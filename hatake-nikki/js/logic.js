@@ -67,15 +67,22 @@
     ninjin: { id: 'ninjin', name: 'にんじん', img: '../assets/images/word/ninjin.png', stageThresholds: [1, 2, 4] },
     tomato: { id: 'tomato', name: 'とまと', img: '../assets/images/word/tomato.png', stageThresholds: [1, 2, 3] }
   };
+  var PLOT_COUNT = 4;
 
   /** 空の plot を生成する。 */
   function emptyPlot() {
     return { seedId: null, daysGrown: 0, wateredToday: false, wilted: false, bug: false };
   }
 
-  /** 新規ゲーム状態を生成する (plot 3枠)。 */
+  function emptyPlots() {
+    var plots = [];
+    for (var i = 0; i < PLOT_COUNT; i++) plots.push(emptyPlot());
+    return plots;
+  }
+
+  /** 新規ゲーム状態を生成する (最初から使えるplot 4枠)。 */
   function createInitialState(todayKey) {
-    return { lastSeenKey: todayKey, plots: [emptyPlot(), emptyPlot(), emptyPlot()] };
+    return { lastSeenKey: todayKey, plots: emptyPlots() };
   }
 
   /** plot の成長段階 (0=たね,1=め,2=そだち,3=しゅうかくOK)。未植栽は -1。 */
@@ -205,13 +212,15 @@
    */
   function normalizeState(raw) {
     var todayKey = dateKey(getNow());
-    var out = { lastSeenKey: todayKey, plots: [emptyPlot(), emptyPlot(), emptyPlot()] };
+    var out = { lastSeenKey: todayKey, plots: emptyPlots() };
     if (raw && typeof raw === 'object') {
       if (typeof raw.lastSeenKey === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.lastSeenKey)) {
         out.lastSeenKey = raw.lastSeenKey;
       }
       if (Array.isArray(raw.plots)) {
-        for (var i = 0; i < 3; i++) {
+        // 旧3区画セーブは0〜2をそのまま保ち、4枠目だけ空畑で補う。
+        // 5枠以上の未知データは、固定4区画の範囲外なので決定論的に切り捨てる。
+        for (var i = 0; i < PLOT_COUNT; i++) {
           out.plots[i] = _normalizePlot(raw.plots[i]);
         }
       }
@@ -228,6 +237,7 @@
     daysBetween: daysBetween,
     hashCode: hashCode,
     CROPS: CROPS,
+    PLOT_COUNT: PLOT_COUNT,
     createInitialState: createInitialState,
     emptyPlot: emptyPlot,
     stageOf: stageOf,

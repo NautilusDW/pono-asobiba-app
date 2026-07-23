@@ -88,7 +88,7 @@
 <link rel="preload" as="image" href="../assets/images/hatake-nikki/crop_sign_ninjin_iso_v2.png" type="image/png">
 <link rel="preload" as="image" href="../assets/images/hatake-nikki/hatake_crop_wet.png" type="image/png">
 <link rel="preload" as="image" href="../assets/images/hatake-nikki/watered_drop_mark_v2.png" type="image/png">
-<link rel="stylesheet" href="styles.css?v=20260723-5">
+<link rel="stylesheet" href="styles.css?v=20260723-6">
 </head>
 <body>
 
@@ -118,28 +118,44 @@
       <button type="button" class="hud-pill zukan-btn" id="zukan-open-btn" aria-label="はたけずかん">📖</button>
     </div>
 
-    <div id="plot-area">
-      <div class="plot" data-plot="0">
+    <div id="plot-area" role="group" aria-label="4つの はたけ">
+      <div class="plot" data-plot="0" role="button" tabindex="0" aria-label="おくの あいている はたけ">
         <div class="plot-hit-area" aria-hidden="true"></div>
-        <img class="crop-sign" alt="" aria-hidden="true" draggable="false">
+        <div class="plot-marker" aria-hidden="true">
+          <img class="crop-sign" alt="" draggable="false">
+          <img class="watered-drop" src="../assets/images/hatake-nikki/watered_drop_mark_v2.png" alt="" draggable="false">
+        </div>
         <div class="plant" data-stage="-1"></div>
-        <img class="watered-drop" src="../assets/images/hatake-nikki/watered_drop_mark_v2.png" alt="" aria-hidden="true" draggable="false">
         <div class="bug-sprite"></div>
         <div class="water-gauge"><div class="water-gauge-fill"></div></div>
       </div>
-      <div class="plot" data-plot="1">
+      <div class="plot" data-plot="1" role="button" tabindex="0" aria-label="ひだりの あいている はたけ">
         <div class="plot-hit-area" aria-hidden="true"></div>
-        <img class="crop-sign" alt="" aria-hidden="true" draggable="false">
+        <div class="plot-marker" aria-hidden="true">
+          <img class="crop-sign" alt="" draggable="false">
+          <img class="watered-drop" src="../assets/images/hatake-nikki/watered_drop_mark_v2.png" alt="" draggable="false">
+        </div>
         <div class="plant" data-stage="-1"></div>
-        <img class="watered-drop" src="../assets/images/hatake-nikki/watered_drop_mark_v2.png" alt="" aria-hidden="true" draggable="false">
         <div class="bug-sprite"></div>
         <div class="water-gauge"><div class="water-gauge-fill"></div></div>
       </div>
-      <div class="plot" data-plot="2">
+      <div class="plot" data-plot="2" role="button" tabindex="0" aria-label="みぎの あいている はたけ">
         <div class="plot-hit-area" aria-hidden="true"></div>
-        <img class="crop-sign" alt="" aria-hidden="true" draggable="false">
+        <div class="plot-marker" aria-hidden="true">
+          <img class="crop-sign" alt="" draggable="false">
+          <img class="watered-drop" src="../assets/images/hatake-nikki/watered_drop_mark_v2.png" alt="" draggable="false">
+        </div>
         <div class="plant" data-stage="-1"></div>
-        <img class="watered-drop" src="../assets/images/hatake-nikki/watered_drop_mark_v2.png" alt="" aria-hidden="true" draggable="false">
+        <div class="bug-sprite"></div>
+        <div class="water-gauge"><div class="water-gauge-fill"></div></div>
+      </div>
+      <div class="plot" data-plot="3" role="button" tabindex="0" aria-label="てまえの あいている はたけ">
+        <div class="plot-hit-area" aria-hidden="true"></div>
+        <div class="plot-marker" aria-hidden="true">
+          <img class="crop-sign" alt="" draggable="false">
+          <img class="watered-drop" src="../assets/images/hatake-nikki/watered_drop_mark_v2.png" alt="" draggable="false">
+        </div>
+        <div class="plant" data-stage="-1"></div>
         <div class="bug-sprite"></div>
         <div class="water-gauge"><div class="water-gauge-fill"></div></div>
       </div>
@@ -193,7 +209,7 @@
 
 </div>
 
-<script src="js/logic.js?v=20260723-1"></script>
-<script src="js/game.js?v=20260723-3"></script>
+<script src="js/logic.js?v=20260723-2"></script>
+<script src="js/game.js?v=20260723-4"></script>
 </body>
 </html>

@@ -1,5 +1,12 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2350: ポノのはたけにっきを、最初から使える4区画の左右対称なアイソメ2×2
+// (奥1・中央左右2・手前1)へ整理し、中央に緑のあぜ道を確保。旧3区画セーブは
+// 既存データを保持して4枠目だけ空畑で補完する。全区画の共通左上アンカーへ
+// 60〜70%サイズの作物札を置き、その左上へ約60%サイズの水やり済み生成マークを
+// 重ねた。styles/logic/game queryも更新。ゲーム個別ファイルはnetwork-first配信のため
+// CRITICAL_ASSETSには追加しない。play.html PAGE_CACHE_VERSION/
+// window.PONO_SW_VERSION と同期 (2350)。
 // v2349: ひょっこりハイタッチの上段3か所を短い画面で0.90、それ以外で0.88へ
 // 縮小して少し奥へ接地させ、下段3か所は基準サイズのまま相対的に手前へ見せる
 // 前後パースを追加。葉の茂み・手前縁・キャラ窓を同じ比率で拡縮し、押下時も比率を
@@ -867,7 +874,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2349;
+const CACHE_VERSION = 2350;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

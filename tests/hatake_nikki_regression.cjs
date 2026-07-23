@@ -37,6 +37,17 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
   }
   assert.equal(typeof L.CROPS, "object", "HatakeLogic.CROPS は定義済み");
   assert.ok(L.CROPS.ninjin && L.CROPS.tomato, "CROPS に ninjin/tomato が存在する");
+  assert.equal(L.PLOT_COUNT, 4, "畑は固定4区画");
+
+  const initial = L.createInitialState("2026-07-23");
+  assert.equal(initial.plots.length, 4, "createInitialState は最初から4区画を返す");
+  for (let i = 0; i < initial.plots.length; i++) {
+    assert.deepEqual(initial.plots[i], L.emptyPlot(), `初期plot${i}は空畑`);
+  }
+  initial.plots[0].seedId = "ninjin";
+  assert.equal(initial.plots[1].seedId, null, "初期plot0とplot1は独立したオブジェクト");
+  assert.equal(initial.plots[2].seedId, null, "初期plot0とplot2は独立したオブジェクト");
+  assert.equal(initial.plots[3].seedId, null, "初期plot0とplot3は独立したオブジェクト");
 }
 
 // ── 2. 時刻注入 + Date 直接呼び出し禁止 (regex) ─────────────────────
@@ -433,10 +444,30 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
   assert.doesNotThrow(() => L.normalizeState({ lastSeenKey: 12345, plots: [null, undefined, {}] }), "plots 欠損/型不正でもクラッシュしない");
 
   const normalized = L.normalizeState({ plots: [{ seedId: "ninjin", daysGrown: 2, wateredToday: true, wilted: false, bug: true }] });
-  assert.equal(normalized.plots.length, 3, "normalizeState は常に3枠の plots を返す");
+  assert.equal(normalized.plots.length, 4, "normalizeState は常に4枠の plots を返す");
   assert.equal(normalized.plots[0].seedId, "ninjin", "妥当なフィールドは保持される");
   assert.equal(normalized.plots[1].seedId, null, "欠損 plot は emptyPlot 相当になる");
   assert.equal(normalized.plots[2].seedId, null, "欠損 plot は emptyPlot 相当になる");
+  assert.equal(normalized.plots[3].seedId, null, "4枠目の欠損 plot も emptyPlot 相当になる");
+
+  const legacyPlots = [
+    { seedId: "ninjin", daysGrown: 2, wateredToday: true, wilted: false, bug: true },
+    { seedId: "tomato", daysGrown: 1, wateredToday: false, wilted: true, bug: false },
+    { seedId: "ninjin", daysGrown: 4, wateredToday: false, wilted: false, bug: false }
+  ];
+  const normalizedLegacy = L.normalizeState({ lastSeenKey: "2026-07-22", plots: legacyPlots });
+  assert.equal(normalizedLegacy.plots.length, 4, "旧3区画セーブを4区画へ拡張する");
+  assert.deepEqual(normalizedLegacy.plots.slice(0, 3), legacyPlots, "旧3区画セーブのplot0〜2を同じ順序で保持する");
+  assert.deepEqual(normalizedLegacy.plots[3], L.emptyPlot(), "旧3区画セーブには空のplot3を追加する");
+
+  const fivePlots = legacyPlots.concat([
+    { seedId: "tomato", daysGrown: 3, wateredToday: true, wilted: false, bug: false },
+    { seedId: "ninjin", daysGrown: 99, wateredToday: true, wilted: false, bug: true }
+  ]);
+  const normalizedFive = L.normalizeState({ plots: fivePlots });
+  assert.equal(normalizedFive.plots.length, 4, "5区画以上の未知セーブは固定4区画へ切り詰める");
+  assert.deepEqual(normalizedFive.plots[3], fivePlots[3], "切り詰め時もplot3までは保持する");
+  assert.equal(normalizedFive.plots.some(plot => plot.daysGrown === 99), false, "5枠目以降のデータは混入しない");
 
   const badCrop = L.normalizeState({ plots: [{ seedId: "unknown-crop", daysGrown: 5 }] });
   assert.equal(badCrop.plots[0].seedId, null, "未知の seedId は emptyPlot 相当に丸められる");
@@ -473,7 +504,7 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
   assert.match(stylesCss, /yard\/hatake_crop\.png/, "styles.css は hatake_crop.png (畝アセット) を引き続き参照する");
 }
 
-// ── 25. #tool-rail と .plot[data-plot="2"] の重なり解消 (レイアウト崩れバグ1-B修正) ──
+// ── 25. #tool-rail と4区画の重なり解消 (レイアウト崩れバグ1-B修正) ──
 {
   const railMatch = stylesCss.match(/#tool-rail\s*\{[^}]*\}/);
   assert.ok(railMatch, "#tool-rail のブロックが見つかる");
@@ -485,16 +516,18 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
   const railWidth = Number(railWidthMatch[1]);
   const railLeftEdge = 100 - railRight - railWidth; // レール左端 (% from left)
 
-  const plot2Match = stylesCss.match(/\.plot\[data-plot="2"\]\s*\{[^}]*\}/);
   const plotWidthMatch = stylesCss.match(/\.plot\s*\{[^}]*width:\s*([\d.]+)%/);
-  assert.ok(plot2Match && plotWidthMatch, ".plot[data-plot=\"2\"] / .plot の width が見つかる");
-  const plot2LeftMatch = plot2Match[0].match(/left:\s*([\d.]+)%/);
-  assert.ok(plot2LeftMatch, ".plot[data-plot=\"2\"] の left が見つかる");
-  const plot2Left = Number(plot2LeftMatch[1]);
+  assert.ok(plotWidthMatch, ".plot の width が見つかる");
   const plotWidth = Number(plotWidthMatch[1]);
-  const plot2RightEdge = plot2Left + plotWidth; // plot2 右端 (% from left)
+  const plotRightEdges = [];
+  for (let idx = 0; idx < 4; idx++) {
+    const coordinateMatch = stylesCss.match(new RegExp('\\.plot\\[data-plot="' + idx + '"\\]\\s*\\{[^}]*left:\\s*([\\d.]+)%[^}]*\\}'));
+    assert.ok(coordinateMatch, `.plot[data-plot="${idx}"] の left が見つかる`);
+    plotRightEdges.push(Number(coordinateMatch[1]) + plotWidth);
+  }
+  const maxPlotRightEdge = Math.max(...plotRightEdges);
 
-  assert.ok(railLeftEdge >= plot2RightEdge, `#tool-rail 左端(${railLeftEdge}%) が .plot[data-plot="2"] 右端(${plot2RightEdge}%) 以上 (重なりゼロ)`);
+  assert.ok(railLeftEdge >= maxPlotRightEdge, `#tool-rail 左端(${railLeftEdge}%) が4区画の最大右端(${maxPlotRightEdge}%) 以上 (重なりゼロ)`);
 }
 
 // ── 26. 水やり discoverability (レイアウト崩れバグ2修正) ────────────────
@@ -519,9 +552,10 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
   assert.match(plotAreaMatch[0], /translateY\(-50%\)/, '#plot-area の中心を stage の中心に合わせる');
 
   const expected = [
-    { idx: 0, left: 25.583333, top: 32.228358 },
-    { idx: 1, left: 13.883333, top: 44.228358 },
-    { idx: 2, left: 38.383333, top: 45.828358 }
+    { idx: 0, left: 30.583333, top: 27.328358 },
+    { idx: 1, left: 13.583333, top: 43.328358 },
+    { idx: 2, left: 47.583333, top: 43.328358 },
+    { idx: 3, left: 30.583333, top: 59.328358 }
   ];
   for (const pos of expected) {
     const blockMatch = stylesCss.match(new RegExp('\\.plot\\[data-plot="' + pos.idx + '"\\]\\s*\\{[^}]*\\}'));
@@ -536,7 +570,17 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
   assert.doesNotMatch(plotBlock[0], /bottom\s*:/, '畝配置は画面下端基準の bottom を使わない');
   assert.match(plotBlock[0], /pointer-events:\s*none/, '透明な矩形部分はタッチを奪わない');
   assert.match(stylesCss, /\.plot-hit-area\s*\{[^}]*clip-path:\s*polygon\(50% 0%, 100% 46%, 50% 100%, 0% 46%\)[^}]*pointer-events:\s*auto/s, '実画像のひし形だけを操作面にする');
-  assert.strictEqual((indexHtml.match(/class="plot-hit-area"/g) || []).length, 3, '各畝にひし形の操作面が1つある');
+  assert.strictEqual((indexHtml.match(/class="plot-hit-area"/g) || []).length, 4, '4つの各畝にひし形の操作面が1つある');
+  assert.match(indexHtml, /id="plot-area"\s+role="group"\s+aria-label="4つの はたけ"/, 'plot-area が4区画のグループとして読み上げられる');
+  assert.strictEqual((indexHtml.match(/class="plot"\s+data-plot="[0-3]"\s+role="button"\s+tabindex="0"/g) || []).length, 4, '4つの畝すべてがキーボード操作可能なbutton roleを持つ');
+  for (const label of ['おくの あいている はたけ', 'ひだりの あいている はたけ', 'みぎの あいている はたけ', 'てまえの あいている はたけ']) {
+    assert.match(indexHtml, new RegExp('aria-label="' + label + '"'), `空畑を位置名つきで読み分ける: ${label}`);
+  }
+  assert.match(gameJs, /PLOT_POSITION_NAMES\s*=\s*\['おく',\s*'ひだり',\s*'みぎ',\s*'てまえ'\]/, '描画後のaria-labelも4位置名を維持する');
+  assert.match(gameJs, /refs\.el\.addEventListener\('keydown',[\s\S]*?e\.key !== 'Enter' && e\.key !== ' '[\s\S]*?e\.preventDefault\(\)[\s\S]*?activatePlotByInput\(idx\)/, '畝はEnter/Spaceを共通1回操作へ結線する');
+  assert.match(gameJs, /refs\.el\.addEventListener\('click',[\s\S]*?plotLastTouchEnd\[idx\][\s\S]*?performance\.now\(\)[\s\S]*?activatePlotByInput\(idx\)/, '畝はマウスclickを受け、touch合成clickだけを単調時計で抑止する');
+  assert.match(gameJs, /function bindControlAction\(el,\s*action\)[\s\S]*?addEventListener\('pointerdown'[\s\S]*?addEventListener\('click'[\s\S]*?e\.detail !== 0/, 'ツールbuttonはpointerとキーボード／支援技術clickを二重発火なく共通actionへ結線する');
+  assert.match(gameJs, /bindControlAction\(tutNextBtn,\s*advanceTutorial\)/, '初回チュートリアルもEnter/Spaceで進められる');
 }
 
 // ── 28. 作物立て札 + 生成画像による水やり済み表示 ───────────────────
@@ -554,8 +598,10 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
     assert.ok(fs.statSync(absolute).size <= 3 * 1024 * 1024, `${relative} が3MB以下`);
   }
 
-  assert.strictEqual((indexHtml.match(/class="crop-sign"/g) || []).length, 3, '各畝に作物立て札が1つある');
-  assert.strictEqual((indexHtml.match(/class="watered-drop"/g) || []).length, 3, '各畝に水やり済みしずく画像が1つある');
+  assert.strictEqual((indexHtml.match(/class="plot-marker"/g) || []).length, 4, '各畝に札と水マークの共通ラッパーが1つある');
+  assert.strictEqual((indexHtml.match(/class="crop-sign"/g) || []).length, 4, '各畝に作物立て札が1つある');
+  assert.strictEqual((indexHtml.match(/class="watered-drop"/g) || []).length, 4, '各畝に水やり済みしずく画像が1つある');
+  assert.strictEqual((indexHtml.match(/<div class="plot-marker" aria-hidden="true">\s*<img class="crop-sign"[^>]*>\s*<img class="watered-drop"[^>]*>\s*<\/div>/g) || []).length, 4, '各plot-marker内で立て札と水マークを同じアンカーに束ねる');
   for (const asset of ['crop_sign_tomato_iso_v2.png', 'crop_sign_ninjin_iso_v2.png', 'hatake_crop_wet.png', 'watered_drop_mark_v2.png']) {
     assert.match(indexHtml, new RegExp('<link\\s+rel="preload"\\s+as="image"[^>]*' + asset.replace('.', '\\.') + '[^>]*>'), `${asset} を開始画面で先読みする`);
   }
@@ -566,17 +612,23 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
   assert.match(stylesCss, /\.plot\.is-watered\s*\{[^}]*hatake_crop_wet\.png/, '水やり済みは湿った土の生成画像へ切り替える');
   assert.match(stylesCss, /\.plot\.is-watered\s*\{[^}]*background-size:\s*contain[^}]*background-position:\s*center[^}]*background-repeat:\s*no-repeat/s, '湿った畝は上頂点を切らず全体表示する');
   assert.match(stylesCss, /\.plot\.is-watered\s+\.watered-drop\s*\{[^}]*display:\s*block/, '水やり済みは大きなしずく画像を表示する');
+  const markerBlock = stylesCss.match(/\.plot-marker\s*\{[^}]*\}/s);
+  assert.ok(markerBlock, '札と水マークの共通ラッパーCSSが存在する');
+  assert.match(markerBlock[0], /left:\s*10%/, '全マーカーは畝の左隅寄りに同じアンカーXを使う');
+  assert.match(markerBlock[0], /top:\s*50%/, '全マーカーは畝の左角に同じアンカーYを使う');
+  assert.match(markerBlock[0], /width:\s*clamp\(30px,\s*20%,\s*56px\)/, '立て札は前版の約60〜70%へ縮小する');
+  assert.match(markerBlock[0], /translate\(-43\.2%,\s*-95%\)/, '立て札は杭先を共通アンカーへ合わせる');
+  assert.match(markerBlock[0], /pointer-events:\s*none/, '共通マーカーは畑の操作を妨げない');
   const signBlock = stylesCss.match(/\.crop-sign\s*\{[^}]*\}/s);
   assert.ok(signBlock, '立て札の共通CSSが存在する');
-  assert.match(signBlock[0], /left:\s*27%/, '全立て札は同じ左下アンカーXを使う');
-  assert.match(signBlock[0], /top:\s*72%/, '全立て札は同じ左下アンカーYを使う');
-  assert.match(signBlock[0], /translate\(-43\.2%,\s*-95%\)/, '立て札は杭先を共通アンカーへ合わせる');
+  assert.match(signBlock[0], /width:\s*100%/, '立て札は共通マーカー幅に追従する');
   assert.match(signBlock[0], /pointer-events:\s*none/, '立て札は畑の操作を妨げない');
-  assert.doesNotMatch(stylesCss, /\.plot\[data-plot="2"\]\s+\.crop-sign/, 'plot2だけ立て札位置を変える例外を置かない');
+  assert.doesNotMatch(stylesCss, /\.plot\[data-plot="[0-3]"\]\s+\.plot-marker/, '区画ごとにマーカー位置を変える例外を置かない');
   assert.match(stylesCss, /\.plot\[data-plot="0"\]\s*\{\s*--crop-sign-tilt:\s*-1\.5deg;\s*\}/, 'plot0は固定の微小傾き');
   assert.match(stylesCss, /\.plot\[data-plot="1"\]\s*\{\s*--crop-sign-tilt:\s*0\.75deg;\s*\}/, 'plot1は固定の微小傾き');
   assert.match(stylesCss, /\.plot\[data-plot="2"\]\s*\{\s*--crop-sign-tilt:\s*-0\.75deg;\s*\}/, 'plot2は固定の微小傾き');
-  assert.match(stylesCss, /\.watered-drop\s*\{[^}]*right:\s*8%[^}]*top:\s*5%[^}]*width:\s*clamp\(36px,\s*23%,\s*52px\)/s, 'しずく済マークは畝上の右上へ大きく置く');
+  assert.match(stylesCss, /\.plot\[data-plot="3"\]\s*\{\s*--crop-sign-tilt:\s*1\.25deg;\s*\}/, 'plot3は固定の微小傾き');
+  assert.match(stylesCss, /\.watered-drop\s*\{[^}]*left:\s*-8%[^}]*top:\s*-8%[^}]*width:\s*clamp\(20px,\s*70%,\s*32px\)/s, 'しずく済マークは立て札左上へ約60%サイズで重ねる');
   assert.match(stylesCss, /\.watered-drop\s*\{[^}]*pointer-events:\s*none/s, 'しずくは畑の操作を妨げない');
   assert.match(stylesCss, /\.plant\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0/s, '芽の中央基準は畝全面へ固定する');
   assert.doesNotMatch(indexHtml + gameJs + stylesCss, /🚿|💧/, 'じょうろ・しずくの絵文字をUI実装に残さない');

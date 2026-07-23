@@ -130,7 +130,8 @@ function createScreenController(screens) {
   var zukanState = loadZukan();
   var activeTool = null;      // null | 'water' | 'seed'
   var pendingSeedId = null;   // 'seed' ツール選択後、次にタップした空plotへ植える
-  var plotPress = [null, null, null];
+  var plotPress = new Array(L.PLOT_COUNT || appState.plots.length);
+  var plotLastTouchEnd = new Array(L.PLOT_COUNT || appState.plots.length);
 
   // ═══ DOM 参照 ═══
   var hudDateEl = document.getElementById('hud-date');
@@ -146,6 +147,7 @@ function createScreenController(screens) {
     tomato: '../assets/images/hatake-nikki/crop_sign_tomato_iso_v2.png',
     ninjin: '../assets/images/hatake-nikki/crop_sign_ninjin_iso_v2.png'
   };
+  var PLOT_POSITION_NAMES = ['おく', 'ひだり', 'みぎ', 'てまえ'];
 
   var plotRefs = [];
   var plotEls = document.querySelectorAll('.plot');
@@ -292,11 +294,12 @@ function createScreenController(screens) {
     }
     if (refs.bugEl) refs.bugEl.classList.toggle('is-visible', !!plot.bug);
     refs.el.classList.toggle('is-watered', !!plot.wateredToday);
+    var positionName = PLOT_POSITION_NAMES[idx] || String(idx + 1) + 'ばん';
     if (cropInfo) {
-      refs.el.setAttribute('aria-label', cropInfo.name + 'の はたけ。' +
+      refs.el.setAttribute('aria-label', positionName + 'の ' + cropInfo.name + 'の はたけ。' +
         (plot.wateredToday ? 'きょうの みずやり できた' : 'きょうの みずやりは まだ'));
     } else {
-      refs.el.setAttribute('aria-label', 'あいている はたけ');
+      refs.el.setAttribute('aria-label', positionName + 'の あいている はたけ');
     }
   }
 
@@ -520,6 +523,20 @@ function createScreenController(screens) {
     updateStatusBar(); // flash 中なら no-op
   }
 
+  // 長押しを使えないキーボード・マウス・支援技術向けの1回操作。
+  // 水ツール時だけ即時水やり、それ以外は既存タップ操作へ合流させる。
+  function activatePlotByInput(idx) {
+    var plot = appState.plots[idx];
+    if (!plot) return;
+    if (plot.bug) {
+      doShooBug(idx);
+    } else if (activeTool === 'water' && plot.seedId && !plot.wateredToday) {
+      doWater(idx);
+    } else {
+      doTapAction(idx);
+    }
+  }
+
   // iOS/Android の長押しネイティブメニュー抑止 (issue1)。
   // NOTE: .plot の touchstart は {passive:true} のまま変えない
   // (preventDefault はここでは不要。コールアウトは CSS -webkit-touch-callout:none +
@@ -541,59 +558,77 @@ function createScreenController(screens) {
       }, { passive: true });
       refs.el.addEventListener('touchend', function (e) {
         var t = e.changedTouches[0];
+        plotLastTouchEnd[idx] = performance.now();
         endPress(idx, t ? t.clientX : null, t ? t.clientY : null);
       }, { passive: true });
       refs.el.addEventListener('touchcancel', function () {
         cancelPress(idx);
       }, { passive: true });
+      // role="button" のキーボード経路。水ツール中は長押しの代わりに
+      // Enter / Space 1回で水やりし、それ以外は植栽・収穫のタップ操作と揃える。
+      refs.el.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        activatePlotByInput(idx);
+      });
+      // 通常のマウス／トラックパッドと、支援技術が送るclickを受ける。
+      // touchend直後の合成clickだけは、植栽→即収穫などの二重発火を防ぐため無視する。
+      refs.el.addEventListener('click', function (e) {
+        var lastTouchEnd = plotLastTouchEnd[idx];
+        if (typeof lastTouchEnd === 'number' && performance.now() - lastTouchEnd < 700) return;
+        e.preventDefault();
+        activatePlotByInput(idx);
+      });
     })(gi);
   }
 
   // ═══ HUD / ツール / モーダル操作 ═══
+  // pointerdown は既存の即応性を維持し、detail=0 のclickで
+  // Enter / Space・支援技術・HTMLElement.click() も同じactionへ合流させる。
+  // 実ポインターのclick(detail>0)は直前のpointerdownと二重になるため無視する。
+  function bindControlAction(el, action) {
+    if (!el) return;
+    el.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      action();
+    });
+    el.addEventListener('click', function (e) {
+      if (e.detail !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      action();
+    });
+  }
+
   var zukanOpenBtn = document.getElementById('zukan-open-btn');
-  if (zukanOpenBtn) {
-    zukanOpenBtn.addEventListener('pointerdown', function (e) {
-      e.preventDefault(); e.stopPropagation();
-      renderZukan();
-      screenCtl.show('zukan-overlay');
-    });
-  }
+  bindControlAction(zukanOpenBtn, function () {
+    renderZukan();
+    screenCtl.show('zukan-overlay');
+  });
   var zukanCloseBtn = document.getElementById('zukan-close-btn');
-  if (zukanCloseBtn) {
-    zukanCloseBtn.addEventListener('pointerdown', function (e) {
-      e.preventDefault(); e.stopPropagation();
-      screenCtl.hide('zukan-overlay');
-    });
-  }
+  bindControlAction(zukanCloseBtn, function () {
+    screenCtl.hide('zukan-overlay');
+  });
   var diaryCloseBtn = document.getElementById('diary-close-btn');
-  if (diaryCloseBtn) {
-    diaryCloseBtn.addEventListener('pointerdown', function (e) {
-      e.preventDefault(); e.stopPropagation();
-      screenCtl.hide('diary-overlay');
-    });
-  }
-  if (toolWaterBtn) {
-    toolWaterBtn.addEventListener('pointerdown', function (e) {
-      e.preventDefault(); e.stopPropagation();
-      activeTool = (activeTool === 'water') ? null : 'water';
-      pendingSeedId = null;
-      toolWaterBtn.classList.toggle('is-active', activeTool === 'water');
-      if (toolSeedBtn) toolSeedBtn.classList.remove('is-active');
-      updateWaterTargets();
-      updateStatusBar();
-    });
-  }
-  if (toolSeedBtn) {
-    toolSeedBtn.addEventListener('pointerdown', function (e) {
-      e.preventDefault(); e.stopPropagation();
-      screenCtl.show('seed-picker');
-    });
-  }
+  bindControlAction(diaryCloseBtn, function () {
+    screenCtl.hide('diary-overlay');
+  });
+  bindControlAction(toolWaterBtn, function () {
+    activeTool = (activeTool === 'water') ? null : 'water';
+    pendingSeedId = null;
+    toolWaterBtn.classList.toggle('is-active', activeTool === 'water');
+    if (toolSeedBtn) toolSeedBtn.classList.remove('is-active');
+    updateWaterTargets();
+    updateStatusBar();
+  });
+  bindControlAction(toolSeedBtn, function () {
+    screenCtl.show('seed-picker');
+  });
   var seedChoiceEls = document.querySelectorAll('.seed-choice');
   for (var sci = 0; sci < seedChoiceEls.length; sci++) {
     (function (btn) {
-      btn.addEventListener('pointerdown', function (e) {
-        e.preventDefault(); e.stopPropagation();
+      bindControlAction(btn, function () {
         pendingSeedId = btn.getAttribute('data-seed');
         activeTool = 'seed';
         if (toolWaterBtn) toolWaterBtn.classList.remove('is-active');
@@ -615,12 +650,7 @@ function createScreenController(screens) {
     updateStatusBar();
   }
   var seedPickerCloseBtn = document.getElementById('seed-picker-close-btn');
-  if (seedPickerCloseBtn) {
-    seedPickerCloseBtn.addEventListener('pointerdown', function (e) {
-      e.preventDefault(); e.stopPropagation();
-      closeSeedPicker();
-    });
-  }
+  bindControlAction(seedPickerCloseBtn, closeSeedPicker);
   var seedPickerEl = document.getElementById('seed-picker');
   if (seedPickerEl) {
     // バックドロップ (カード外側) タップでも閉じられるようにする。
@@ -652,7 +682,9 @@ function createScreenController(screens) {
     bubble.classList.remove('hidden');
     bubble.innerHTML = '<div class="tut-icon">' + iconHtml + '</div>' + step.text +
       '<br><button class="tut-next-btn" id="tut-next">' + (tutStep < TUT_STEPS.length - 1 ? 'つぎへ' : 'とじる') + '</button>';
-    document.getElementById('tut-next').addEventListener('pointerdown', onTutNext);
+    var tutNextBtn = document.getElementById('tut-next');
+    bindControlAction(tutNextBtn, advanceTutorial);
+    if (tutNextBtn) tutNextBtn.focus({ preventScroll: true });
   }
   function closeTutorial() {
     var dim = document.getElementById('tut-dim');
@@ -660,9 +692,7 @@ function createScreenController(screens) {
     if (dim) dim.classList.add('hidden');
     if (bubble) bubble.classList.add('hidden');
   }
-  function onTutNext(e) {
-    e.preventDefault();
-    e.stopPropagation();
+  function advanceTutorial() {
     tutStep++;
     if (tutStep >= TUT_STEPS.length) { closeTutorial(); return; }
     renderTutStep();

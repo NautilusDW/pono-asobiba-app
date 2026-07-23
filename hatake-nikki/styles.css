@@ -133,34 +133,47 @@ html, body {
   pointer-events: auto;
   touch-action: manipulation;
 }
-/* egg/index.html の FARM_PLOT_POS 先頭3点と共通の実測座標。
-   0=奥、1/2=手前の三角形にし、ひし形地面の外に出さない。 */
-.plot[data-plot="0"] { left: 25.583333%; top: 32.228358%; z-index: 1; }
-.plot[data-plot="1"] { left: 13.883333%; top: 44.228358%; z-index: 2; }
-.plot[data-plot="2"] { left: 38.383333%; top: 45.828358%; z-index: 2; }
+/* green.png 上のアイソメ2×2。画面では 0=奥、1/2=中央、3=手前の
+   左右対称なひし形になり、4枚の間に緑のあぜ道が残る。
+   4区画はロックせず最初からすべて使える。 */
+.plot[data-plot="0"] { left: 30.583333%; top: 27.328358%; z-index: 1; }
+.plot[data-plot="1"] { left: 13.583333%; top: 43.328358%; z-index: 2; }
+.plot[data-plot="2"] { left: 47.583333%; top: 43.328358%; z-index: 2; }
+.plot[data-plot="3"] { left: 30.583333%; top: 59.328358%; z-index: 3; }
 .plot.is-pressed { filter: brightness(0.92); }
+.plot:focus-visible {
+  outline: none;
+  filter: drop-shadow(0 0 10px rgba(255, 225, 100, 0.95)) brightness(1.06);
+}
 
-/* 植えた作物の立て札。全区画で、杭先を畝の左下辺上の同じ相対点
-   (27%,72%)へ固定する。画像は畝軸と同じ約30.6°のアイソメ角で生成済み。
-   位置は変えず、自然な手作り感だけを±1.5°以内の固定傾きで付ける。 */
-.crop-sign {
+/* 札と水やり済みマークを同じアンカーで動かす。
+   杭先は左角付近(10%,50%)へ移し、札は前版の約65%に縮小。
+   生成しずくは札の左上へ重ね、前版の約60%にする。 */
+.plot-marker {
   position: absolute;
-  left: 27%;
-  top: 72%;
-  z-index: 2;
+  left: 10%;
+  top: 50%;
+  z-index: 4;
+  width: clamp(30px, 20%, 56px);
+  transform-origin: 0 0;
+  transform: rotate(var(--crop-sign-tilt, 0deg)) translate(-43.2%, -95%);
+  pointer-events: none;
+}
+.crop-sign {
+  position: relative;
+  z-index: 1;
   display: none;
-  width: clamp(46px, 30%, 84px);
+  width: 100%;
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 2px 2px rgba(80, 52, 30, 0.24));
-  transform-origin: 0 0;
-  transform: rotate(var(--crop-sign-tilt, 0deg)) translate(-43.2%, -95%);
   pointer-events: none;
 }
 .crop-sign.is-visible { display: block; }
 .plot[data-plot="0"] { --crop-sign-tilt: -1.5deg; }
 .plot[data-plot="1"] { --crop-sign-tilt: 0.75deg; }
 .plot[data-plot="2"] { --crop-sign-tilt: -0.75deg; }
+.plot[data-plot="3"] { --crop-sign-tilt: 1.25deg; }
 
 /* 水やり済みは「濃い湿った土 + 水色の外周 + 大きなしずく」の3手掛かり。
    生成画像は238×143。containで上頂点まで必ず表示し、拡大cropしない。 */
@@ -172,12 +185,13 @@ html, body {
 }
 .watered-drop {
   position: absolute;
-  right: 8%;
-  top: 5%;
+  left: -8%;
+  top: -8%;
+  right: auto;
   bottom: auto;
-  z-index: 4;
+  z-index: 2;
   display: none;
-  width: clamp(36px, 23%, 52px);
+  width: clamp(20px, 70%, 32px);
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 2px 2px rgba(30, 111, 173, 0.28));
