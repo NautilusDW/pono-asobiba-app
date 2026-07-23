@@ -842,12 +842,18 @@
 // styles.css は個別query更新済み。ゲーム個別ファイルはnetwork-first配信のため
 // CRITICAL_ASSETSには追加しない。play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION
 // と同期 (2346)。
+// v2348: ひょっこりハイタッチから常設の花壇・ひかりのたね・成長表示を撤去し、
+// GPT Image 2製の6接地面つき森背景、同じ葉の茂みを背面／手前縁へ重ねる共通開口、
+// 中央コンボレーンへ整理。直前に成功した場所だけを次候補から外す視線移動、
+// 7体ごとの30点ボーナス、最大コンボ記録は維持。ゲーム個別ファイルと画像は
+// network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
+// PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2348)。
 // v2347: なぞなぞトレイン恐竜面のクレーン／水路成功結果を、自動遷移ではなく
 // 明示ボタンを押すまで保持。水路はdecode済み成功絵を確認してから次へ進める。
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2347;
+const CACHE_VERSION = 2348;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
