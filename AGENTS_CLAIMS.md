@@ -59,6 +59,8 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
+- 2026-07-25 - by Codex - [batch:1468-machigai-tts31-narration] - machigai/**, tests/e2e/machigai/**, tests/machigai_*.cjs, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - 間違い探しで実際に再生される全差分ラベルと完了文言を Gemini TTS 3.1 / Leda / 1.15倍へ統一し、音声形式・音量・faster-whisper台本キーワード・全manifest対応・連打/mute/cancelを検証してApp stagingへ反映する [overlap: batch:1464-hyokkori-sleep-feedback (sw.js/play.html), batch:1460-nazonazo-town-pitatto-round7 (sw.js/play.html)]
+
 - 2026-07-25 - by Claude - [batch:1467-kawaglint-art-production-depth-fishdex-ui] - unity/PonoNativeGames/Assets/Pono/Games/KawaGlint/**(既存ファイル変更+新規、AquaLumina等の保護4ディレクトリ不変更), tmp/alpha_pending/**(新規生成物)、AGENTS_CLAIMS.md, HANDOFF.md - ユーザーフィードバック反映: ①UIがポノに被る不具合修正+ロケーション別ポノ配置、②本番アート生成(統合かこう/海3背景+新種10+海藻+隠れ物オブジェクト)、③海藻の独立揺れレイヤー化+岩/サンゴでの奥行き・隠れ演出、④図鑑(fishdex)閲覧UI新設(Phase C、データ層は実装済み)。fable設計+アート生成→(orchestrator目視承認)→sonnet5実装→クロスレビュー→ビルド検証で進行予定 [overlap: batch:1449-tsuri-unity-water-spike(KawaGlint本体、継続作業)]
 
 - 2026-07-24 - by Claude - [batch:1463-tsuri-sea-worldmap-plan-doc] - docs/TSURI_SEA_WORLDMAP_PLAN_2026-07-24.md, AGENTS_CLAIMS.md - v1.1改訂完了: §6.2の解放条件をユーザー決定「全ロケーション常時解放(unlockCount:null)、閾値は後日」で確定。企画書としては実装着手可能な状態。図鑑サンプルのフォーマット承認のみ待ち [CLOSED的、docsのみでcode変更なし]
