@@ -9,12 +9,16 @@ namespace Pono.TownCraft
         private readonly List<GameObject> _spawned = new();
         private TownCraftState _state;
         private Font _font;
+        private TownCraftDualGridAtlas _dualGridAtlas;
 
         public void Render(TownCraftState state)
         {
             _state = state;
             _sprites.Theme = state.theme;
             _font ??= Resources.Load<Font>("Fonts/NotoSansJP-Variable");
+            _dualGridAtlas = state.terrainArt == TerrainArtVariant.Legacy
+                ? null
+                : new TownCraftDualGridAtlas(state.terrainArt);
             Clear();
 
             for (var y = 0; y < state.height; y++)
@@ -36,7 +40,7 @@ namespace Pono.TownCraft
                     AddSprite($"water-{x}-{y}", _sprites.Tile(visual.sprite),
                         new Vector3(x, y, -0.08f), 2 + y, Vector3.one, visual.rotation);
                 }
-                else if (cell.road)
+                else if (cell.road && _dualGridAtlas == null)
                 {
                     var mask = TownCraftRules.ConnectionMask(state, x, y, c => c.road);
                     var visual = ResolveConnected("dirt", mask);
@@ -45,7 +49,21 @@ namespace Pono.TownCraft
                 }
             }
 
+            if (_dualGridAtlas != null) RenderDualGridRoads();
             foreach (var placement in state.placements) RenderPlacement(placement);
+        }
+
+        private void RenderDualGridRoads()
+        {
+            for (var y = 0; y <= _state.height; y++)
+            for (var x = 0; x <= _state.width; x++)
+            {
+                var mask = TownCraftDualGrid.Mask(_state, x, y, cell => cell.road && !cell.water);
+                var sprite = _dualGridAtlas.SpriteForMask(mask);
+                if (sprite == null) continue;
+                AddSprite($"dual-road-{x}-{y}", sprite,
+                    new Vector3(x - 0.5f, y - 0.5f, -0.08f), 3 + y, Vector3.one);
+            }
         }
 
         private Sprite GroundSprite(TownCell cell)

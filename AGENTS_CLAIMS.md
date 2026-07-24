@@ -57,6 +57,8 @@
 
 ## Active claims
 
+- 2026-07-25 - by Codex - [batch:1474-towncraft-spritecook-dualgrid] - DONE - unity/PonoNativeGames/Assets/Pono/Games/TownCraft/**, docs/TOWNCRAFT_TOPDOWN_TILE_SYSTEM_2026-07-25.md, tmp/alpha_pending/1474-spritecook-towncraft-test/**, AGENTS.md, HANDOFF.md, AGENTS_CLAIMS.md - GPT Image 2固定のSpriteCookで控えめ草土15-pieceを追加生成。華やか／控えめatlasをローカル透過処理し、Unity dual-grid rendererと地形切替、道沿い街灯へ統合。EditMode 9/9、macOS実画面QA済み。既存KawaGlint/**と並走dirty metaは変更していない。
+
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
 - 2026-07-25 - by Claude - [batch:1470-kawaglint-species-x2-rarity-bg-depth-polish] - unity/PonoNativeGames/Assets/Pono/Games/KawaGlint/**(既存ファイル変更+新規、AquaLumina等の保護4ディレクトリ不変更), tmp/alpha_pending/**(新規アート、gitignore対象)、docs/**、AGENTS_CLAIMS.md, HANDOFF.md - ユーザー実プレイフィードバック7件: ①生き物を約2倍(15→30種前後)に拡充、②抽選確率の再設計(連続で同じ種も出る独立抽選+レアは本当に稀+pity)、③レア種の魚影を一目で分かる差別化(シルエット/動き)、④背景のサンゴ/岩/海藻をちゃんと作る(現状13点は最低限)、⑤生態的整合性(沖の船で鮭が釣れる等)の見直し、⑥背景の多層化・アニメ化(雲が流れる/木々が揺れる/パララックス)、⑦水面が二重に見える不具合(背景アートの焼き込み水面線とSurfaceBandエフェクトのズレ)+ウキの見た目改善+食いつき時に引っ張られる描写の追加。**状態: 設計完了・実装未着手・Claude→次担当へ引き継ぎ中(2026-07-25)。** Opus5による5領域の並列設計+6件のクロスレビューは完了し、**全文を `docs/KAWAGLINT_EXPANSION_DESIGN_2026-07-25.md` に保存済み**(統合フェーズ実行中にセッション終了したため統合前の生テキスト。矛盾はクロスレビュー§6に指摘があるので実装前に必ず解消すること)。**アート生成の前提が途中で変わった重要事項**: ユーザーはHiggsfield ultimateプランのアンリミテッド枠を持つが、実データ確認の結果アンリミテッドは "Available on web" 限定で、**MCP経由の生成には適用されずクレジットを消費する**(Nano Banana Pro 2k=2cr / GPT Image 2 high 2k=7cr、残高892)。MCP側から有効化する手段は存在しない(ツール定義・モデル定義・プラン情報すべて確認済み)。よって**アート生成はMCPからではなく、web UI(またはClaude Cowork等ブラウザ操作可能な環境)でアンリミテッド生成する方針**にユーザーが決定。実装担当は発注書を「web UIにそのまま貼れる指示書」形式(1枚ごとにプロンプト全文/アスペクト比/解像度/クロマキー色/保存ファイル名)に整形して提供すること。詳細な引き継ぎ手順はHANDOFF.mdの本batchエントリ参照 [overlap: batch:1449-tsuri-unity-water-spike(KawaGlint本体、継続作業)]

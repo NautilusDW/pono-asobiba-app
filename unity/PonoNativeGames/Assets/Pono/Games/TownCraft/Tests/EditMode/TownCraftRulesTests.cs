@@ -71,5 +71,26 @@ namespace Pono.TownCraft.Tests.EditMode
             var after = state.cells.Select(c => (c.ground, c.road, c.water, c.height)).ToArray();
             Assert.That(after, Is.EqualTo(before));
         }
+
+        [Test]
+        public void DualGridUsesSpriteCookMaskOrderAndAtlasLookup()
+        {
+            var state = TownCraftState.CreateDemo();
+            var mask = TownCraftDualGrid.Mask(state, 7, 6, cell => cell.road);
+            Assert.That(mask, Is.EqualTo(14));
+            Assert.That(TownCraftDualGrid.FrameForMask(0), Is.EqualTo(-1));
+            Assert.That(TownCraftDualGrid.FrameForMask(14), Is.EqualTo(5));
+            Assert.That(TownCraftDualGrid.FrameForMask(15), Is.EqualTo(6));
+            Assert.That(TownCraftDualGrid.AtlasCellForMask(15), Is.EqualTo(new UnityEngine.Vector2Int(2, 1)));
+        }
+
+        [Test]
+        public void TerrainArtSwitchDoesNotChangeMapTopology()
+        {
+            var state = TownCraftState.CreateDemo();
+            var before = state.cells.Select(c => (c.ground, c.road, c.water, c.height)).ToArray();
+            state.terrainArt = TerrainArtVariant.SpriteCookRich;
+            Assert.That(state.cells.Select(c => (c.ground, c.road, c.water, c.height)), Is.EqualTo(before));
+        }
     }
 }

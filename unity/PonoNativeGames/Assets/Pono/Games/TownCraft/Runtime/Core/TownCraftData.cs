@@ -8,6 +8,7 @@ namespace Pono.TownCraft
     public enum EditTool { Ground, Road, Water, Raise, Lower, Erase, Plant, Roadside, Fence, Building }
     public enum PlacementCategory { Building, Roadside, Vegetation, Boundary, Waterside }
     public enum TownTheme { Countryside, Modern, Future }
+    public enum TerrainArtVariant { Legacy, SpriteCookRich, SpriteCookRestrained }
 
     [Serializable]
     public sealed class TownCell
@@ -40,11 +41,12 @@ namespace Pono.TownCraft
     [Serializable]
     public sealed class TownCraftState
     {
-        public const int CurrentVersion = 1;
+        public const int CurrentVersion = 2;
         public int version = CurrentVersion;
         public int width = 18;
         public int height = 12;
         public TownTheme theme = TownTheme.Countryside;
+        public TerrainArtVariant terrainArt = TerrainArtVariant.SpriteCookRestrained;
         public TownCell[] cells;
         public List<TownPlacement> placements = new();
         public string playerName = "わたし";
@@ -81,7 +83,7 @@ namespace Pono.TownCraft
             });
             state.placements.Add(new TownPlacement
             {
-                id = "lamp-a", assetId = "streetlamp_green",
+                id = "lamp-a", assetId = "streetlamp_green_spritecook",
                 category = PlacementCategory.Roadside, x = 5, y = 5
             });
             state.placements.Add(new TownPlacement
@@ -136,7 +138,7 @@ namespace Pono.TownCraft
         };
 
         public static readonly string[] Vegetation = { "tree_round", "tree_young", "bush_round", "flowers_mixed", "rock_low" };
-        public static readonly string[] Roadside = { "streetlamp_green", "bench_wood", "mailbox_red", "notice_board_blank", "bicycle_rack", "vegetable_share_stand" };
+        public static readonly string[] Roadside = { "streetlamp_green_spritecook", "bench_wood", "mailbox_red", "notice_board_blank", "bicycle_rack", "vegetable_share_stand" };
         public static readonly string[] Boundaries = { "fence_straight", "fence_corner" };
         public static readonly string[] Waterside = { "pond_deck", "footbridge" };
 

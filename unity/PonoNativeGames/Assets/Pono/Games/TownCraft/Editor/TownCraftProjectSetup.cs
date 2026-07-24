@@ -91,10 +91,13 @@ namespace Pono.TownCraft.Editor
                 if (AssetImporter.GetAtPath(path) is not TextureImporter importer) continue;
                 importer.textureType = TextureImporterType.Sprite;
                 importer.spriteImportMode = SpriteImportMode.Single;
-                importer.spritePixelsPerUnit = path.Contains("/Houses/") ? 192f : 256f;
-                importer.filterMode = FilterMode.Bilinear;
+                importer.spritePixelsPerUnit = path.Contains("/Houses/") ? 192f :
+                    path.Contains("/DualGrid/") ? 128f : 256f;
+                importer.filterMode = path.Contains("/DualGrid/") ? FilterMode.Point : FilterMode.Bilinear;
                 importer.textureCompression = TextureImporterCompression.Uncompressed;
                 importer.mipmapEnabled = false;
+                importer.isReadable = path.Contains("/DualGrid/");
+                importer.wrapMode = TextureWrapMode.Clamp;
                 importer.alphaIsTransparency = path.Contains("/Props/") || path.Contains("/Houses/");
                 importer.SaveAndReimport();
             }
