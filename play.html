@@ -11730,7 +11730,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2380; // sw.js CACHE_VERSION と同期 (v2380: 並走コミット衝突解消のためリナンバー。町「ぴたっと停車」round7 + ひょっこりの地面配置を統合)
+    const PAGE_CACHE_VERSION = 2381; // sw.js CACHE_VERSION と同期 (v2381: 並走コミット衝突解消のためリナンバー。町「ぴたっと停車」round7追補+ひょっこりの地面配置を統合)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -11739,7 +11739,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2380'; // PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期
+    window.PONO_SW_VERSION = 'v2381'; // PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.

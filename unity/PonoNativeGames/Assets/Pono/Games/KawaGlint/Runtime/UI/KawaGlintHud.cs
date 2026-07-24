@@ -70,6 +70,24 @@ namespace Pono.KawaGlint.UI
         private static readonly Color GaugeYellow = new Color32(0xFF, 0xD9, 0x3D, 0xFF);
         private static readonly Color GaugeOrange = new Color32(0xFF, 0x8A, 0x3D, 0xFF);
 
+        // ── Catch banner tail-wag art (module D, batch:1458-kawaglint-fish-art) ──
+        // uGUI has no MaterialPropertyBlock equivalent, so (unlike the
+        // world-space fish actors in KawaGlintActorsController) this banner
+        // gets one dedicated Material instance -- there is only ever a
+        // single catch banner on screen at a time, so no sharing concern.
+        // Amplitude/speed/wave are deliberately gentler than every
+        // world-space fish mode (KawaGlintActorsController's
+        // TargetFishWag*) since this art sits still and large in the middle
+        // of the screen -- a strong wag here would read as distracting
+        // rather than lively.
+        private const string FishWagShaderResourcePath = "KawaGlint/Rendering/KawaFishWag";
+        private const float CatchBannerArtWagAmplitude = 0.012f;
+        private const float CatchBannerArtWagSpeed = 5.0f;
+        private const float CatchBannerArtWagWave = 3.0f;
+        private static readonly int WagAmpId = Shader.PropertyToID("_WagAmp");
+        private static readonly int WagSpeedId = Shader.PropertyToID("_WagSpeed");
+        private static readonly int WagWaveId = Shader.PropertyToID("_WagWave");
+
         /// <summary>Catch-banner rarity dot colors -- the single shared source for both this HUD's
         /// default banner state and <see cref="Gameplay.KawaGlintGameController"/>'s dot-color lookup.</summary>
         public static readonly Color RarityNormalColor = new Color32(0x7F, 0xD0, 0xE8, 0xFF);
@@ -85,6 +103,8 @@ namespace Pono.KawaGlint.UI
         private Text _catchBannerLabel;
         private Text _catchBannerName;
         private Image _catchBannerDot;
+        private Image _catchBannerArt;
+        private Material _catchBannerArtMaterial;
         private GameObject _escapeBanner;
         private Text _bucketCount;
         private RectTransform _flyWordLayer;
@@ -129,6 +149,26 @@ namespace Pono.KawaGlint.UI
         {
             UpdateRendaComboPop();
             UpdateTimingRingPulse();
+        }
+
+        // Runtime-generated Material (never a project asset) -- mirrors the
+        // Application.isEditor DestroyImmediate/Destroy split used
+        // throughout this spike's Rendering-side controllers (e.g.
+        // KawaGlintActorsController.DestroyGeneratedAsset).
+        private void OnDestroy()
+        {
+            if (_catchBannerArtMaterial != null)
+            {
+                if (Application.isEditor)
+                {
+                    DestroyImmediate(_catchBannerArtMaterial);
+                }
+                else
+                {
+                    Destroy(_catchBannerArtMaterial);
+                }
+                _catchBannerArtMaterial = null;
+            }
         }
 
         private void UpdateRendaComboPop()
@@ -243,7 +283,13 @@ namespace Pono.KawaGlint.UI
             StartCoroutine(AnimateFlyWord(word));
         }
 
-        public void ShowCatchBanner(string label, string speciesName, Color dotColor)
+        /// <summary>
+        /// <paramref name="catchArt"/> (batch:1458-kawaglint-fish-art's
+        /// full-color per-species illustration) is optional -- omit it (or
+        /// pass null) to fall back to the banner's original text-only look,
+        /// e.g. for a species whose art failed to resolve.
+        /// </summary>
+        public void ShowCatchBanner(string label, string speciesName, Color dotColor, Sprite catchArt = null)
         {
             if (_catchBannerLabel != null)
             {
@@ -256,6 +302,11 @@ namespace Pono.KawaGlint.UI
             if (_catchBannerDot != null)
             {
                 _catchBannerDot.color = dotColor;
+            }
+            if (_catchBannerArt != null)
+            {
+                _catchBannerArt.sprite = catchArt;
+                _catchBannerArt.gameObject.SetActive(catchArt != null);
             }
             _catchBanner?.SetActive(true);
         }
@@ -479,7 +530,9 @@ namespace Pono.KawaGlint.UI
             bannerRect.anchorMax = new Vector2(0.5f, 0.5f);
             bannerRect.pivot = new Vector2(0.5f, 0.5f);
             bannerRect.anchoredPosition = Vector2.zero;
-            bannerRect.sizeDelta = new Vector2(900f, 420f);
+            // Enlarged (was 900x420) to make room for the per-species catch
+            // illustration (batch:1458-kawaglint-fish-art) below the label.
+            bannerRect.sizeDelta = new Vector2(900f, 560f);
 
             var dotImage = KawaGlintUiFactory.CreateDot("CatchBannerRarityDot", bannerRect, RarityNormalColor);
             var dotRect = dotImage.rectTransform;
@@ -495,15 +548,53 @@ namespace Pono.KawaGlint.UI
             labelRect.anchorMin = new Vector2(0.5f, 1f);
             labelRect.anchorMax = new Vector2(0.5f, 1f);
             labelRect.pivot = new Vector2(0.5f, 1f);
-            labelRect.anchoredPosition = new Vector2(0f, -100f);
+            labelRect.anchoredPosition = new Vector2(0f, -90f);
             labelRect.sizeDelta = new Vector2(820f, 100f);
+
+            // Catch illustration: centered in the banner's middle band,
+            // between the label and the species name. preserveAspect=true is
+            // this uGUI subtree's AR-safety mechanism (this project's
+            // absolute image-stretch ban applies here too) -- Image never
+            // stretches the sprite to fill the fixed 360x260 box, it always
+            // contains/letterboxes it.
+            var artImage = KawaGlintUiFactory.CreateImage("CatchBannerArt", bannerRect, Color.white);
+            artImage.preserveAspect = true;
+            var artRect = artImage.rectTransform;
+            artRect.anchorMin = new Vector2(0.5f, 0.5f);
+            artRect.anchorMax = new Vector2(0.5f, 0.5f);
+            artRect.pivot = new Vector2(0.5f, 0.5f);
+            artRect.anchoredPosition = new Vector2(0f, 10f);
+            artRect.sizeDelta = new Vector2(360f, 260f);
+            _catchBannerArt = artImage;
+            _catchBannerArt.gameObject.SetActive(false);
+
+            // Tail-wag material (module D, batch:1458-kawaglint-fish-art):
+            // a single dedicated instance (uGUI Image has no
+            // MaterialPropertyBlock equivalent -- unlike the world-space fish
+            // in KawaGlintActorsController -- but there is only ever one
+            // catch banner on screen, so one instance is exactly right).
+            // Missing/unsupported shader falls back to Image's default UI
+            // material -- the illustration simply renders static, no error.
+            var wagShader = Resources.Load<Shader>(FishWagShaderResourcePath);
+            if (wagShader != null && wagShader.isSupported)
+            {
+                _catchBannerArtMaterial = new Material(wagShader)
+                {
+                    name = "KawaGlint Catch Banner Wag (Runtime)",
+                    hideFlags = HideFlags.DontSave
+                };
+                _catchBannerArtMaterial.SetFloat(WagAmpId, CatchBannerArtWagAmplitude);
+                _catchBannerArtMaterial.SetFloat(WagSpeedId, CatchBannerArtWagSpeed);
+                _catchBannerArtMaterial.SetFloat(WagWaveId, CatchBannerArtWagWave);
+                _catchBannerArt.material = _catchBannerArtMaterial;
+            }
 
             _catchBannerName = KawaGlintUiFactory.CreateText("CatchBannerName", bannerRect, string.Empty, 80, TextAnchor.MiddleCenter, new Color(1f, 0.92f, 0.5f));
             var nameRect = _catchBannerName.rectTransform;
-            nameRect.anchorMin = new Vector2(0.5f, 0.5f);
-            nameRect.anchorMax = new Vector2(0.5f, 0.5f);
-            nameRect.pivot = new Vector2(0.5f, 0.5f);
-            nameRect.anchoredPosition = new Vector2(0f, -20f);
+            nameRect.anchorMin = new Vector2(0.5f, 0f);
+            nameRect.anchorMax = new Vector2(0.5f, 0f);
+            nameRect.pivot = new Vector2(0.5f, 0f);
+            nameRect.anchoredPosition = new Vector2(0f, 40f);
             nameRect.sizeDelta = new Vector2(820f, 140f);
 
             _catchBanner.SetActive(false);

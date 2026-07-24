@@ -45,6 +45,18 @@ namespace Pono.KawaGlint.Rendering
         private const int FishTextureWidth = 128;
         private const int FishTextureHeight = 64;
         private const int FishCount = 4;
+
+        // Fixed index -> species assignment for the four ambient fish (batch:
+        // 1458-kawaglint-fish-art). Deliberately NOT drawn from `random` --
+        // it's a static assortment decision, not a per-run one -- so the
+        // System.Random(20260724) draw order/count below is completely
+        // unaffected by which species art loads. `treasure_boot` (ながぐつ)
+        // is excluded from the ambient pool by design (it's a one-off gag
+        // catch, not a background swimmer).
+        private static readonly string[] AmbientFishSpeciesIds =
+        {
+            "fish_ayu", "fish_nijimasu", "fish_salmon", "zarigani"
+        };
         private const float FishMinLengthWorld = 0.8f;
         private const float FishMaxLengthWorld = 1.6f;
         private const float FishMinDepthY = -4.2f;
@@ -93,6 +105,21 @@ namespace Pono.KawaGlint.Rendering
         // matching the "always succeeds (stock shaders only)" module contract.
         private const string SpriteUnlitShaderName = "Universal Render Pipeline/2D/Sprite-Unlit-Default";
 
+        // Procedural tail-wag shader (batch:1458-kawaglint-fish-art, module
+        // D). Used only for the fish-shadow actors (ambient + target); every
+        // other actor here (bobber/rings/line/splash) keeps the plain
+        // Sprite-Unlit-Default material untouched.
+        private const string FishWagShaderResourcePath = "KawaGlint/Rendering/KawaFishWag";
+
+        // Golden-angle phase step (radians): gives each of the FishCount
+        // ambient fish a well-distributed, non-repeating wag phase from a
+        // single deterministic formula -- consumes zero draws from `random`,
+        // so the seeded placement loop above is completely unaffected by
+        // this addition.
+        private const float FishWagPhaseStep = 2.3999632f;
+
+        private static readonly int WagPhaseId = Shader.PropertyToID("_WagPhase");
+
         public static KawaGlintActorsController Build(
             Transform parent,
             Rect waterWorldRect,
@@ -109,7 +136,30 @@ namespace Pono.KawaGlint.Rendering
             var spriteMaterial = CreateSharedMaterial("KawaGlint Actor Sprite (Runtime)");
             controller.RegisterGeneratedAsset(spriteMaterial);
 
-            BuildFishShadows(controller, root.transform, waterWorldRect, random, spriteMaterial, out var fishSprite, out var fishNativeWidthWorld);
+            // Runtime-generated Material (never a project asset), so it is
+            // safe to register for OnDestroy cleanup like every other
+            // generated asset in this builder. Falls back to the plain
+            // sprite material (no wag, static art) when the shader is
+            // missing/unsupported -- this class must always succeed
+            // regardless of platform shader availability.
+            var fishWagShader = Resources.Load<Shader>(FishWagShaderResourcePath);
+            Material fishMaterial;
+            if (fishWagShader != null && fishWagShader.isSupported)
+            {
+                fishMaterial = new Material(fishWagShader)
+                {
+                    name = "KawaGlint Fish Wag (Runtime)",
+                    hideFlags = HideFlags.DontSave
+                };
+                controller.RegisterGeneratedAsset(fishMaterial);
+            }
+            else
+            {
+                Debug.LogWarning("KawaGlint: KawaFishWag shader is missing or unsupported on this platform; fish will render as static art (no tail wag).");
+                fishMaterial = spriteMaterial;
+            }
+
+            BuildFishShadows(controller, root.transform, waterWorldRect, random, fishMaterial, out var fishSprite, out var fishNativeWidthWorld);
             BuildBobber(controller, root.transform, waterlineWorldY, spriteMaterial);
             BuildRippleRings(controller, root.transform, waterlineWorldY, spriteMaterial, out var ringSprite);
             BuildFishingLine(controller, root.transform, rodTipWorldPosition, spriteMaterial);
@@ -118,7 +168,7 @@ namespace Pono.KawaGlint.Rendering
             // four ambient fish keep their reproducible placement regardless
             // of this addition. Shares the ambient fish silhouette
             // texture/sprite rather than generating a second copy.
-            BuildTargetFish(controller, root.transform, fishSprite, fishNativeWidthWorld, spriteMaterial);
+            BuildTargetFish(controller, root.transform, fishSprite, fishNativeWidthWorld, fishMaterial);
 
             // Consumes zero randomness (draws no values from `random`), so it
             // is safe to build last without disturbing any of the seeded
@@ -142,24 +192,38 @@ namespace Pono.KawaGlint.Rendering
             out Sprite fishSprite,
             out float nativeWidthWorld)
         {
+            // Procedural teardrop silhouette: kept unconditionally as the
+            // per-fish fallback (any species whose art fails to load falls
+            // back to this, individually) and as the default target-fish
+            // sprite when no cast is in flight yet.
             var texture = CreateFishShadowTexture();
             controller.RegisterGeneratedAsset(texture);
-            var sprite = CreateSprite(texture, new Vector2(0.5f, 0.5f), "KawaGlint Fish Shadow", PixelsPerUnit);
-            controller.RegisterGeneratedAsset(sprite);
-            fishSprite = sprite;
-
-            var nativeWidth = FishTextureWidth / PixelsPerUnit;
-            nativeWidthWorld = nativeWidth;
+            var proceduralSprite = CreateSprite(texture, new Vector2(0.5f, 0.5f), "KawaGlint Fish Shadow", PixelsPerUnit);
+            controller.RegisterGeneratedAsset(proceduralSprite);
+            var proceduralNativeWidth = FishTextureWidth / PixelsPerUnit;
 
             for (var i = 0; i < FishCount; i++)
             {
                 var length = NextFloat(random, FishMinLengthWorld, FishMaxLengthWorld);
-                // Uniform scale on both axes preserves the texture's native
-                // 2:1 aspect ratio exactly -- no stretch.
-                var scale = length / nativeWidth;
                 var direction = random.Next(2) == 0 ? -1f : 1f;
                 var startX = NextFloat(random, waterWorldRect.xMin, waterWorldRect.xMax);
                 var baseY = NextFloat(random, FishMinDepthY, FishMaxDepthY);
+                var speed = NextFloat(random, FishMinSpeedWorld, FishMaxSpeedWorld);
+                var bobSpeed = NextFloat(random, FishMinBobSpeed, FishMaxBobSpeed);
+                var bobPhase = NextFloat(random, 0f, Mathf.PI * 2f);
+
+                // Species/art selection consumes zero randomness (a fixed
+                // index lookup), so it can never perturb the draw
+                // order/count above regardless of whether the resource
+                // actually loads.
+                var artSprite = KawaGlintSpriteCatalog.LoadFishShadow(AmbientFishSpeciesIds[i % AmbientFishSpeciesIds.Length]);
+                var spriteForThisFish = artSprite != null ? artSprite : proceduralSprite;
+                var nativeWidthForThisFish = artSprite != null ? artSprite.bounds.size.x : proceduralNativeWidth;
+
+                // Uniform scale on both axes, derived from the chosen
+                // sprite's own native width -- preserves whichever texture's
+                // real aspect ratio exactly, no stretch.
+                var scale = length / nativeWidthForThisFish;
 
                 var go = new GameObject($"FishShadow{i}");
                 go.transform.SetParent(parent, false);
@@ -167,20 +231,46 @@ namespace Pono.KawaGlint.Rendering
                 go.transform.localScale = new Vector3(scale, scale, 1f);
 
                 var renderer = go.AddComponent<SpriteRenderer>();
-                renderer.sprite = sprite;
+                renderer.sprite = spriteForThisFish;
                 renderer.sharedMaterial = material;
                 renderer.sortingOrder = FishSortingOrder;
-                // Source silhouette faces -X by default; flip to face the
-                // direction of travel.
+                // Source art (both the procedural silhouette and the
+                // illustrated shadow PNGs) faces -X by default; flip to face
+                // the direction of travel.
                 renderer.flipX = direction > 0f;
+                if (artSprite != null)
+                {
+                    // Illustrated shadows are baked fully opaque; soften to
+                    // roughly match the procedural silhouette's own baked
+                    // FishShadowAlpha so ambient fish read as murky
+                    // underwater shapes rather than solid cutouts.
+                    renderer.color = new Color(1f, 1f, 1f, 0.8f);
+                }
 
-                var speed = NextFloat(random, FishMinSpeedWorld, FishMaxSpeedWorld);
-                var bobSpeed = NextFloat(random, FishMinBobSpeed, FishMaxBobSpeed);
-                var bobPhase = NextFloat(random, 0f, Mathf.PI * 2f);
+                // Per-fish wag phase only (module D) -- amplitude/speed stay
+                // at the shared material's defaults for ambient fish (only
+                // the single target fish varies those, per gameplay mode, in
+                // KawaGlintActorsController). Harmless no-op if `material`
+                // fell back to the plain sprite material (that shader has no
+                // _WagPhase property, so the property block is simply
+                // unused).
+                var mpb = new MaterialPropertyBlock();
+                renderer.GetPropertyBlock(mpb);
+                mpb.SetFloat(WagPhaseId, i * FishWagPhaseStep);
+                renderer.SetPropertyBlock(mpb);
+
                 var halfWidth = length * 0.5f;
-
                 controller.RegisterFish(go.transform, speed, direction, baseY, bobSpeed, bobPhase, FishBobAmplitude, halfWidth);
             }
+
+            // Target-fish default: prefer the ayu shadow art so the very
+            // first cast (before any species is known) already shows
+            // illustrated art rather than the procedural placeholder;
+            // ShowTargetFish(string,float) below swaps this out per-species
+            // once a cast actually starts.
+            var defaultArt = KawaGlintSpriteCatalog.LoadFishShadow("fish_ayu");
+            fishSprite = defaultArt != null ? defaultArt : proceduralSprite;
+            nativeWidthWorld = defaultArt != null ? defaultArt.bounds.size.x : proceduralNativeWidth;
         }
 
         private static Texture2D CreateFishShadowTexture()

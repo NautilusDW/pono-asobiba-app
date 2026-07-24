@@ -442,7 +442,7 @@ namespace Pono.KawaGlint.Gameplay
             _debugDeepUntilElapsed = 0f;
 
             var species = TsuriFishData.GetSpeciesById(_session.SpeciesId);
-            _actors.ShowTargetFish(SpeciesWorldLength(species));
+            _actors.ShowTargetFish(_session.SpeciesId, SpeciesWorldLength(species));
             _actors.Bobber.BeginCast(_stage.RodTipWorldPosition, _targetX, CastFlightSeconds);
             _actors.SetFishingLineVisible(true);
             _actors.SetFishingLineTension(false);
@@ -640,7 +640,7 @@ namespace Pono.KawaGlint.Gameplay
             var speciesName = species != null ? species.Name : SpeciesUnknownName;
             var dotColor = species != null && species.Rarity == TsuriRarity.Rare ? KawaGlintHud.RarityRareColor : KawaGlintHud.RarityNormalColor;
 
-            _hud.ShowCatchBanner(label, speciesName, dotColor);
+            _hud.ShowCatchBanner(label, speciesName, dotColor, KawaGlintSpriteCatalog.LoadCatchArt(_session.SpeciesId));
             _hud.SetPhaseWord(PhaseWordLanded);
 
             string narration;

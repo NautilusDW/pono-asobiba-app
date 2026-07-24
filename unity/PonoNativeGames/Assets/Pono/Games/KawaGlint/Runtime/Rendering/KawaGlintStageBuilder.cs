@@ -53,6 +53,17 @@ namespace Pono.KawaGlint.Rendering
     /// correctly-layered static riverside — that is the effects-off QA
     /// "baseline" capture. Fish shadows and the bobber are deliberately NOT
     /// built here (module 4's responsibility).
+    ///
+    /// The sky/sun/clouds/riverbed/water-plants/shore-bank/angler are all
+    /// procedurally generated <em>unless</em> the production art from batch
+    /// 1458-kawaglint-fish-art (Content/Resources/KawaGlint/Sprites) has been
+    /// imported, in which case a single full-art background image replaces
+    /// the whole procedural backdrop (see <see cref="BuildBackgroundArt"/>)
+    /// and the angler silhouette is replaced by the illustrated Pono sprite
+    /// (see <see cref="BuildAnglerArt"/>). Both fall back to the original
+    /// procedural placeholders when the corresponding Resources asset is
+    /// absent, so this class keeps working with zero .prefab/.mat/texture
+    /// assets if the art hasn't been imported yet.
     /// </summary>
     public static class KawaGlintStageBuilder
     {
@@ -82,6 +93,7 @@ namespace Pono.KawaGlint.Rendering
         // own 32-34, fish shadows own 14 — all module 4/2, not built here).
         private const int SkySortingOrder = 0;
         private const int WaterSortingOrder = 1;
+        private const int BackgroundArtSortingOrder = 2; // between Water(1) and SunGlow(6)
         private const int SunGlowSortingOrder = 6;
         private const int CloudsSortingOrder = 8;
         private const int RiverbedSortingOrder = 10;
@@ -104,6 +116,48 @@ namespace Pono.KawaGlint.Rendering
         private const int ShoreTextureWidth = 512;
         private const int AnglerTextureWidth = 256;
         private const int AnglerTextureHeight = 192;
+
+        // ---------------------------------------------------------------
+        // Production art integration (batch 1458-kawaglint-fish-art).
+        // Sprites are loaded via the shared KawaGlintSpriteCatalog
+        // (LoadBackground/LoadAngler), which returns null when the
+        // corresponding Resources asset hasn't been imported yet -- that
+        // means "keep the procedural placeholder" everywhere it's consumed
+        // below.
+        // ---------------------------------------------------------------
+
+        // bg_river_crosssection.png's own baked-in waterline row, measured
+        // from the top of the image by module A's preprocessing script
+        // (tmp/alpha_pending/1458-kawaglint-fish-art/bg_metrics.json:
+        // waterline_from_top01). Used to align the art's drawn water
+        // surface to the shared WaterlineWorldY contract regardless of
+        // camera aspect -- see BuildBackgroundArt.
+        private const float BgWaterlineFromTop01 = 0.4138157894736842f;
+
+        // Extra uniform scale on top of the strict cover-fit minimum, so
+        // the refraction pass's underwater UV distortion never samples
+        // past the art's own edge (same margin rationale as
+        // KawaGlintStageBuilder.ExpandRect for the procedural water rect).
+        private const float BackgroundArtOversampleFactor = 1.02f;
+
+        // Pono's illustrated world height; width is derived from the
+        // sprite's own aspect ratio (never assigned independently -- see
+        // BuildAnglerArt). Bottom-center world anchor picked to visually
+        // match the procedural placeholder's seat-on-the-bank position;
+        // QA-adjustable in the 1.8-2.2 range per DESIGN.md if the log
+        // Pono sits on reads wrong against the art background.
+        private const float AnglerArtWorldHeight = 2.6f;
+        private static readonly Vector3 AnglerArtBottomCenter = new Vector3(-7.2f, 1.95f, 0f);
+
+        // pono_angler_side.png's rod-tip loop position, measured by module
+        // A's preprocessing script (tmp/alpha_pending/1458-kawaglint-fish-art/
+        // pono_anchor.json) as a UV fraction of the (trimmed+padded) sprite:
+        // u from the left edge, v from the bottom edge. Used to derive the
+        // world-space rod tip directly from the art instead of a hand-picked
+        // constant, so the fishing line/bobber always line up with wherever
+        // the drawn rod actually points -- see BuildAnglerArt.
+        private const float PonoRodTipU = 0.9605878423513694f;
+        private const float PonoRodTipV = 0.7213541666666667f;
 
         // Stock URP 2D shader (ships with the render pipeline, not a project
         // asset) — using it directly is what makes these sprites/particles
@@ -150,14 +204,29 @@ namespace Pono.KawaGlint.Rendering
             var spriteMaterial = CreateSharedMaterial("KawaGlint Sprite (Runtime)", texture: null);
             content.RegisterGeneratedAsset(spriteMaterial);
 
-            BuildSky(content, root.transform, skyRect, spriteMaterial);
-            BuildWater(content, root.transform, waterRect, spriteMaterial);
-            BuildSunGlow(content, root.transform, camera, SunViewportPosition, random, spriteMaterial);
-            BuildClouds(content, root.transform, skyRect, random, spriteMaterial);
-            BuildRiverbed(content, root.transform, waterRect, random, spriteMaterial);
-            BuildPlants(content, root.transform, waterRect, random, spriteMaterial);
-            BuildShoreBank(content, root.transform, visibleRect, spriteMaterial);
-            BuildAngler(content, root.transform, spriteMaterial);
+            var backgroundArtSprite = KawaGlintSpriteCatalog.LoadBackground();
+            if (backgroundArtSprite != null)
+            {
+                // The full-art background already contains sky, sun glow,
+                // clouds, riverbed, water plants and the shore bank baked
+                // into one illustration -- building the procedural versions
+                // of any of those on top would double-draw them. Motes and
+                // the angler are unaffected (the art has neither) and stay
+                // below.
+                BuildBackgroundArt(root.transform, visibleRect, backgroundArtSprite, spriteMaterial);
+            }
+            else
+            {
+                BuildSky(content, root.transform, skyRect, spriteMaterial);
+                BuildWater(content, root.transform, waterRect, spriteMaterial);
+                BuildSunGlow(content, root.transform, camera, SunViewportPosition, random, spriteMaterial);
+                BuildClouds(content, root.transform, skyRect, random, spriteMaterial);
+                BuildRiverbed(content, root.transform, waterRect, random, spriteMaterial);
+                BuildPlants(content, root.transform, waterRect, random, spriteMaterial);
+                BuildShoreBank(content, root.transform, visibleRect, spriteMaterial);
+            }
+
+            var rodTipWorldPosition = BuildAngler(content, root.transform, spriteMaterial);
 
             var particleTexture = CreateSoftCircleTexture();
             content.RegisterGeneratedAsset(particleTexture);
@@ -177,7 +246,7 @@ namespace Pono.KawaGlint.Rendering
                 waterWorldRect,
                 skyWorldRect,
                 SunViewportPosition,
-                RodTipWorldPosition,
+                rodTipWorldPosition,
                 ShoreRightEdgeWorldX);
         }
 
@@ -307,6 +376,47 @@ namespace Pono.KawaGlint.Rendering
             }
 
             return Color.Lerp(mid2, bed, (depth - 0.70f) / 0.30f);
+        }
+
+        // ---------------------------------------------------------------
+        // Background art (order 2) — production replacement for the
+        // procedural Sky/Water/SunGlow/Clouds/Riverbed/Plants/ShoreBank
+        // stack above, used only when bg_river_crosssection.png has been
+        // imported (see BackgroundResourcePath / LoadArtSprite). Sits
+        // between Water(1) and SunGlow(6) purely so the sorting-order
+        // contract stays intact even if a future change ever draws both
+        // side by side; in practice only one of the two ever exists in a
+        // given Build() call.
+        // ---------------------------------------------------------------
+
+        private static void BuildBackgroundArt(Transform parent, Rect visibleRect, Sprite sprite, Material material)
+        {
+            // Cover-fit + waterline alignment, uniform scale only -- the
+            // art's own aspect ratio (~1.7684, not a clean 16:9) is
+            // preserved exactly by applying the single scalar `s` to both
+            // axes below; whatever doesn't fit the visible frame is
+            // cropped, never squashed (this project's absolute image
+            // stretch prohibition).
+            var size = sprite.bounds.size; // world units at scale=1 (PixelsPerUnit=100 per the imported .meta)
+            var above = Mathf.Max(0f, visibleRect.yMax - WaterlineWorldY);
+            var below = Mathf.Max(0f, WaterlineWorldY - visibleRect.yMin);
+            var s = Mathf.Max(
+                visibleRect.width / size.x,
+                above / (size.y * BgWaterlineFromTop01),
+                below / (size.y * (1f - BgWaterlineFromTop01)))
+                * BackgroundArtOversampleFactor;
+
+            // Anchors the art's own measured waterline row (bg_metrics.json,
+            // module A) to the shared WaterlineWorldY contract so the baked-
+            // in water surface lines up with KawaSurfaceBand/refraction
+            // regardless of camera aspect -- computed from camera.aspect via
+            // visibleRect, never a hardcoded 16:9 assumption.
+            var centerY = WaterlineWorldY - (0.5f - BgWaterlineFromTop01) * size.y * s;
+            var position = new Vector3(visibleRect.center.x, centerY, 0f);
+
+            var renderer = CreateSpriteRendererObject(
+                "BackgroundArt", parent, sprite, material, BackgroundArtSortingOrder, position);
+            renderer.transform.localScale = new Vector3(s, s, 1f);
         }
 
         // ---------------------------------------------------------------
@@ -726,11 +836,46 @@ namespace Pono.KawaGlint.Rendering
         }
 
         // ---------------------------------------------------------------
-        // Angler silhouette (order 42) — placeholder only, Pono art is out
-        // of scope for this spike.
+        // Angler silhouette (order 42) — replaced by the illustrated Pono
+        // sprite (pono_angler_side.png, batch 1458-kawaglint-fish-art) when
+        // that art has been imported; falls back to the original procedural
+        // placeholder otherwise. Either path returns the world-space rod-tip
+        // position the fishing line/bobber should draw to.
         // ---------------------------------------------------------------
 
-        private static void BuildAngler(KawaGlintStageContent content, Transform parent, Material material)
+        private static Vector3 BuildAngler(KawaGlintStageContent content, Transform parent, Material material)
+        {
+            var artSprite = KawaGlintSpriteCatalog.LoadAngler();
+            return artSprite != null
+                ? BuildAnglerArt(parent, artSprite, material)
+                : BuildAnglerPlaceholder(content, parent, material);
+        }
+
+        private static Vector3 BuildAnglerArt(Transform parent, Sprite sprite, Material material)
+        {
+            // Uniform scale derived from a fixed world height only; width is
+            // whatever the sprite's own aspect ratio makes it (never
+            // assigned independently) -- absolutely no stretch.
+            var size = sprite.bounds.size;
+            var scale = AnglerArtWorldHeight / size.y;
+            var worldWidth = size.x * scale;
+
+            // Sprite pivot is bottom-center (0.5, 0), so the GameObject's
+            // own world position IS the bottom-center anchor -- no extra
+            // offset math needed here.
+            var renderer = CreateSpriteRendererObject(
+                "Angler", parent, sprite, material, AnglerSortingOrder, AnglerArtBottomCenter);
+            renderer.transform.localScale = new Vector3(scale, scale, 1f);
+
+            // Rod-tip loop position derived from the measured UV anchor
+            // (pono_anchor.json, module A, batch 1458) rather than a
+            // hand-picked world constant, so the fishing line/bobber always
+            // line up with wherever the drawn rod actually points.
+            return AnglerArtBottomCenter
+                + new Vector3((PonoRodTipU - 0.5f) * worldWidth, PonoRodTipV * AnglerArtWorldHeight, 0f);
+        }
+
+        private static Vector3 BuildAnglerPlaceholder(KawaGlintStageContent content, Transform parent, Material material)
         {
             var texture = CreateAnglerTexture();
             content.RegisterGeneratedAsset(texture);
@@ -742,6 +887,8 @@ namespace Pono.KawaGlint.Rendering
             var renderer = CreateSpriteRendererObject("Angler", parent, sprite, material, AnglerSortingOrder, AnglerWorldPosition);
             var nativeSize = new Vector2(AnglerTextureWidth, AnglerTextureHeight) / PixelsPerUnit;
             renderer.transform.localScale = new Vector3(worldWidth / nativeSize.x, worldHeight / nativeSize.y, 1f);
+
+            return RodTipWorldPosition;
         }
 
         private static Texture2D CreateAnglerTexture()
@@ -987,6 +1134,14 @@ namespace Pono.KawaGlint.Rendering
             sprite.name = name;
             return sprite;
         }
+
+        // Production (non-procedural) background/angler art is loaded via
+        // KawaGlintSpriteCatalog.LoadBackground()/LoadAngler() (see Build()
+        // and BuildAngler() above) rather than a loader of this file's own
+        // -- that catalog owns the Resources.Load + Sprite.Create + cache
+        // recipe (and its own "never register with RegisterGeneratedAsset"
+        // contract) for every KawaGlint illustrated asset, fish art
+        // included.
 
         private static SpriteRenderer CreateSpriteRendererObject(
             string name,

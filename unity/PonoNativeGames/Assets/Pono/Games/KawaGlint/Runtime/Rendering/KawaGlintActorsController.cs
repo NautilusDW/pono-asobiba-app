@@ -92,6 +92,22 @@ namespace Pono.KawaGlint.Rendering
         private const float TargetFishFleeSpeedWorld = 8f;
         private const float TargetFishFleeSinkSpeedWorld = 0.5f;
 
+        // Tail-wag amplitude/speed per target-fish mode (module D,
+        // batch:1458-kawaglint-fish-art). Deliberately distinct frequencies
+        // from every other per-frame oscillator already driving this fish
+        // (TargetFishThrashFrequency = 20f, the fishing line's
+        // TrembleFrequency = 46f) so the wag reads as its own cue rather than
+        // aliasing with the thrash jitter or line tremble.
+        private const float TargetFishWagApproachAmplitude = 0.03f;
+        private const float TargetFishWagApproachSpeed = 8.2f;
+        private const float TargetFishWagThrashAmplitude = 0.05f;
+        private const float TargetFishWagThrashSpeed = 16f;
+        private const float TargetFishWagFleeAmplitude = 0.055f;
+        private const float TargetFishWagFleeSpeed = 18f;
+
+        private static readonly int WagAmpId = Shader.PropertyToID("_WagAmp");
+        private static readonly int WagSpeedId = Shader.PropertyToID("_WagSpeed");
+
         private readonly List<Object> _generatedAssets = new List<Object>();
         private readonly List<FishEntry> _fish = new List<FishEntry>();
         private readonly List<RingEntry> _rings = new List<RingEntry>();
@@ -116,6 +132,16 @@ namespace Pono.KawaGlint.Rendering
         private TargetFishMode _targetFishMode = TargetFishMode.Hidden;
         private Vector3 _targetFishAppearWorld;
         private float _targetFishTargetAnchorX;
+
+        // Tail-wag MPB state (module D). Tracked separately from
+        // _targetFishMode/_targetFishWagModeApplied so ApplyTargetFishWag can
+        // cheaply no-op on the many per-frame calls that re-set
+        // _targetFishMode to the same value it already was (e.g.
+        // SetTargetFishApproach during a multi-second approach) -- the MPB
+        // update only actually runs on a genuine mode transition.
+        private MaterialPropertyBlock _targetFishWagMpb;
+        private TargetFishMode _targetFishWagAppliedMode;
+        private bool _targetFishWagApplied;
 
         /// <summary>The bobber this controller drives the ripple rings/fishing line against.</summary>
         public KawaGlintBobber Bobber => _bobber;
@@ -163,12 +189,37 @@ namespace Pono.KawaGlint.Rendering
         /// begins its Approach toward wherever <see cref="SetTargetFishApproach"/>
         /// is subsequently told to move it. <paramref name="worldLength"/>
         /// uniformly scales the shared silhouette sprite (aspect preserved).
+        /// Equivalent to <c>ShowTargetFish(null, worldLength)</c> -- keeps
+        /// whatever sprite the builder last assigned the target fish.
         /// </summary>
         public void ShowTargetFish(float worldLength)
+        {
+            ShowTargetFish(null, worldLength);
+        }
+
+        /// <summary>
+        /// Same as <see cref="ShowTargetFish(float)"/>, but first swaps the
+        /// target fish's sprite to <paramref name="speciesId"/>'s illustrated
+        /// shadow art (batch:1458-kawaglint-fish-art) when that species'
+        /// resource resolves. A null/unknown/missing <paramref name="speciesId"/>
+        /// silently keeps whatever sprite is already assigned (the ambient
+        /// default or a previous cast's species) -- never blocks the cast.
+        /// </summary>
+        public void ShowTargetFish(string speciesId, float worldLength)
         {
             if (_targetFishTransform == null)
             {
                 return;
+            }
+
+            if (!string.IsNullOrEmpty(speciesId) && _targetFishRenderer != null)
+            {
+                var artSprite = KawaGlintSpriteCatalog.LoadFishShadow(speciesId);
+                if (artSprite != null)
+                {
+                    _targetFishRenderer.sprite = artSprite;
+                    _targetFishNativeWidthWorld = artSprite.bounds.size.x;
+                }
             }
 
             _targetFishWorldLength = worldLength;
@@ -185,6 +236,7 @@ namespace Pono.KawaGlint.Rendering
             }
             _targetFishTransform.gameObject.SetActive(true);
             _targetFishMode = TargetFishMode.Approach;
+            ApplyTargetFishWag(TargetFishMode.Approach);
         }
 
         /// <summary>
@@ -213,6 +265,7 @@ namespace Pono.KawaGlint.Rendering
             }
 
             _targetFishMode = TargetFishMode.Approach;
+            ApplyTargetFishWag(TargetFishMode.Approach);
             _targetFishTargetAnchorX = targetWorldX + TargetFishTargetXOffset;
 
             var anchor = new Vector3(_targetFishTargetAnchorX, TargetFishAnchorY, 0f);
@@ -228,6 +281,7 @@ namespace Pono.KawaGlint.Rendering
             }
 
             _targetFishMode = thrashing ? TargetFishMode.Thrash : TargetFishMode.Approach;
+            ApplyTargetFishWag(_targetFishMode);
         }
 
         /// <summary>Sends the target fish fleeing off the right edge; it self-hides once fully off-screen.</summary>
@@ -245,6 +299,7 @@ namespace Pono.KawaGlint.Rendering
                 _targetFishRenderer.flipX = true;
             }
             _targetFishMode = TargetFishMode.Flee;
+            ApplyTargetFishWag(TargetFishMode.Flee);
         }
 
         /// <summary>Immediately hides the target fish (e.g. after a catch banner closes).</summary>
@@ -257,6 +312,64 @@ namespace Pono.KawaGlint.Rendering
 
             _targetFishMode = TargetFishMode.Hidden;
             _targetFishTransform.gameObject.SetActive(false);
+            ApplyTargetFishWag(TargetFishMode.Hidden);
+        }
+
+        /// <summary>
+        /// Applies the tail-wag amplitude/speed for <paramref name="mode"/>
+        /// via MaterialPropertyBlock (module D, batch:1458-kawaglint-fish-art)
+        /// -- deliberately only on an actual mode transition (skips the
+        /// no-op re-application every caller above would otherwise trigger
+        /// on repeat calls, e.g. SetTargetFishApproach during a multi-second
+        /// approach), so this never becomes a per-frame SetPropertyBlock
+        /// call. Harmless no-op if the target fish's material fell back to
+        /// the plain sprite material in <see cref="KawaGlintActorsBuilder"/>
+        /// (that shader has no _WagAmp/_WagSpeed property, so the property
+        /// block values are simply unused -- static art, no wag).
+        /// </summary>
+        private void ApplyTargetFishWag(TargetFishMode mode)
+        {
+            if (_targetFishRenderer == null)
+            {
+                return;
+            }
+            if (_targetFishWagApplied && mode == _targetFishWagAppliedMode)
+            {
+                return;
+            }
+            _targetFishWagApplied = true;
+            _targetFishWagAppliedMode = mode;
+
+            float amplitude;
+            float speed;
+            switch (mode)
+            {
+                case TargetFishMode.Approach:
+                    amplitude = TargetFishWagApproachAmplitude;
+                    speed = TargetFishWagApproachSpeed;
+                    break;
+                case TargetFishMode.Thrash:
+                    amplitude = TargetFishWagThrashAmplitude;
+                    speed = TargetFishWagThrashSpeed;
+                    break;
+                case TargetFishMode.Flee:
+                    amplitude = TargetFishWagFleeAmplitude;
+                    speed = TargetFishWagFleeSpeed;
+                    break;
+                default:
+                    amplitude = 0f;
+                    speed = 0f;
+                    break;
+            }
+
+            if (_targetFishWagMpb == null)
+            {
+                _targetFishWagMpb = new MaterialPropertyBlock();
+            }
+            _targetFishRenderer.GetPropertyBlock(_targetFishWagMpb);
+            _targetFishWagMpb.SetFloat(WagAmpId, amplitude);
+            _targetFishWagMpb.SetFloat(WagSpeedId, speed);
+            _targetFishRenderer.SetPropertyBlock(_targetFishWagMpb);
         }
 
         /// <summary>

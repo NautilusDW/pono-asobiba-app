@@ -11,7 +11,7 @@ async function testZeroInput() {
   page.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()); });
   page.on('pageerror', err => errors.push('pageerror: ' + err.message));
   await page.addInitScript(() => { window.__APP_BUILD__ = 1; });
-  await page.goto('http://localhost:8791/nazonazo-tunnel/index.html', { waitUntil: 'load' });
+  await page.goto('http://localhost:8792/nazonazo-tunnel/index.html', { waitUntil: 'load' });
   await page.waitForTimeout(400);
   await page.locator('#startBtn').click();
   await page.waitForTimeout(500);
@@ -35,7 +35,7 @@ async function testHoldThroughFail() {
   page.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()); });
   page.on('pageerror', err => errors.push('pageerror: ' + err.message));
   await page.addInitScript(() => { window.__APP_BUILD__ = 1; });
-  await page.goto('http://localhost:8791/nazonazo-tunnel/index.html', { waitUntil: 'load' });
+  await page.goto('http://localhost:8792/nazonazo-tunnel/index.html', { waitUntil: 'load' });
   await page.waitForTimeout(400);
   await page.locator('#startBtn').click();
   await page.waitForTimeout(500);
@@ -46,7 +46,7 @@ async function testHoldThroughFail() {
   await page.mouse.down(); // single pointerdown, NEVER released for the whole test
   let maxHeldPointers = 0, minHeldPointersAfterDown = 99, sawAttempt1 = false, sawAttempt2 = false, sawAssist = false, succeeded = false;
   const log = [];
-  for (let i = 0; i < 900; i++) { // up to ~63s
+  for (let i = 0; i < 1600; i++) { // up to ~112s (gate-anchored zone sits further out now)
     await sleep(70);
     const s = await snap(page);
     if (!s) continue;

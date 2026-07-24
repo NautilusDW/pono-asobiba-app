@@ -1,29 +1,31 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
-// v2380: 並走セッションのCACHE_VERSION衝突解消のためリナンバー(v2377を2系統が
-// 独立に採番していたためv2380へ繰り上げ、内容の欠落は無し)。
-// なぞなぞトレイン町面「ぴたっと停車」round7。ユーザー実プレイフィードバック
-// (「駅間のほとんどを自動走行→駅手前で急停止して新しい出発ボタンが出る、が毎駅起きる。
-// 全区間を自分でホールドし続けたい」)を受け、各駅間レグを短い局所距離(旧
-// TOWN_DOCK_TRACK_LEN=100固定)から実際の駅間距離まるごと(1駅目: 入口→stops(o,0)の
-// 約296vw、2・3駅目: 駅間GAP=430vw)へ拡張。resolveTownDockSuccess/startTownDockGameに
-// あった「駅間の大半を共有巡航(driving=true)へハンドオフし、最後の短い区間だけローカル
-// 操作」という自動走行の仕組みを完全撤去し、レグ開始から終了まで一貫してローカル物理
-// (tickTownDockGame)だけがworldXを書き込む形に統一。townDockState.legStartXを新設し、
-// 1駅目はステージ入口(origin(stg))、2・3駅目は「直前のレグが実際に停止したその地点」を
-// そのまま引き継ぐことでテレポート/瞬間移動なしに次のレグへシームレスに接続。全区間を
-// 通しでホールドし続けたプレイヤーは指を離さず加速し続けられる(押しっぱなし中は
-// heldPointersが常に保持されるため)。フロート型の独立ゲージは作らず、ブレーキゾーン帯
-// (アンバー、.town-dock-brake-zone)と赤枠停止ボックス(.town-dock-stop-box)を本物の
-// #world直下の実DOM要素として.tun.stationゲートと全く同じworldX座標系(left:Nvw)で
-// 配置し、既存のworld.style.transformスクロールにそのまま乗せた(TOWN_DOCK_ZONE_WARN_LEAD
-// ぶん手前から前もって見える)。ゾーン中心(zoneCenter)はレグ実距離から都度算出する形に
-// 変更、3回失敗後の自動アシスト(taper)は専用の強い減速レート
-// (TOWN_DOCK_ASSIST_DECEL_RATE)と物理的な制動距離の逆算式へ差し替え、レグが長くなった
-// ことで収束に1分超かかっていた回帰を解消(実測10秒程度に短縮)。新規回帰チェック
-// tests/nazonazo_town_dock_regression.cjs は126チェックへ拡張、既存nazonazo_*.cjsは
-// 21pass/14fail(v2376以前から変わらない既存不具合、本round7の変更と無関係)を維持。
-// play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2380)。
+// v2381: 並走セッションのCACHE_VERSION衝突解消のためリナンバー(複数セッションが
+// 独立に採番していたためv2381へ繰り上げ、内容の欠落は無し)。
+// なぞなぞトレイン町面「ぴたっと停車」round7 追補。v2377で追加したブレーキゾーン帯/
+// 停止ボックスをユーザーがスクリーンショットで確認したところ2点指摘: (1) 線路の高さ
+// (bottom低め)に置くと前景装飾レイヤー#fgT(z-index:8)や#townDockThrottleに隠れる問題を、
+// 縦位置をbottom18-19vhへずらして回避していたが、これは「線路・駅の絵から離れた高さに
+// 浮く帯」に後退していた。根本原因はposition:absolute+z-index:3の#worldが独自スタッキング
+// コンテキストを作るため、子要素にどんなz-indexを与えても兄弟の#fgTより手前に出せない
+// CSSの制約。ブレーキゾーン帯/停止ボックス/新設の誘導矢印を#world直下ではなく#scene直下
+// (#world/#fgT/#veh と同じ兄弟階層)へ生成し直し、branch-stage-polishのスプライトと同じ
+// 「毎フレームtransform:translate3d(cssXFromVw(worldSpaceX-worldX),0,0)でworldXへ同期する」
+// 手法へ切り替え、z-index:9-11(#fgTの8より高い)を直接指定できるようにした上で、
+// 本来のトラック高さ(bottom2.8-12.6vh)へ戻した。(2) 停止ゾーンの終端(bounds.end)が
+// legLen(=stops(o,i)までの距離)からの逆算だったため、本物の駅ゲート(tunX(o,i)=
+// stops(o,i)+CHECKPOINT_STOP_LEFT_VW(24vw))の左端よりさらに手前(実測30vw超)になり、
+// 「停止ボックスが駅の絵と噛み合わない/画面に駅が映らない」不具合の原因になっていた。
+// zoneCenterの基準をlegLenからtunX(origin(stg),stationIndex)(=本物のゲート要素と全く同じ
+// 実座標)へ直接差し替え、常に本物のゲート画像の幅49vwへ重なるようにした
+// (townDockGateAnchorPos新設)。ハードクランプもbounds.endが届くようMath.max(legLen,
+// bounds.end+40)へ拡張。あわせて配色をオレンジ/赤(危険色)から青(接近中)/緑(ここで
+// 離せばOK)へ変更し、ゾーン中心を指して弾む誘導矢印(.town-dock-approach-arrow、内側の
+// -glyphだけにCSS bounceを分離しworldX同期transformと競合しないようにした)を追加。
+// 物理演算・判定式・リトライ/ヒントtierロジック・ポインタ配線・completeCurrentStage契約は
+// 一切変更していない。tests/nazonazo_town_dock_regression.cjs は新規チェックを追加して
+// 更新、全34本のnazonazo_*.cjsは21pass/14fail(既存不具合、本round7と無関係)を維持。
+// play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2381)。
 // v2379: ひょっこりハイタッチ1面の6外装を、崖縁・木の根元・左右の花壇から
 // 中央の開けた草地3列へ再配置し、奥→中→手前の遠近差と中央コンボ余白を維持した。
 // 2面どんぐり遠景は、奥の暗い影を誤って前縁にした旧alpha maskを廃止し、
@@ -1106,7 +1108,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2380;
+const CACHE_VERSION = 2381;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
