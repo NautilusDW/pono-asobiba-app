@@ -119,18 +119,44 @@ namespace Pono.KawaGlint.UI
             // CreateText() call site (timing-ring labels, banners, etc., which
             // already sit on their own dark panel背景) keeps its exact prior
             // look.
+            //
+            // effectDistance is specified in CanvasScaler reference-resolution
+            // units (this HUD's Canvas uses ScaleWithScreenSize against a
+            // 1920x1080 reference -- see KawaGlintHud.Build), NOT raw screen
+            // pixels. At any actual render resolution below that reference
+            // (e.g. this project's own -ponoSpikeCapture QA window, which
+            // renders at 960x540 => CanvasScaler.scaleFactor 0.5), the old
+            // values here (2/3 units) worked out to barely ~1-1.5 *physical*
+            // pixels on screen. That is thin enough to survive completely
+            // intact in Unity's own raw framebuffer (confirmed by direct
+            // per-pixel sampling of a fresh QA screenshot: an exact-match
+            // #0D2938 navy ring around every glyph) yet still read as
+            // "invisible" in practice, because it cannot survive even one
+            // incidental resample: displaying that small internal buffer in a
+            // larger on-screen window (the normal GPU/OS compositor upscale
+            // that happens whenever the window's point size doesn't match the
+            // render resolution 1:1) blurs a 1px-wide line across several
+            // output pixels, diluting it below both a naive exact-color pixel
+            // scan's threshold and normal human perception. Reproduced this
+            // exact failure locally by taking that same raw screenshot and
+            // applying one bilinear resize pass matching the on-screen window
+            // size: the navy ring vanished entirely from a per-pixel color
+            // scan. Doubling both distances below keeps the outline/shadow a
+            // comfortable multi-pixel band even after that kind of incidental
+            // scaling, at every resolution this scaler can produce (it only
+            // gets more generous above the 1920x1080 reference).
             if (outline)
             {
                 var o = rect.gameObject.AddComponent<Outline>();
                 o.effectColor = new Color(0.05f, 0.16f, 0.24f, 1f); // deep river navy #0D2938 (matches NarrationBarBg)
-                o.effectDistance = new Vector2(2f, 2f);
+                o.effectDistance = new Vector2(4f, 4f);
                 o.useGraphicAlpha = true;
             }
             if (shadow)
             {
                 var s = rect.gameObject.AddComponent<Shadow>();
                 s.effectColor = new Color(0f, 0f, 0f, 0.8f);
-                s.effectDistance = new Vector2(0f, -3f);
+                s.effectDistance = new Vector2(0f, -6f);
                 s.useGraphicAlpha = true;
             }
 

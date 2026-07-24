@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using Pono.KawaGlint.Bootstrap;
@@ -255,6 +256,98 @@ namespace Pono.KawaGlint.Tests.PlayMode
             Assert.That(_controller.CaughtCount, Is.Zero);
 
             yield return null;
+        }
+
+        // ── diagnostic (batch:1462-kawaglint-silhouette-opacity-hud-legibility): proves whether
+        // Outline/Shadow's ModifyMesh actually contributes navy/black vertices to the generated
+        // mesh, independent of any screenshot/pixel-scan ambiguity (resolution, anti-aliasing,
+        // OS-level screencap scaling). VertexColorProbe is appended as the LAST IMeshModifier on
+        // the GameObject, so by the time its own ModifyMesh runs, Unity has already run every
+        // earlier modifier (Outline, then Shadow) and appended their vertices into the shared
+        // VertexHelper stream -- if either effect is truly wired up, this probe must see them.
+        [UnityTest]
+        public IEnumerator PhaseWordAndBucketCount_HaveOutlineAndShadowVertexColors()
+        {
+            yield return null;
+            Canvas.ForceUpdateCanvases();
+
+            foreach (var name in new[] { "PhaseWord", "BucketCount" })
+            {
+                var text = FindText(name);
+                Assert.That(text.GetComponent<Outline>(), Is.Not.Null, $"{name} is missing its Outline component.");
+                Assert.That(text.GetComponent<Shadow>(), Is.Not.Null, $"{name} is missing its Shadow component.");
+
+                var probe = text.gameObject.AddComponent<VertexColorProbe>();
+                yield return null;
+                Canvas.ForceUpdateCanvases();
+
+                Assert.That(probe.CapturedVertexCount, Is.GreaterThan(0), $"{name}: probe captured zero vertices (Text mesh is empty).");
+                Assert.That(
+                    probe.SawOutlineColoredVertex,
+                    Is.True,
+                    $"{name}: no navy (#0D2938-ish) vertex found in the generated mesh -- Outline's ModifyMesh never contributed its offset copies.");
+                Assert.That(
+                    probe.SawShadowColoredVertex,
+                    Is.True,
+                    $"{name}: no black/near-black vertex found in the generated mesh -- Shadow's ModifyMesh never contributed its offset copy.");
+                Assert.That(
+                    probe.VertexCountMultiple,
+                    Is.EqualTo(10),
+                    $"{name}: expected exactly 10x the base glyph vertex count (Outline's 5x, then Shadow doubling that to 10x) -- got {probe.VertexCountMultiple}x. " +
+                    "A value of 1 means neither effect ran; 5 means only Outline (not Shadow, or vice versa) ran.");
+            }
+        }
+
+        /// <summary>Appended as the final IMeshModifier on a Graphic to inspect the fully-composed vertex stream (see the test above for why this proves the effect chain ran, not just that the components exist).</summary>
+        private sealed class VertexColorProbe : BaseMeshEffect
+        {
+            public int CapturedVertexCount { get; private set; }
+            public bool SawOutlineColoredVertex { get; private set; }
+            public bool SawShadowColoredVertex { get; private set; }
+            public int VertexCountMultiple { get; private set; }
+
+            private static readonly Color32 ExpectedOutlineColor = new Color32(13, 41, 61, 255); // #0D2938
+            private static readonly Color32 ExpectedShadowColor = new Color32(0, 0, 0, 204); // 0.8 alpha black
+
+            public override void ModifyMesh(VertexHelper vh)
+            {
+                if (!IsActive())
+                {
+                    return;
+                }
+
+                var verts = new List<UIVertex>();
+                vh.GetUIVertexStream(verts);
+                CapturedVertexCount = verts.Count;
+
+                var baseGlyphVertexCount = 0;
+                foreach (var v in verts)
+                {
+                    if (IsColorClose(v.color, Color.white))
+                    {
+                        baseGlyphVertexCount++;
+                    }
+                    else if (IsColorClose(v.color, ExpectedOutlineColor))
+                    {
+                        SawOutlineColoredVertex = true;
+                    }
+                    else if (IsColorClose(v.color, ExpectedShadowColor))
+                    {
+                        SawShadowColoredVertex = true;
+                    }
+                }
+
+                VertexCountMultiple = baseGlyphVertexCount > 0 ? verts.Count / baseGlyphVertexCount : 0;
+            }
+
+            private static bool IsColorClose(Color32 a, Color32 b)
+            {
+                const int tolerance = 12;
+                return Mathf.Abs(a.r - b.r) <= tolerance
+                    && Mathf.Abs(a.g - b.g) <= tolerance
+                    && Mathf.Abs(a.b - b.b) <= tolerance
+                    && Mathf.Abs(a.a - b.a) <= tolerance;
+            }
         }
 
         private Text FindText(string objectName)
