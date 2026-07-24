@@ -1535,6 +1535,23 @@ body.town-dock-active #dots{opacity:0;visibility:hidden}
    townDockState.pos を worldX へ書き込むだけで、既存の render() の
    world.style.transform=translate3d(-worldX,...) が自動的に本物の背景/駅ゲートを動かす。
    ここに書く CSS は「待ち人の中身(CSS図形、実画像なし)」と「ヒント点滅の見た目」のみ。 */
+/* v4 (round7): ブレーキゾーン帯(アンバー)+赤枠停止ボックス。フロート型の独立HUDバーは
+   作らない(過去に一度却下された設計の再発防止)。#world 直下の実DOM要素として
+   left/width をvwで書き込み(js: townDockUpdateZoneVisual)、既存の world.style.transform の
+   スクロールにそのまま乗せる -- .tun.station ゲートと全く同じ座標系。列車が実際に近づく
+   につれて画面に現れる「前もっての減速サイン」になり、赤枠は正確な停止目標を示す。 */
+/* bottom/heightは #townDockThrottle (bottom最大18.4vh程度まで占有) より上、
+   実際の機関車本体(#veh、town/v-trainではbottom9.1vh〜おおむね43vh)の下寄りの高さに
+   重なるよう選んでいる。トラック直上の帯という体裁を保ちつつ、常に画面中央に固定表示される
+   発進ボタンの真後ろに隠れて見えなくなる事故を避けるため。 */
+.town-dock-brake-zone{position:absolute;bottom:19vh;height:8.4vh;z-index:3;border-radius:14px;pointer-events:none;
+  background:repeating-linear-gradient(115deg,rgba(255,181,66,.62) 0 24px,rgba(255,138,26,.76) 24px 40px);
+  border:3px solid rgba(255,214,140,.9);box-shadow:0 0 16px rgba(255,150,40,.55),inset 0 0 10px rgba(255,255,255,.28)}
+.town-dock-brake-zone[hidden]{display:none!important}
+.town-dock-stop-box{position:absolute;bottom:18vh;height:10.4vh;z-index:4;border-radius:16px;pointer-events:none;
+  border:5px solid #ff3b30;background:rgba(255,255,255,.2);
+  box-shadow:0 0 0 3px rgba(255,255,255,.62) inset,0 0 18px rgba(255,59,48,.65)}
+.town-dock-stop-box[hidden]{display:none!important}
 .town-dock-station-helper-figure{position:relative;width:100%;height:100%}
 .town-dock-station-helper-figure::before{content:"";position:absolute;left:50%;top:0;width:58%;aspect-ratio:1;transform:translateX(-50%);border-radius:50%;background:#ffd9ad;box-shadow:0 2px 0 rgba(140,90,40,.2)}
 .town-dock-station-helper-figure::after{content:"";position:absolute;left:50%;bottom:0;width:100%;height:64%;transform:translateX(-50%);border-radius:40% 40% 18% 18%;background:#e8834f;box-shadow:0 2px 0 rgba(140,90,40,.2)}

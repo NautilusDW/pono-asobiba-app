@@ -82,7 +82,19 @@ namespace Pono.KawaGlint.Gameplay
         // QA/test override for IsDeepHookWindowOpen -- see DebugForceDeepWindow.
         // Never mutated by _preBitePlan itself; purely an additional "OR"
         // condition the controller checks alongside the plan's own schedule.
+        // Also drives the SAME visual presentation (BiteSink + timing ring)
+        // as a real plan-scheduled Deep event in UpdateWaitSteadyState below
+        // -- not just the hooking-tap gate -- so a PlayMode test can
+        // deterministically observe "the bobber sinks and the ring shows"
+        // without depending on the randomized plan actually placing a Deep
+        // pull at this exact moment (it may have placed zero this cast).
         private float _debugDeepUntilElapsed;
+        private float _debugDeepStartElapsed;
+
+        // Sentinel _activeEventIndex value meaning "a DebugForceDeepWindow
+        // override is driving the Deep presentation right now", distinct
+        // from -1 (no event) and every real non-negative _preBitePlan index.
+        private const int DebugDeepEventIndex = -2;
 
         private int _rendaCombo;
         private int _flyWordIndex;
@@ -285,11 +297,24 @@ namespace Pono.KawaGlint.Gameplay
             var onWater = state == KawaGlintBobberState.Floating
                 || state == KawaGlintBobberState.Twitch
                 || state == KawaGlintBobberState.BiteSink;
-            var idx = onWater && _preBitePlan != null ? _preBitePlan.CurrentEventIndex(elapsed) : -1;
+
+            // A DebugForceDeepWindow override takes priority over the plan's
+            // own schedule (it is only ever set by a PlayMode test) and maps
+            // to the DebugDeepEventIndex sentinel rather than a real plan
+            // index, so the change-detection below still fires exactly once
+            // on entry/exit even though there is no actual BiteEvent behind it.
+            var debugDeepActive = onWater && elapsed < _debugDeepUntilElapsed;
+            var planIdx = onWater && !debugDeepActive && _preBitePlan != null ? _preBitePlan.CurrentEventIndex(elapsed) : -1;
+            var idx = debugDeepActive ? DebugDeepEventIndex : planIdx;
 
             if (idx != _activeEventIndex)
             {
-                if (idx >= 0)
+                if (idx == DebugDeepEventIndex)
+                {
+                    _activeEventKind = KawaGlintPreBiteEventKind.Deep;
+                    EnterDeepEventVisual();
+                }
+                else if (idx >= 0)
                 {
                     _activeEventKind = _preBitePlan.EventKindAt(idx);
                     if (_activeEventKind == KawaGlintPreBiteEventKind.Deep)
@@ -299,10 +324,7 @@ namespace Pono.KawaGlint.Gameplay
                         // (item 4 of the spec: the player should read this
                         // exactly like "the real bite", just possibly one of
                         // several chances this cast).
-                        _actors.Bobber.SetVisualState(KawaGlintBobberState.BiteSink);
-                        _hud.ShowTimingRing();
-                        _hud.SetPhaseWord(PhaseWordBite);
-                        _hud.SetNarration(NarrationBite);
+                        EnterDeepEventVisual();
                     }
                     else
                     {
@@ -336,10 +358,21 @@ namespace Pono.KawaGlint.Gameplay
                 _activeEventIndex = idx;
             }
 
-            if (_activeEventIndex >= 0 && _activeEventKind == KawaGlintPreBiteEventKind.Deep)
+            if (_activeEventIndex != -1 && _activeEventKind == KawaGlintPreBiteEventKind.Deep)
             {
-                _hud.SetTimingRing(ComputeRingViewport(), _preBitePlan.DeepWindowRemaining01(elapsed));
+                var remaining01 = _activeEventIndex == DebugDeepEventIndex
+                    ? Mathf.Clamp01(1f - (elapsed - _debugDeepStartElapsed) / Mathf.Max(0.0001f, _debugDeepUntilElapsed - _debugDeepStartElapsed))
+                    : _preBitePlan.DeepWindowRemaining01(elapsed);
+                _hud.SetTimingRing(ComputeRingViewport(), remaining01);
             }
+        }
+
+        private void EnterDeepEventVisual()
+        {
+            _actors.Bobber.SetVisualState(KawaGlintBobberState.BiteSink);
+            _hud.ShowTimingRing();
+            _hud.SetPhaseWord(PhaseWordBite);
+            _hud.SetNarration(NarrationBite);
         }
 
         /// <summary>Entry point for <see cref="KawaGlintInputSurface.Tapped"/> -- also the PlayMode test operation port.</summary>
@@ -670,7 +703,9 @@ namespace Pono.KawaGlint.Gameplay
         {
             if (_session.Phase == TsuriPhase.Wait)
             {
-                _debugDeepUntilElapsed = WaitElapsedSec + durationSec;
+                var elapsed = WaitElapsedSec;
+                _debugDeepStartElapsed = elapsed;
+                _debugDeepUntilElapsed = elapsed + durationSec;
             }
         }
 

@@ -1052,6 +1052,11 @@ let tunnels=[],playing=false,cars=[],helpItems=[],rareCount=0,rareEl=null,rareSp
 // 分離する(townDock は tunnels を一切読まない設計を維持するため)。buildWorld() で
 // isTownDockStage() 用に生成し、resetTownDockGame() 等でワールド再構築のたびにクリアする。
 let townDockGates=[];
+// v4 (round7): ブレーキゾーン帯+赤枠停止ボックスの実DOM要素。.tun.station ゲートと全く同じ
+// 「#world の子要素として left をvw絶対座標で置き、world.style.transformの1:1スクロールに
+// 委ねる」方式。フロート型の独立HUDバーは作らない(過去に一度却下された設計の再発防止)。
+// buildWorld() のたびに再生成し、位置は毎フレーム townDockUpdateZoneVisual() が更新する。
+let townDockZoneEl=null,townDockStopBoxEl=null;
 let journeyScore=0,highScore=0,stageScore=0,stageScoreBreakdown=emptyStageScoreBreakdown(),stageClearScoreGranted=false,stageCompletionHandled=false;
 let tunnelFriendCandidates=[],tunnelFriendsFound=0,tunnelFriendTotalFound=0,tunnelFriendRewardGranted=false,tunnelFriendPerfectScoreGranted=false,tunnelFriendGameActive=false,tunnelFriendStartWorldX=0;
 let pendingBranchChoice=null,branchGateActive=false,branchGateTimer=0;
@@ -1103,23 +1108,44 @@ let dinoAdventureState=createDinoAdventureState();
 // 汽車をぴたりと止めて村人を乗せるミニゲーム。dino の crane 水平移動 tick と同じ
 // 「ease-toward-target-speed を dt でクランプする」物理モデルを踏襲するが、汽車の
 // 大域移動 (worldX/vel/target/driving) には一切触れない完全に独立したローカル状態
-// (townDockState.pos, 0〜TOWN_DOCK_TRACK_LEN の抽象スカラー) を持つ。
+// (townDockState.pos, 0〜現在レグの実距離の抽象スカラー) を持つ。
+// v4 (round7): ユーザー実プレイフィードバックにより「駅間のほとんどを共有巡航
+// (driving=true) が自動で運び、駅の手前だけローカル操作」という旧設計を撤去。
+// 各レグは実際の駅間距離まるごと(入口→1駅目、1駅目→2駅目、2駅目→3駅目)を
+// プレイヤーの保持操作だけでカバーする。レグの起点(pos===0に対応する実worldX)は
+// townDockState.legStartX に保持し、1駅目は「ステージ入口地点(origin(stg))」、
+// 2駅目以降は「直前のレグが実際に停止した地点(その瞬間のworldXそのもの)」を
+// そのまま引き継ぐ(共有巡航へのハンドオフが無いのでテレポートも発生しない)。
 const TOWN_DOCK_STATION_COUNT=3;
-const TOWN_DOCK_TRACK_LEN=100;
-const TOWN_DOCK_ACCEL_RATE=150;
-const TOWN_DOCK_DECEL_RATE=58;
+const TOWN_DOCK_ACCEL_RATE=95;
+const TOWN_DOCK_DECEL_RATE=8;
+// 3回目以降の自動アシスト(taper)専用の減速レート。通常のリリース減速(TOWN_DOCK_DECEL_RATE=8)は
+// 「長い区間をゆったりコーストする」体感のためにわざと緩めてあるが、そのままアシストの
+// ブレーキにも使うと(taperでtargetSpeedを下げても実速度がその緩さでしか追従できないため)
+// 詰まった子を確実に救うはずのセーフティネットが極端に遅くなってしまう
+// (実測: 緩い減速のままだと収束に1分以上かかるケースを検証で確認)。アシスト作動中だけ
+// この専用レートに切り替えることで、通常時の「じっくり感」を保ったまま
+// 3回失敗後は数秒〜十数秒で確実にゾーン内へ収まるようにする。
+const TOWN_DOCK_ASSIST_DECEL_RATE=60;
 const TOWN_DOCK_SETTLE_VEL=.08;
 const TOWN_DOCK_ZONE_WIDEN_FACTOR=1.4;
 const TOWN_DOCK_ASSIST_ATTEMPT_TIER=3;
 const TOWN_DOCK_STATION_SCORE=150;
 const TOWN_DOCK_RETRY_DELAY_MS=1150;
 const TOWN_DOCK_BOARD_DELAY_MS=1300;
-const TOWN_DOCK_NEXT_STATION_DELAY_MS=650;
 const TOWN_DOCK_ALL_CLEAR_DELAY_MS=1500;
+// ブレーキゾーン帯(トラック上のアンバー帯)を、実際の停止判定ゾーン(zoneStart)より
+// この分だけ手前から見せ始める「前もっての警告」用のリード距離(vw)。
+const TOWN_DOCK_ZONE_WARN_LEAD=42;
+// zoneWidth: 停止に成功できる幅(vw、実距離と同じ単位)。zoneEndGap: レグ終端(実際の
+// 駅停止位置)からゾーン終端までの余白(vw)。zoneCenter は実行時に
+// legLen-zoneEndGap-width/2 として毎回算出するため、レグの実距離が変わっても
+// (=駅ごとに296vw/430vwと違っても)常に「駅の少し手前でぴたっと止まる」配置になる。
+// 1駅目が最も広く簡単、2・3駅目はより狭く難しい、という既存の難易度傾斜は維持。
 const TOWN_DOCK_STATIONS=Object.freeze([
- Object.freeze({zoneCenter:50,zoneWidth:36,cruiseSpeed:30,oscAmplitude:0,oscPeriodMs:0}),
- Object.freeze({zoneCenter:62,zoneWidth:16,cruiseSpeed:46,oscAmplitude:0,oscPeriodMs:0}),
- Object.freeze({zoneCenter:56,zoneWidth:16,cruiseSpeed:46,oscAmplitude:4.8,oscPeriodMs:5200})
+ Object.freeze({zoneWidth:66,zoneEndGap:18,cruiseSpeed:19,oscAmplitude:0,oscPeriodMs:0}),
+ Object.freeze({zoneWidth:44,zoneEndGap:16,cruiseSpeed:23,oscAmplitude:0,oscPeriodMs:0}),
+ Object.freeze({zoneWidth:44,zoneEndGap:16,cruiseSpeed:23,oscAmplitude:12,oscPeriodMs:5200})
 ]);
 const TOWN_DOCK_LINES=Object.freeze({
  intro:["ればーを おしつづけて すすもう。はなすと ゆっくり とまるよ","こんどは ぴったり とまるのが むずかしいよ","とまる ばしょが すこし うごくよ！"],
@@ -1143,7 +1169,7 @@ const TOWN_DOCK_PASSENGERS=Object.freeze([
 function createTownDockState(){
  return {
   epoch:0,phase:"idle",stationIndex:0,attempts:0,assist:false,armed:false,
-  pos:0,vel:0,oscPhase:0,
+  pos:0,vel:0,oscPhase:0,legStartX:0,
   heldPointers:new Map(),keyDirection:0,
   pausedAt:0,frameAt:0,
   completionCount:0,transitionCount:0,timers:new Set()
@@ -2597,6 +2623,18 @@ function buildWorld(keepCover){
    t.appendChild(hp);
    world.appendChild(t);townDockGates.push(t);
   }
+  // v4 (round7): ブレーキゾーン帯+赤枠停止ボックスも本物の#world直下の子要素として生成する
+  // (.tun.station ゲートと全く同じ座標系)。buildWorld() は world.innerHTML="" で毎回まっさらに
+  // なるため、参照もここで作り直す。位置(left/width)はレグ開始のたびtownDockUpdateZoneVisual()
+  // が実データから書き込む(ここでは空のプレースホルダとして生成するだけ)。
+  townDockZoneEl=document.createElement("div");
+  townDockZoneEl.className="town-dock-brake-zone";
+  townDockZoneEl.hidden=true;townDockZoneEl.setAttribute("aria-hidden","true");
+  world.appendChild(townDockZoneEl);
+  townDockStopBoxEl=document.createElement("div");
+  townDockStopBoxEl.className="town-dock-stop-box";
+  townDockStopBoxEl.hidden=true;townDockStopBoxEl.setAttribute("aria-hidden","true");
+  world.appendChild(townDockStopBoxEl);
  }
  if(!isMainlineFinalStg(stg)){
   if(!isDinoAdventureStage(st)&&!isTownDockStage(st)){
@@ -7579,8 +7617,21 @@ function ending(){
 /* ================= 町: ぴたっと停車 (townDock) ================= */
 function currentTownDockStation(){return TOWN_DOCK_STATIONS[Math.min(townDockState.stationIndex,TOWN_DOCK_STATIONS.length-1)];}
 function townDockNow(){return typeof performance!=="undefined"?performance.now():Date.now();}
+// v4 (round7): レグの実距離(townDockState.legStartXから、今の駅の実stops(...)までの実vw距離)。
+// legStartXは駅ごとに固定ではなく実行時に決まる(1駅目=ステージ入口、2・3駅目=直前のレグが
+// 実際に停止した地点)ため、legLenも都度この関数で算出する。
+function townDockLegLen(){
+ return Math.max(1,stops(origin(stg),townDockState.stationIndex)-townDockState.legStartX);
+}
 function townDockZoneWidth(station){return station.zoneWidth*(townDockState.attempts>=2?TOWN_DOCK_ZONE_WIDEN_FACTOR:1);}
-function townDockZoneCenter(station){return station.oscAmplitude?station.zoneCenter+Math.sin(townDockState.oscPhase)*station.oscAmplitude:station.zoneCenter;}
+// zoneCenterは「レグ終端(実際の駅停止位置)からzoneEndGap+幅/2だけ手前」で算出する。
+// これにより2回目失敗でゾーンが広がっても(=widthが増えても)ゾーンの終端(bounds.end)は
+// legLen-zoneEndGapのまま動かず、広がった分だけ始端が手前に伸びる(=易しくなる)。
+function townDockZoneCenter(station){
+ const legLen=townDockLegLen(),width=townDockZoneWidth(station);
+ const center=legLen-station.zoneEndGap-width/2;
+ return station.oscAmplitude?center+Math.sin(townDockState.oscPhase)*station.oscAmplitude:center;
+}
 function townDockZoneBounds(station){
  const width=townDockZoneWidth(station),center=townDockZoneCenter(station);
  return {center,width,start:center-width/2,end:center+width/2};
@@ -7657,21 +7708,35 @@ function handleTownDockKeyUp(event){
  const key=event.key;
  if(key===" "||key==="Enter"){event.preventDefault();if(townDockState.keyDirection)townDockState.keyDirection=0;updateTownDockThrottlePresentation();}
 }
-// v3: state.pos (0〜TOWN_DOCK_TRACK_LEN の抽象スカラー) を、本物の worldX 座標系における
-// 「この駅への接近開始地点」からのオフセットとしてそのまま解釈する変換。stops(origin(stg),i)
-// は既存の全ステージが共有する「車両の画面固定位置と本物のゲートが重なる」オフセットその
-// ものなので、pos===zoneCenter の瞬間に worldX===stops(...) と一致するよう逆算するだけで、
-// TOWN_DOCK_STATIONS の zoneCenter/zoneWidth など既存の数値には一切触れない。
-function townDockApproachStartX(stationIndex){
- return stops(origin(stg),stationIndex)-TOWN_DOCK_STATIONS[stationIndex].zoneCenter;
+// v4 (round7): ブレーキゾーン帯(アンバー)+赤枠停止ボックスを、本物の#world直下の
+// townDockZoneEl/townDockStopBoxElへ「実worldX絶対座標」で書き込む。.tun.stationゲートと
+// 全く同じ「leftをvwで置き、world.style.transformのスクロールに委ねる」方式なので、
+// フロート型の独立HUDバーとは違い、実スクロール世界の一部として自然に近づいてくる。
+// ブレーキ帯はbounds.startよりTOWN_DOCK_ZONE_WARN_LEAD手前から見せ始めることで、
+// 「駅の手前で見える減速サイン」のような前もっての警告になる(3枚目のoscillateする駅では
+// 毎フレーム位置が揺れるので、tickの度に呼ぶ前提)。
+function townDockUpdateZoneVisual(){
+ const state=townDockState;
+ if(!townDockZoneEl||!townDockStopBoxEl)return;
+ if(state.phase!=="run"){townDockZoneEl.hidden=true;townDockStopBoxEl.hidden=true;return;}
+ const station=currentTownDockStation(),bounds=townDockZoneBounds(station);
+ const warnStart=Math.max(0,bounds.start-TOWN_DOCK_ZONE_WARN_LEAD);
+ townDockZoneEl.style.left=(state.legStartX+warnStart)+"vw";
+ townDockZoneEl.style.width=Math.max(1,bounds.end-warnStart)+"vw";
+ townDockZoneEl.hidden=false;
+ townDockStopBoxEl.style.left=(state.legStartX+bounds.start)+"vw";
+ townDockStopBoxEl.style.width=bounds.width+"vw";
+ townDockStopBoxEl.hidden=false;
 }
 function syncTownDockPresentation(){
  // 見た目は本物の worldX スクロール+本物の .tun.station ゲート(buildWorld 内、
  // isTownDockStage() 分岐で生成)にすべて委ねている。worldX への書き込みは
- // tickTownDockGame 本体で行うため、ここでは追加のヒント演出(1回目失敗時の点滅)を
- // 「今アプローチ中の本物のゲート」へ反映するだけ。state の読み取りのみ、書き込みはしない。
+ // tickTownDockGame 本体で行うため、ここでは追加のヒント演出(1回目失敗時の点滅)と
+ // ブレーキゾーン帯/停止ボックスの位置更新を「今アプローチ中の本物のゲート」へ反映する
+ // だけ。state の読み取りのみ、書き込みはしない。
  const state=townDockState,gate=townDockGates[state.stationIndex];
  if(gate)gate.classList.toggle("is-blink",state.attempts>=1&&state.phase==="run");
+ townDockUpdateZoneVisual();
 }
 function focusTownDockThrottleNextFrame(){
  const epoch=townDockState.epoch;
@@ -7682,6 +7747,13 @@ function focusTownDockThrottleNextFrame(){
 }
 function beginTownDockStation(index){
  const state=townDockState;
+ // v4 (round7): このレグの起点(pos===0に対応する実worldX)を、呼び出し時点の実worldXから
+ // そのまま引き継ぐ。1駅目はstartTownDockGame()が事前にworldX=origin(stg)へ合わせてから
+ // この関数を直接呼ぶので「ステージ入口地点」になり、2・3駅目はresolveTownDockSuccess()の
+ // 遅延コールバックがboarding中(tickは早期returnでworldXを一切動かさない)にこの関数を呼ぶので
+ // 「直前のレグが実際に停止した、まさにその地点」になる。共有巡航(driving)へのハンドオフが
+ // 無いため、テレポート/瞬間移動は一切発生しない。
+ state.legStartX=worldX;
  state.stationIndex=index;state.attempts=0;state.assist=false;state.pos=0;state.vel=0;state.oscPhase=0;state.armed=false;
  state.phase="run";
  if(townDockLayer)townDockLayer.dataset.phase="run";
@@ -7774,16 +7846,13 @@ function resolveTownDockSuccess(){
  townDockTimeout(()=>{
   if(!isTownDockStage()||!playing)return;
   if(isLast)finishTownDockAllClear();
-  else{
-   // 次の駅の接近開始地点まで、瞬間移動ではなく既存の共有巡航(driving=true)で自然に運ぶ
-   // (2駅間の実距離GAP=430vwに対しローカル接近距離は最大100vwしかなく、pos=0への直接
-   // リセットだけでは350vw超のワープになってしまうため)。到達すると既存のgloopが
-   // driving=falseへ戻し、pending="townDock"を検知してshowTownDockStop()が呼ばれる
-   // (showTownDockStop は townDockState.stationIndex を見るので 0 決め打ちではなく
-   // 次の駅からそのまま再開する)。
-   sndGo();target=townDockApproachStartX(state.stationIndex);pending="townDock";driving=true;
-  }
- },isLast?TOWN_DOCK_BOARD_DELAY_MS:(TOWN_DOCK_BOARD_DELAY_MS+TOWN_DOCK_NEXT_STATION_DELAY_MS));
+  // v4 (round7): 次の駅も共有巡航(driving=true)へは一切ハンドオフしない。乗車演出の
+  // 一時停止中(phase="boarding")はtickTownDockGameがworldXへ一切書き込まない(早期return)
+  // ため、ここでbeginTownDockStation()を直接呼べば「今まさに停まっているその地点」から
+  // シームレスに次のレグが始まる(テレポートなし)。押しっぱなしのプレイヤーはheldPointers
+  // がそのまま保持されているので、指を離さず続けて加速できる。
+  else beginTownDockStation(state.stationIndex);
+ },TOWN_DOCK_BOARD_DELAY_MS);
 }
 function reconcileTownDockPointers(){
  // 実機 (特に iOS Safari) では、指を離した瞬間の pointerup/pointercancel/lostpointercapture が
@@ -7814,18 +7883,22 @@ function tickTownDockGame(now,dt){
    if(remaining<=bounds.width*.18)targetSpeed=0;
   }
  }
- const accelLimit=(targetSpeed>=state.vel?TOWN_DOCK_ACCEL_RATE:TOWN_DOCK_DECEL_RATE)*Math.max(0,dt);
+ const decelRate=state.assist?TOWN_DOCK_ASSIST_DECEL_RATE:TOWN_DOCK_DECEL_RATE;
+ const accelLimit=(targetSpeed>=state.vel?TOWN_DOCK_ACCEL_RATE:decelRate)*Math.max(0,dt);
  state.vel+=clamp(targetSpeed-state.vel,-accelLimit,accelLimit);
  let nextPos=state.pos+state.vel*dt;
+ const trackLen=townDockLegLen();
  if(nextPos<=0){nextPos=0;if(state.vel<0)state.vel=0;}
- if(nextPos>=TOWN_DOCK_TRACK_LEN){nextPos=TOWN_DOCK_TRACK_LEN;if(state.vel>0)state.vel=0;}
+ if(nextPos>=trackLen){nextPos=trackLen;if(state.vel>0)state.vel=0;}
  state.pos=nextPos;
- // v3: ローカルpos値の「画面への書き込み先」を本物のworldXへ橋渡しするだけの1行。
+ // v4: ローカルpos値の「画面への書き込み先」を本物のworldXへ橋渡しするだけの1行。
  // pos/vel の値・計算式そのものは変更しておらず、この直後の armed/settled/undershoot/
  // overshoot 判定はすべて従来どおり state.pos/state.vel を見て行う(worldX を見ない)。
  // render() 側は既存の world.style.transform=translate3d(-worldX,...) が毎フレーム無条件で
  // 走るので、ここに書くだけで本物の背景スクロール・本物の駅ゲートの接近が自動的に反映される。
- worldX=townDockApproachStartX(state.stationIndex)+state.pos;
+ // legStartXはレグ開始時に固定されたその瞬間のworldX(beginTownDockStation参照)なので、
+ // ここでのworldX書き込みは常に「レグ起点+レグ内で進んだ実距離」になる。
+ worldX=state.legStartX+state.pos;
  // armed: 駅開始/リトライ直後は pos=0,vel=0 で「静止=settled」を満たしてしまうため、
  // 実際に位置が動く(=一度でも加速が起きた)までは成否判定そのものを行わない。
  // これが無いと、プレイヤーがまだ一度もレバーへ触れていない最初のフレームで
@@ -7848,16 +7921,20 @@ function showTownDockStop(){
  clearRareEvent();quiz.classList.remove("show");
  if(townDockLayer){townDockLayer.hidden=false;townDockLayer.setAttribute("aria-hidden","false");townDockLayer.dataset.phase="run";}
  document.body.classList.add("town-dock-active");
- // 最初の到着(stationIndex===0)にも、resolveTownDockSuccess の駅間巡航が戻ってくる
- // 2駅目・3駅目にも共通の入口。townDockState.stationIndex を見るので 0 決め打ちではない。
+ // townDockState.stationIndex を見るので 0 決め打ちではない(将来 startTownDockGame() 以外
+ // からも再利用できるよう、常にこの1つの入口を経由する形を維持する)。
  beginTownDockStation(townDockState.stationIndex);
 }
 function startTownDockGame(){
  resetTownDockGame();
- // 最初の自動巡航は「1駅目そのもの」ではなく「1駅目への接近開始地点」までにする。
- // ここで一旦止まり(driving=falseになる)、そこから先はプレイヤーのホールド操作で
- // tickTownDockGame が worldX を直接進める。
- worldX=origin(stg);target=townDockApproachStartX(0);pending="townDock";driving=true;playing=true;swapReady=false;swapped=false;
+ // v4 (round7): ユーザーフィードバックにより、駅間のほとんどを共有巡航(driving=true)が
+ // 自動で運ぶ設計を撤去した。1駅目のレグも「ステージ入口地点(origin(stg))→1駅目」の
+ // 実距離まるごとをプレイヤーの保持操作だけでカバーする。ここで一度だけ本当に停止した
+ // 状態(pos=0,vel=0)からholdを待つ「フレッシュな出発」を見せるのは意図的にOK
+ // (このミニゲーム全体の中で唯一・最初の一度だけ起きる正しい停止)。driving/pending/target
+ // は共有巡航を使わない証として明示的にニュートラルへ倒しておく。
+ worldX=origin(stg);target=worldX;pending=null;driving=false;playing=true;swapReady=false;swapped=false;
+ showTownDockStop();
 }
 function blurTownDockControl(){
  const active=document.activeElement;
@@ -7885,13 +7962,24 @@ function resetTownDockGame(){
  if(townDockLayer){townDockLayer.hidden=true;townDockLayer.setAttribute("aria-hidden","true");townDockLayer.dataset.phase="idle";}
  if(townDockThrottle){townDockThrottle.disabled=false;townDockThrottle.classList.remove("is-held","is-waiting");}
  townDockGates.forEach(gate=>gate.classList.remove("is-blink"));
+ if(townDockZoneEl)townDockZoneEl.hidden=true;
+ if(townDockStopBoxEl)townDockStopBoxEl.hidden=true;
  document.body.classList.remove("town-dock-active","town-dock-bright");
 }
 // TEMP DEBUG (to be removed once the zero-input infinite-fail-loop report is diagnosed):
 // exposes internal townDockState for Playwright/devtools polling without needing console.log parsing.
 window.__townDockSnapshot=function(){
  const s=townDockState;
- return {phase:s.phase,stationIndex:s.stationIndex,attempts:s.attempts,assist:s.assist,armed:s.armed,pos:s.pos,vel:s.vel,oscPhase:s.oscPhase,heldPointers:s.heldPointers.size,keyDirection:s.keyDirection,pausedAt:s.pausedAt,epoch:s.epoch,playing,pending,stg};
+ // v4: レグ/ゾーン形状もあわせて出す(legStartX/legLen/bounds)。Playwrightから「今どこまで
+ // 進んでいて、ゾーンまであと何vwか」を毎フレーム読み、継続保持→ゾーン内でreleaseという
+ // 実プレイと同じ操作をスクリプトから再現できるようにするためのデバッグ専用フック。
+ let bounds=null,legLen=null;
+ try{
+  const station=currentTownDockStation();
+  bounds=townDockZoneBounds(station);
+  legLen=townDockLegLen();
+ }catch(_){}
+ return {phase:s.phase,stationIndex:s.stationIndex,attempts:s.attempts,assist:s.assist,armed:s.armed,pos:s.pos,vel:s.vel,oscPhase:s.oscPhase,legStartX:s.legStartX,legLen,bounds,heldPointers:s.heldPointers.size,keyDirection:s.keyDirection,pausedAt:s.pausedAt,epoch:s.epoch,playing,pending,worldX,stg,stageCompletionHandled,totalStars,stageMiss};
 };
 
 /* ================= map ================= */

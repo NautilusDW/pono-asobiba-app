@@ -12,6 +12,15 @@ namespace Pono.KawaGlint.UI
     /// Mirrors <c>Pono.HideSeekCreatures.UI</c>'s pattern of a MonoBehaviour
     /// that owns the whole uGUI subtree it builds. GameObject names below are
     /// a PlayMode-test contract -- do not rename without updating the tests.
+    ///
+    /// Multi-chance pre-bite (batch:kawaglint-multi-chance-prebite): the
+    /// timing ring (<see cref="ShowTimingRing"/>/<see cref="SetTimingRing"/>/
+    /// <see cref="HideTimingRing"/>) and the hit-confirm effect
+    /// (<see cref="PlayHookHitFx"/>) are driven by the exact same stateless
+    /// API during a Wait-phase Deep ("グイン") pre-bite window as during the
+    /// terminal Bite phase -- this class carries zero awareness of which
+    /// caller (<see cref="Gameplay.KawaGlintGameController"/>) is asking, or
+    /// of how many hooking chances a single cast offers.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class KawaGlintHud : MonoBehaviour

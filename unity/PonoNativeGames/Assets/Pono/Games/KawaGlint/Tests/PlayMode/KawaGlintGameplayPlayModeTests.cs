@@ -168,6 +168,16 @@ namespace Pono.KawaGlint.Tests.PlayMode
                 "The catch banner never closed back to the idle cast prompt.");
         }
 
+        /// <summary>
+        /// Regression gate for batch:kawaglint-multi-chance-prebite: this
+        /// exercises the DebugSkipWait path straight to the terminal Bite
+        /// window (bypassing any Wait-phase Deep event entirely) and proves
+        /// that missing it still falls through to the existing escape/pity/
+        /// re-cast flow completely unchanged. If a future change to the
+        /// multi-chance Deep-window logic in KawaGlintGameController ever
+        /// breaks this test, the bug is almost certainly in that new code,
+        /// not here -- this test's own assertions are untouched by the redesign.
+        /// </summary>
         [UnityTest]
         public IEnumerator EscapeFlow_MissedBiteWindow_ThenRecast()
         {

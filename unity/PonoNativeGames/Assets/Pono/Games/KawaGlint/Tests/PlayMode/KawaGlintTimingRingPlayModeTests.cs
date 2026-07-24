@@ -24,6 +24,12 @@ namespace Pono.KawaGlint.Tests.PlayMode
     /// WaitUntilOrFail pattern (91_KawaGlint.unity is intentionally not
     /// registered in EditorBuildSettings, so this suite builds the scene by
     /// hand).
+    ///
+    /// batch:kawaglint-multi-chance-prebite: every test below drives the
+    /// terminal Bite window via DebugSkipWait, a path that never touches the
+    /// new Wait-phase Deep-event presentation in KawaGlintGameController
+    /// (see KawaGlintPreBitePlayModeTests for that). Their meaning is
+    /// unchanged by that redesign -- all assertions here must stay green.
     /// </summary>
     public sealed class KawaGlintTimingRingPlayModeTests
     {

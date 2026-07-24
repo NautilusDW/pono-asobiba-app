@@ -447,8 +447,9 @@
    * game シーン（コア）
    * ================================================================== */
 
-  function buildPanel(src, alt) {
+  function buildPanel(src, alt, side) {
     var panel = el('div', 'panel');
+    panel.dataset.side = side || '';
     var img = new Image();
     img.alt = alt || '';
     var failed = false;
@@ -460,6 +461,57 @@
     img.src = src;
     panel.appendChild(img);
     return { el: panel, img: img, isFailed: function () { return failed; } };
+  }
+
+  function pointForSide(diff, side) {
+    if (side === 'a' && diff.a) return diff.a;
+    if (side === 'b' && diff.b) return diff.b;
+    return diff;
+  }
+
+  /**
+   * A画像を土台に、指定された物の周辺だけを静的に変形してB画像を作る。
+   * 画像全体の色変更や物の追加削除ではなく、向き・形・模様・小さな位置差を作るためのもの。
+   */
+  function addSubtleVariantPatches(panel, src, differences) {
+    (differences || []).forEach(function (diff, index) {
+      var visual = diff.visual;
+      if (!visual) return;
+
+      var pointA = pointForSide(diff, 'a');
+      var pointB = pointForSide(diff, 'b');
+      var centerX = (pointA.x + pointB.x) / 2;
+      var centerY = (pointA.y + pointB.y) / 2;
+      var patchRadius = visual.patchR || Math.max(diff.r * 1.35, 0.075);
+      var feather = Math.min(0.012, patchRadius * 0.16);
+
+      var patch = el('div', 'subtle-difference-patch');
+      patch.dataset.differenceIndex = String(index);
+      patch.style.setProperty('--patch-x', (centerX * 100) + '%');
+      patch.style.setProperty('--patch-y', (centerY * 100) + '%');
+      patch.style.setProperty('--patch-radius', (patchRadius * 100) + '%');
+      patch.style.setProperty('--patch-inner-radius', ((patchRadius - feather) * 100) + '%');
+
+      var patchImg = new Image();
+      patchImg.alt = '';
+      patchImg.setAttribute('aria-hidden', 'true');
+      patchImg.draggable = false;
+      patchImg.src = src;
+      patchImg.style.transformOrigin = (pointA.x * 100) + '% ' + (pointA.y * 100) + '%';
+
+      var dx = pointB.x - pointA.x;
+      var dy = pointB.y - pointA.y;
+      var rotate = visual.rotate || 0;
+      var scaleX = visual.scaleX || 1;
+      var scaleY = visual.scaleY || 1;
+      patchImg.style.transform =
+        'translate(' + (dx * 100) + '%, ' + (dy * 100) + '%) ' +
+        'rotate(' + rotate + 'deg) ' +
+        'scale(' + scaleX + ', ' + scaleY + ')';
+
+      patch.appendChild(patchImg);
+      panel.appendChild(patch);
+    });
   }
 
   function gameScene(container, params) {
@@ -511,8 +563,13 @@
 
     /* --- panels --- */
     var panelsRow = el('div', 'game-panels');
-    var panelA = buildPanel(stage.imgA, stage.name + ' A');
-    var panelB = buildPanel(stage.imgB, stage.name + ' B');
+    var panelA = buildPanel(stage.imgA, stage.name + ' A', 'a');
+    var panelBSource = stage.variantBase === 'A' ? stage.imgA : stage.imgB;
+    var panelB = buildPanel(panelBSource, stage.name + ' B', 'b');
+    if (stage.variantBase === 'A') {
+      panelB.el.classList.add('subtle-variant');
+      addSubtleVariantPatches(panelB.el, panelBSource, stage.differences);
+    }
     panelsRow.appendChild(panelA.el);
     panelsRow.appendChild(panelB.el);
     container.appendChild(panelsRow);
@@ -531,7 +588,8 @@
     function panelPointForDiff(panelObj, diff) {
       var w = panelObj.el.clientWidth;
       var h = panelObj.el.clientHeight;
-      return { x: diff.x * w, y: diff.y * h };
+      var point = pointForSide(diff, panelObj.el.dataset.side);
+      return { x: point.x * w, y: point.y * h };
     }
 
     function markBothPanels(diff) {
@@ -585,7 +643,7 @@
         if (rect.width <= 0 || rect.height <= 0) return;
         var nx = clamp01((evt.clientX - rect.left) / rect.width);
         var ny = clamp01((evt.clientY - rect.top) / rect.height);
-        var result = session.checkHit(nx, ny);
+        var result = session.checkHit(nx, ny, panelObj.el.dataset.side);
         if (result.hit) {
           handleCorrect(result, panelObj, { x: nx * panelObj.el.clientWidth, y: ny * panelObj.el.clientHeight });
         } else {
