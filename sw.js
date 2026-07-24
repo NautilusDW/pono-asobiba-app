@@ -1,5 +1,10 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2382: まちがいさがしのジャングル・よるのおへや・まほうのおしろを再調整。
+// 約300px表示でも、見つけにくさを保ちながら、羽の模様・しっぽの輪・ハート模様・
+// 月の向き・鼻の巻き・枕の角・ドラゴンの羽・王冠の大きさを明確に見比べられる
+// 局所差へ更新した。ゲーム個別画像はnetwork-first配信のためCRITICAL_ASSETSには
+// 追加しない。play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2382)。
 // v2381: 並走セッションのCACHE_VERSION衝突解消のためリナンバー(複数セッションが
 // 独立に採番していたためv2381へ繰り上げ、内容の欠落は無し)。
 // なぞなぞトレイン町面「ぴたっと停車」round7 追補。v2377で追加したブレーキゾーン帯/
@@ -1108,7 +1113,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2381;
+const CACHE_VERSION = 2382;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
