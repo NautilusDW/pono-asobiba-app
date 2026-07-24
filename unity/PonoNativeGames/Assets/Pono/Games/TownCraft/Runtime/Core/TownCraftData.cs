@@ -41,12 +41,12 @@ namespace Pono.TownCraft
     [Serializable]
     public sealed class TownCraftState
     {
-        public const int CurrentVersion = 2;
+        public const int CurrentVersion = 3;
         public int version = CurrentVersion;
         public int width = 18;
         public int height = 12;
         public TownTheme theme = TownTheme.Countryside;
-        public TerrainArtVariant terrainArt = TerrainArtVariant.SpriteCookRestrained;
+        public TerrainArtVariant terrainArt = TerrainArtVariant.Legacy;
         public TownCell[] cells;
         public List<TownPlacement> placements = new();
         public string playerName = "わたし";

@@ -88,6 +88,7 @@ namespace Pono.TownCraft.Tests.EditMode
         public void TerrainArtSwitchDoesNotChangeMapTopology()
         {
             var state = TownCraftState.CreateDemo();
+            Assert.That(state.terrainArt, Is.EqualTo(TerrainArtVariant.Legacy));
             var before = state.cells.Select(c => (c.ground, c.road, c.water, c.height)).ToArray();
             state.terrainArt = TerrainArtVariant.SpriteCookRich;
             Assert.That(state.cells.Select(c => (c.ground, c.road, c.water, c.height)), Is.EqualTo(before));

@@ -119,7 +119,8 @@ namespace Pono.TownCraft
             GUILayout.Label($"ざいりょう {_state.inventory.materials}　ひらめき {_state.inventory.ideas}", _label);
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button($"じめん：{TerrainName(_state.terrainArt)}", _button, GUILayout.Width(170))) ChangeTerrainArt();
+            if (GUILayout.Button("みち：じどうせつぞく", _button, GUILayout.Width(210)))
+                _message = "みちは となりの マスへ じどうで つながるよ";
             if (GUILayout.Button("おへやへ", _button, GUILayout.Width(140))) _message = "わたしの おへやへ つなぐ いりぐち";
             if (GUILayout.Button("ずかん", _button, GUILayout.Width(120))) _message = "ずかんを ひらく いりぐち";
             GUILayout.Label("おうちの なかで かぐを かえたり ずかんを よめるよ", _label);
@@ -156,26 +157,11 @@ namespace Pono.TownCraft
             _world.Render(_state);
         }
 
-        private void ChangeTerrainArt()
-        {
-            _state.terrainArt = (TerrainArtVariant)(((int)_state.terrainArt + 1) % 3);
-            _message = $"{TerrainName(_state.terrainArt)}の じめんに したよ";
-            TownCraftStore.Save(_state);
-            _world.Render(_state);
-        }
-
         private static string ThemeName(TownTheme theme) => theme switch
         {
             TownTheme.Modern => "まち",
             TownTheme.Future => "みらい",
             _ => "いなか"
-        };
-
-        private static string TerrainName(TerrainArtVariant variant) => variant switch
-        {
-            TerrainArtVariant.SpriteCookRich => "にぎやか",
-            TerrainArtVariant.SpriteCookRestrained => "すっきり",
-            _ => "もとのえ"
         };
 
         private void EnsureStyles()
