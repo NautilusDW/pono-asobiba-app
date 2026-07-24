@@ -207,6 +207,23 @@ check(/clearTownDockPointers\(\)/.test(extractFunction(game, "completeTownDockSt
 check(!/townDockThrottle\.disabled=/.test(extractFunction(game, "updateTownDockThrottlePresentation")), 'updateTownDockThrottlePresentation must never set the native "disabled" attribute: per the Pointer Events spec, disabling a pointer-captured element implicitly releases capture (fires lostpointercapture), which would silently drop a continuous hold. Use a CSS class instead.');
 check(/is-waiting/.test(css) && /is-waiting/.test(game), "a non-disabling is-waiting visual state must exist to replace the old :disabled dimming");
 
+// ---- regression guard: reported "held with zero input, infinite fail loop" incident ----
+// A user reported the train failing forever without ever touching the throttle. A dedicated
+// Playwright run with true zero input over 22s showed no issue with the armed gate itself, which
+// points at (a) a stale cached build predating the armed fix, and/or (b) a real device silently
+// dropping a pointer release event so heldPointers never clears. (a) is addressed by bumping
+// CACHE_VERSION below; (b) is addressed by this self-healing reconciliation.
+const reconcileFn = extractFunction(game, "reconcileTownDockPointers");
+check(/hasPointerCapture/.test(reconcileFn), "must reconcile heldPointers against the browser's own hasPointerCapture() truth, self-healing a pointer whose release event never reached us");
+check(/state\.heldPointers\.delete\(pointerId\)/.test(reconcileFn), "must actually remove a pointerId once the browser confirms it is no longer captured");
+check(/if\(state\.heldPointers\.size\)reconcileTownDockPointers\(\);/.test(tickFn), "tickTownDockGame must reconcile stale pointer capture every frame before computing held");
+
+// ---- regression guard: the "■■■" boarded-villager window lights must not read as a dino-style
+// life/chances counter (townDock has unlimited retries, only escalating hints) ----
+check(/id="townDockWindows"[^>]*role="img"[^>]*aria-label="のせた むらびと/.test(html), "townDockWindows needs an unambiguous aria-label so it cannot be mistaken for a limited-chances indicator");
+check(/townDockWindows\.setAttribute\("aria-label","のせた むらびと/.test(extractFunction(game, "syncTownDockWindows")), "the window-lights aria-label must update live as villagers board");
+check(!/dinoCraneChances|"のこり\s*"\+/.test(extractFunction(game, "syncTownDockWindows")), "townDock's window-light indicator must not borrow dino's remaining-chances copy/logic");
+
 // ---- hiragana/katakana voice lines exist and are wired into the guide/stamp feedback ----
 check(/undershoot:"もう すこし まえで とまろう"/.test(game), "undershoot hint copy missing/changed");
 check(/overshoot:"すこし はやすぎたかな"/.test(game), "overshoot hint copy missing/changed");

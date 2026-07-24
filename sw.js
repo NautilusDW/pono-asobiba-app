@@ -1,5 +1,20 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2372: なぞなぞトレイン町面「ぴたっと停車」の実機報告2件を修正。(1)駅開始/リトライ
+// 直後、一度も入力しないうちに settled(vel=0)+pos(0)<zone が真になり即座に
+// resolveTownDockFail が発火する回帰を armed ゲート (実際に位置が動くまで判定を
+// 一切行わない) で修正。(2) resolveTownDockFail/Success の clearTownDockPointers()
+// 呼び出しと disabled属性の代入を廃止し、指を離さず駅をまたいで押し続けても
+// ホールドが継続するよう変更 (disabled化は Pointer Events 仕様上 pointer capture を
+// 暗黙解放するため)。さらに実機で pointerup/lostpointercapture 系イベントが万一
+// 届かない場合の自己修復として、hasPointerCapture() との毎フレーム突き合わせによる
+// heldPointers 自動修復を追加。前回のarmed修正パッチ(このコメントの直前のCACHE_VERSION
+// バンプ漏れ)により実機で旧コードのキャッシュが残っていた可能性が高いため、
+// 今回改めてバンプする。#townDockLayer の data-phase をfail-pause/boarding含め
+// 正しく同期。窓明かり「■■■」表示にaria-labelを追加しdinoの残機表示との混同を防止。
+// nazonazo-tunnel/js/game.js,index.html のみ変更。ゲーム個別ファイルと画像は
+// network-first配信のためCRITICAL_ASSETSには追加しない。play.html
+// PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2372)。
 // v2371: ひょっこりハイタッチで結果ボタンを押して次面へ進む時、非表示にした
 // 結果カードへのfocus追従でstage内がスクロールしHUDが上へ隠れる経路を修正。
 // ボタンfocusを外してstage scrollを0へ戻し、ゲーム個別queryを1453bへ更新。
@@ -1003,7 +1018,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2371;
+const CACHE_VERSION = 2372;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

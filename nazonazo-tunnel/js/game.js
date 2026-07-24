@@ -7568,7 +7568,11 @@ function townDockTimeout(fn,ms){
 }
 function townDockWindowElements(){return townDockWindows?[...townDockWindows.querySelectorAll("i")]:[];}
 function syncTownDockWindows(){
- townDockWindowElements().forEach((el,index)=>el.classList.toggle("is-lit",index<townDockState.stationIndex));
+ const boarded=townDockState.stationIndex;
+ townDockWindowElements().forEach((el,index)=>el.classList.toggle("is-lit",index<boarded));
+ // dino のクレーンの「のこり◯かい (残機)」表示と混同されないよう明示: これは無制限リトライの
+ // townDock に存在しない残機ではなく、乗せた むらびとの人数 (窓の明かり) を表す。
+ if(townDockWindows)townDockWindows.setAttribute("aria-label","のせた むらびと "+boarded+" / "+TOWN_DOCK_STATION_COUNT);
 }
 function showTownDockVillagerWaiting(){if(townDockVillager)townDockVillager.classList.remove("is-boarded");}
 function showTownDockVillagerBoarded(){if(townDockVillager)townDockVillager.classList.add("is-boarded");}
@@ -7726,9 +7730,22 @@ function resolveTownDockSuccess(){
   else beginTownDockStation(state.stationIndex);
  },isLast?TOWN_DOCK_BOARD_DELAY_MS:(TOWN_DOCK_BOARD_DELAY_MS+TOWN_DOCK_NEXT_STATION_DELAY_MS));
 }
+function reconcileTownDockPointers(){
+ // 実機 (特に iOS Safari) では、指を離した瞬間の pointerup/pointercancel/lostpointercapture が
+ // 何らかの理由で取りこぼされ、heldPointers に「持ち主のいないホールド」が残ることが理論上
+ // あり得る。ブラウザ自身が「もうこの要素はこの pointerId を capture していない」と答えたら
+ // (=hasPointerCapture が false)、こちらの Map 側もその場で自己修復する。誤って有効な保持を
+ // 消すことはない (捕捉中なら常に true を返す API のため)。
+ if(!townDockThrottle||!townDockThrottle.hasPointerCapture)return;
+ const state=townDockState;
+ for(const pointerId of [...state.heldPointers.keys()]){
+  try{if(!townDockThrottle.hasPointerCapture(pointerId))state.heldPointers.delete(pointerId);}catch(_){}
+ }
+}
 function tickTownDockGame(now,dt){
  const state=townDockState;
  if(!isTownDockStage()||state.phase!=="run"||state.pausedAt||document.hidden)return;
+ if(state.heldPointers.size)reconcileTownDockPointers();
  const station=currentTownDockStation(),bounds=townDockZoneBounds(station);
  if(station.oscAmplitude)state.oscPhase+=dt*(2*Math.PI*1000/station.oscPeriodMs);
  const held=townDockHeld();
@@ -7808,6 +7825,12 @@ function resetTownDockGame(){
  syncTownDockWindows();
  document.body.classList.remove("town-dock-active","town-dock-bright");
 }
+// TEMP DEBUG (to be removed once the zero-input infinite-fail-loop report is diagnosed):
+// exposes internal townDockState for Playwright/devtools polling without needing console.log parsing.
+window.__townDockSnapshot=function(){
+ const s=townDockState;
+ return {phase:s.phase,stationIndex:s.stationIndex,attempts:s.attempts,assist:s.assist,armed:s.armed,pos:s.pos,vel:s.vel,oscPhase:s.oscPhase,heldPointers:s.heldPointers.size,keyDirection:s.keyDirection,pausedAt:s.pausedAt,epoch:s.epoch,playing,pending,stg};
+};
 
 /* ================= map ================= */
 function openMap(msg){
