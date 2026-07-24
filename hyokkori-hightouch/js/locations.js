@@ -5,8 +5,9 @@
 
 var ASSET_BASE = '../assets/images/hyokkori-hightouch/';
 var WALK_SAVE_KEY = 'pono_hyokkori_walk_v1';
-var WALK_STATE_VERSION = 1;
-var ROUTE_ID = 'mori-3-v1';
+var WALK_STATE_VERSION = 2;
+var ROUTE_ID = 'mori-5-v1';
+var LEGACY_ROUTE_ID = 'mori-3-v1';
 
 function partner(id) {
   return {
@@ -27,6 +28,8 @@ var PARTNER_CATALOG = {
   usagi: partner('usagi'),
   tanuki: partner('tanuki'),
   kawauso: partner('kawauso'),
+  kaeru: partner('kaeru'),
+  yamane: partner('yamane'),
   hikari_momonga: {
     id: 'hikari_momonga',
     awake: ASSET_BASE + 'friend_hikari_momonga_bonus_awake.png',
@@ -39,6 +42,8 @@ var LOCATIONS = [
     id: 'komorebi_clearing',
     name: 'こもれびの ひろば',
     shortName: 'ひろば',
+    startStory: 'ひかりの たねを\nつきの はなへ とどけよう',
+    resultStory: 'たねが こみちへ すすんだ！',
     background: ASSET_BASE + 'bg_world_komorebi_lowangle_20260724.png',
     hideouts: {
       far: ASSET_BASE + 'hideout_world_komorebi_far_v2_20260724.png',
@@ -75,6 +80,8 @@ var LOCATIONS = [
     id: 'donguri_path',
     name: 'どんぐりの こみち',
     shortName: 'こみち',
+    startStory: 'りすたちに みちを\nおしえて もらおう',
+    resultStory: 'みずべまで きたよ！',
     background: ASSET_BASE + 'bg_world_donguri_overlook_20260724.png',
     hideouts: {
       far: ASSET_BASE + 'hideout_world_donguri_far_v2_20260724.png',
@@ -110,6 +117,8 @@ var LOCATIONS = [
     id: 'mizube',
     name: 'せせらぎの みずべ',
     shortName: 'みずべ',
+    startStory: 'かわうそと たねを\nむこうぎしへ とどけよう',
+    resultStory: 'ゆうやけの おかが みえた！',
     background: ASSET_BASE + 'bg_world_mizube_waterline_v2_20260724.png',
     hideouts: {
       far: ASSET_BASE + 'hideout_world_mizube_far_v2_20260724.png',
@@ -137,8 +146,81 @@ var LOCATIONS = [
       { x: 20, groundY: 88, depth: 1.04, hideout: 'near', rotate: 0 },
       { x: 80, groundY: 87, depth: 1.02, hideout: 'near', rotate: 0 }
     ],
-    // かえるを追加する第2弾までは、見分けやすいふくろうを仮の6種目にする。
-    partnerIds: ['araiguma', 'kojika', 'usagi', 'karasu', 'kawauso', 'fukurou'],
+    partnerIds: ['araiguma', 'kojika', 'usagi', 'karasu', 'kawauso', 'kaeru'],
+    bonusPartnerId: 'hikari_momonga'
+  },
+  {
+    id: 'mushroom_hill',
+    name: 'きのこの おか',
+    shortName: 'おか',
+    startStory: 'きのこの あかりを\nたよりに のぼろう',
+    resultStory: 'つきあかりまで あと いっぽ！',
+    background: ASSET_BASE + 'bg_world_mushroom_hill_sunset_20260724.png',
+    hideouts: {
+      far: ASSET_BASE + 'hideout_world_mushroom_far_20260724.png',
+      near: ASSET_BASE + 'hideout_world_mushroom_near_20260724.png'
+    },
+    hideoutLayouts: {
+      far: {
+        groundAnchorY: 67.8,
+        foregroundTop: 60,
+        windowBottom: 30,
+        charWidth: 50,
+        charLiftCqh: 7.5
+      },
+      near: {
+        groundAnchorY: 76.3,
+        foregroundTop: 64,
+        windowBottom: 28,
+        charWidth: 55,
+        charLiftCqh: 8
+      }
+    },
+    slots: [
+      { x: 30, groundY: 55, depth: 0.82, hideout: 'far', rotate: 0 },
+      { x: 71, groundY: 40, depth: 0.86, hideout: 'far', rotate: 0 },
+      { x: 18, groundY: 78, depth: 0.98, hideout: 'near', rotate: 0 },
+      { x: 50, groundY: 84, depth: 1.07, hideout: 'near', rotate: 0 },
+      { x: 82, groundY: 77, depth: 1, hideout: 'near', rotate: 0 }
+    ],
+    partnerIds: ['harinezumi', 'fukurou', 'kitsune', 'usagi', 'tanuki', 'yamane'],
+    bonusPartnerId: 'hikari_momonga'
+  },
+  {
+    id: 'moonlight_forest',
+    name: 'つきあかりの もり',
+    shortName: 'つきあかり',
+    startStory: 'つきあかりへ たねを\nとどけよう',
+    resultStory: 'つきの はなが さいた！',
+    afterStory: 'あたらしい たねで また さんぽ！',
+    background: ASSET_BASE + 'bg_world_moonlight_forest_clearing_20260724.png',
+    hideouts: {
+      far: ASSET_BASE + 'hideout_world_moonlight_far_20260724.png',
+      near: ASSET_BASE + 'hideout_world_moonlight_near_20260724.png'
+    },
+    hideoutLayouts: {
+      far: {
+        groundAnchorY: 65.8,
+        foregroundTop: 60,
+        windowBottom: 30,
+        charWidth: 50,
+        charLiftCqh: 7.5
+      },
+      near: {
+        groundAnchorY: 67.9,
+        foregroundTop: 61,
+        windowBottom: 28,
+        charWidth: 55,
+        charLiftCqh: 8
+      }
+    },
+    slots: [
+      { x: 27, groundY: 39, depth: 0.84, hideout: 'far', rotate: 0 },
+      { x: 73, groundY: 39, depth: 0.86, hideout: 'far', rotate: 0 },
+      { x: 21, groundY: 79, depth: 1.04, hideout: 'near', rotate: 0 },
+      { x: 79, groundY: 79, depth: 1.04, hideout: 'near', rotate: 0 }
+    ],
+    partnerIds: ['fukurou', 'kitsune', 'karasu', 'usagi', 'tanuki', 'yamane'],
     bonusPartnerId: 'hikari_momonga'
   }
 ];
@@ -190,12 +272,15 @@ function normalizeLocationRecords(rawRecords) {
 }
 
 /**
- * localStorage由来の値を、現在の3地点ルートの安全な状態へ正規化する。
+ * localStorage由来の値を、現在の5地点ルートの安全な状態へ正規化する。
  * 毎回新しいオブジェクトを返し、未知の場所・余分なキー・不正値は引き継がない。
  */
 function normalizeWalkState(raw) {
   var source = parseRawState(raw);
   if (!source || typeof source !== 'object' || Array.isArray(source)) source = {};
+  var sourceRuns = nonNegativeInteger(source.routeCompletedRuns);
+  var completedLegacyRoute = source.routeId === LEGACY_ROUTE_ID && sourceRuns >= 3;
+  var routeCompletedRuns = completedLegacyRoute ? 3 : sourceRuns;
 
   var completedSet = {};
   if (Array.isArray(source.completedLocationIds)) {
@@ -204,9 +289,14 @@ function normalizeWalkState(raw) {
       if (LOCATION_BY_ID[completedId]) completedSet[completedId] = true;
     }
   }
+  if (completedLegacyRoute) {
+    completedSet.komorebi_clearing = true;
+    completedSet.donguri_path = true;
+    completedSet.mizube = true;
+  }
   var completedLocationIds = ROUTE_IDS.filter(function (id) { return completedSet[id]; });
 
-  var selectedLocationId = LOCATION_BY_ID[source.selectedLocationId]
+  var selectedLocationId = !completedLegacyRoute && LOCATION_BY_ID[source.selectedLocationId]
     ? source.selectedLocationId
     : null;
   var mode = source.mode === 'select' && selectedLocationId ? 'select' : 'route';
@@ -214,7 +304,7 @@ function normalizeWalkState(raw) {
   return {
     version: WALK_STATE_VERSION,
     routeId: ROUTE_ID,
-    routeCompletedRuns: nonNegativeInteger(source.routeCompletedRuns),
+    routeCompletedRuns: routeCompletedRuns,
     completedLocationIds: completedLocationIds,
     mode: mode,
     selectedLocationId: selectedLocationId,

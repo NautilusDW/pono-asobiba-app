@@ -42,7 +42,7 @@ window.__showHyokkoriLoadError=function(){
 <script src="../common/menu.js"></script>
 <script src="../common/highscore.js"></script>
 
-<link rel="stylesheet" href="styles.css?v=20260724-1450">
+<link rel="stylesheet" href="styles.css?v=20260724-1453">
 </head>
 <body>
 
@@ -80,13 +80,16 @@ window.__showHyokkoriLoadError=function(){
     <div class="start-copy">
       <div class="title" id="start-title">ひょっこりハイタッチ</div>
       <div class="start-location" id="start-location">こもれびの ひろば</div>
-      <div class="desc">おきている どうぶつと<br>ハイタッチしよう！</div>
+      <div class="desc" id="start-desc">ひかりの たねを<br>つきの はなへ とどけよう</div>
       <button class="tap-btn" id="start-btn" type="button">ここで あそぶ</button>
     </div>
   </div>
 
   <div id="countdown-screen">
-    <div class="cd-text" id="cd-text">よーい…</div>
+    <div class="cd-card">
+      <div class="cd-text" id="cd-text">よーい…</div>
+      <div class="cd-story" id="cd-story">ひかりの たねを<br>つきの はなへ とどけよう</div>
+    </div>
   </div>
 
   <!-- 場所定義の slots 数だけ、js/game.js の buildHoles() が複製する。
@@ -126,9 +129,9 @@ window.__showHyokkoriLoadError=function(){
 
   <canvas id="fx-canvas" aria-hidden="true"></canvas>
 
-  <div id="result-overlay" role="dialog" aria-modal="true" aria-labelledby="result-title">
+  <div id="result-overlay" role="dialog" aria-modal="true" aria-labelledby="result-title" aria-describedby="result-score result-next-location">
     <div id="result-card">
-      <img class="result-pono" src="../assets/images/hyokkori-hightouch/pono_result_bloom.png" alt="おはなを もって ハイタッチする ポノ" loading="lazy" decoding="async" draggable="false">
+      <img class="result-pono" id="result-visual" src="../assets/images/hyokkori-hightouch/pono_title_highfive.png" alt="ポノが ハイタッチを しているよ" loading="lazy" decoding="async" draggable="false">
       <div class="result-copy">
         <div class="result-banner" id="result-title">おしまい！</div>
         <div class="result-score" id="result-score">0 てん</div>
@@ -146,6 +149,8 @@ window.__showHyokkoriLoadError=function(){
             <span class="walk-dot" data-walk-index="0" aria-hidden="true"></span>
             <span class="walk-dot" data-walk-index="1" aria-hidden="true"></span>
             <span class="walk-dot" data-walk-index="2" aria-hidden="true"></span>
+            <span class="walk-dot" data-walk-index="3" aria-hidden="true"></span>
+            <span class="walk-dot" data-walk-index="4" aria-hidden="true"></span>
           </div>
           <div id="result-next-location">つぎは どんぐりの こみち</div>
         </div>
@@ -155,9 +160,9 @@ window.__showHyokkoriLoadError=function(){
   </div>
 </div>
 
-<script src="js/locations.js?v=20260724-1450"></script>
+<script src="js/locations.js?v=20260724-1453"></script>
 <script src="js/logic.js?v=20260723-1442"></script>
-<script src="js/game.js?v=20260724-1450" onerror="window.__showHyokkoriLoadError()"></script>
+<script src="js/game.js?v=20260724-1453" onerror="window.__showHyokkoriLoadError()"></script>
 <script>
 window.setTimeout(function(){
   if(!document.body.classList.contains('pono-game-ready'))window.__showHyokkoriLoadError();

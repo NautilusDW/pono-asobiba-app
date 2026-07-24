@@ -116,19 +116,19 @@ function mulberry32(seed) {
   }
 }
 
-// ── 2c. 3地点データ・可変かくれ場所・さんぽ進行 ─────────────────────
+// ── 2c. 5地点データ・可変かくれ場所・さんぽ進行 ─────────────────────
 {
   assert.deepEqual(
     D.ROUTE_IDS,
-    ["komorebi_clearing", "donguri_path", "mizube"],
-    "第1弾は広場→こみち→みずべの固定3地点"
+    ["komorebi_clearing", "donguri_path", "mizube", "mushroom_hill", "moonlight_forest"],
+    "広場→こみち→みずべ→きのこのおか→つきあかりのもりの固定5地点"
   );
   assert.equal(D.WALK_SAVE_KEY, "pono_hyokkori_walk_v1", "さんぽ進行は専用v1キーへ保存する");
-  assert.equal(D.LOCATIONS.length, 3, "第1弾の場所定義は3件");
+  assert.equal(D.LOCATIONS.length, 5, "場所定義は物語の終点まで5件");
   const browserSandbox = { window: {} };
   vm.runInNewContext(locationsJsSrc, browserSandbox, { filename: "hyokkori-locations-browser.js" });
   assert.equal(typeof browserSandbox.window.HyokkoriLocations.normalizeWalkState, "function", "ブラウザへHyokkoriLocationsを公開する");
-  assert.equal(browserSandbox.window.HyokkoriLocations.LOCATIONS.length, 3, "ブラウザ公開APIにも3地点が入る");
+  assert.equal(browserSandbox.window.HyokkoriLocations.LOCATIONS.length, 5, "ブラウザ公開APIにも5地点が入る");
 
   const expectedSlots = {
     komorebi_clearing: [
@@ -144,6 +144,15 @@ function mulberry32(seed) {
     mizube: [
       [13, 47, 0.82, "far", 0], [80, 45, 0.86, "far", 0],
       [20, 88, 1.04, "near", 0], [80, 87, 1.02, "near", 0]
+    ],
+    mushroom_hill: [
+      [30, 55, 0.82, "far", 0], [71, 40, 0.86, "far", 0],
+      [18, 78, 0.98, "near", 0], [50, 84, 1.07, "near", 0],
+      [82, 77, 1, "near", 0]
+    ],
+    moonlight_forest: [
+      [27, 39, 0.84, "far", 0], [73, 39, 0.86, "far", 0],
+      [21, 79, 1.04, "near", 0], [79, 79, 1.04, "near", 0]
     ]
   };
   const expectedWorldAssets = {
@@ -161,6 +170,16 @@ function mulberry32(seed) {
       background: "bg_world_mizube_waterline_v2_20260724.png",
       far: "hideout_world_mizube_far_v2_20260724.png",
       near: "hideout_world_mizube_near_v2_20260724.png"
+    },
+    mushroom_hill: {
+      background: "bg_world_mushroom_hill_sunset_20260724.png",
+      far: "hideout_world_mushroom_far_20260724.png",
+      near: "hideout_world_mushroom_near_20260724.png"
+    },
+    moonlight_forest: {
+      background: "bg_world_moonlight_forest_clearing_20260724.png",
+      far: "hideout_world_moonlight_far_20260724.png",
+      near: "hideout_world_moonlight_near_20260724.png"
     }
   };
   const expectedHideoutLayouts = {
@@ -175,6 +194,14 @@ function mulberry32(seed) {
     mizube: {
       far: { groundAnchorY: 69.8, foregroundTop: 64, windowBottom: 30, charWidth: 50, charLiftCqh: 7 },
       near: { groundAnchorY: 66.8, foregroundTop: 56, windowBottom: 28, charWidth: 55, charLiftCqh: 8 }
+    },
+    mushroom_hill: {
+      far: { groundAnchorY: 67.8, foregroundTop: 60, windowBottom: 30, charWidth: 50, charLiftCqh: 7.5 },
+      near: { groundAnchorY: 76.3, foregroundTop: 64, windowBottom: 28, charWidth: 55, charLiftCqh: 8 }
+    },
+    moonlight_forest: {
+      far: { groundAnchorY: 65.8, foregroundTop: 60, windowBottom: 30, charWidth: 50, charLiftCqh: 7.5 },
+      near: { groundAnchorY: 67.9, foregroundTop: 61, windowBottom: 28, charWidth: 55, charLiftCqh: 8 }
     }
   };
 
@@ -215,9 +242,26 @@ function mulberry32(seed) {
   assert.match(D.LOCATION_BY_ID.komorebi_clearing.background, /bg_world_komorebi_lowangle_20260724\.png$/, "ひろばは子どもの目線の専用背景を使う");
   assert.match(D.LOCATION_BY_ID.donguri_path.background, /bg_world_donguri_overlook_20260724\.png$/, "こみちは見下ろし構図の専用背景を使う");
   assert.match(D.LOCATION_BY_ID.mizube.background, /bg_world_mizube_waterline_v2_20260724\.png$/, "みずべは泡状の石ドームを除いた修正版背景を使う");
+  assert.match(D.LOCATION_BY_ID.mushroom_hill.background, /bg_world_mushroom_hill_sunset_20260724\.png$/, "きのこのおかは斜面を見上げる夕焼け専用背景を使う");
+  assert.match(D.LOCATION_BY_ID.moonlight_forest.background, /bg_world_moonlight_forest_clearing_20260724\.png$/, "つきあかりのもりは円形広場を見下ろす専用背景を使う");
   assert.doesNotMatch(locationsJsSrc, /bg_world_mizube_waterline_20260724\.png/, "生成失敗の泡状石ドームを含む旧みずべ背景を実行時参照しない");
   assert.ok(D.LOCATION_BY_ID.donguri_path.partnerIds.includes("tanuki"), "こみちに新規たぬきが出る");
   assert.ok(D.LOCATION_BY_ID.mizube.partnerIds.includes("kawauso"), "みずべに新規かわうそが出る");
+  assert.ok(D.LOCATION_BY_ID.mizube.partnerIds.includes("kaeru"), "みずべに新規かえるが出る");
+  assert.ok(D.LOCATION_BY_ID.mushroom_hill.partnerIds.includes("yamane"), "きのこのおかに新規やまねが出る");
+  assert.ok(D.LOCATION_BY_ID.moonlight_forest.partnerIds.includes("yamane"), "つきあかりのもりにもやまねが出る");
+  assert.deepEqual(
+    D.LOCATIONS.map(location => [location.startStory, location.resultStory]),
+    [
+      ["ひかりの たねを\nつきの はなへ とどけよう", "たねが こみちへ すすんだ！"],
+      ["りすたちに みちを\nおしえて もらおう", "みずべまで きたよ！"],
+      ["かわうそと たねを\nむこうぎしへ とどけよう", "ゆうやけの おかが みえた！"],
+      ["きのこの あかりを\nたよりに のぼろう", "つきあかりまで あと いっぽ！"],
+      ["つきあかりへ たねを\nとどけよう", "つきの はなが さいた！"]
+    ],
+    "5面を通してひかりのたねを月の花へ届ける物語がつながる"
+  );
+  assert.equal(D.LOCATION_BY_ID.moonlight_forest.afterStory, "あたらしい たねで また さんぽ！", "5面完走後は次の周回の目的を示す");
 
   for (const holeCount of [4, 5, 6]) {
     assert.equal(L.pickHole(holeCount, [], () => 0), 0, `${holeCount}か所: rand=0なら先頭`);
@@ -240,8 +284,8 @@ function mulberry32(seed) {
 
   const emptyWalk = D.normalizeWalkState(null);
   assert.deepEqual(emptyWalk, {
-    version: 1,
-    routeId: "mori-3-v1",
+    version: 2,
+    routeId: "mori-5-v1",
     routeCompletedRuns: 0,
     completedLocationIds: [],
     mode: "route",
@@ -252,7 +296,9 @@ function mulberry32(seed) {
   assert.equal(D.locationForRun(emptyWalk).id, "komorebi_clearing", "0完走は広場");
   assert.equal(D.locationForRun({ routeCompletedRuns: 1 }).id, "donguri_path", "1完走はこみち");
   assert.equal(D.locationForRun({ routeCompletedRuns: 2 }).id, "mizube", "2完走はみずべ");
-  assert.equal(D.locationForRun({ routeCompletedRuns: 3 }).id, "komorebi_clearing", "3完走で広場へ一周する");
+  assert.equal(D.locationForRun({ routeCompletedRuns: 3 }).id, "mushroom_hill", "3完走はきのこのおか");
+  assert.equal(D.locationForRun({ routeCompletedRuns: 4 }).id, "moonlight_forest", "4完走はつきあかりのもり");
+  assert.equal(D.locationForRun({ routeCompletedRuns: 5 }).id, "komorebi_clearing", "5完走で広場へ一周する");
   assert.equal(
     D.locationForRun({ mode: "select", selectedLocationId: "mizube", routeCompletedRuns: 0 }).id,
     "mizube",
@@ -273,8 +319,8 @@ function mulberry32(seed) {
     },
     extra: "drop me"
   });
-  assert.equal(repaired.version, 1, "versionは現行へ正規化");
-  assert.equal(repaired.routeId, "mori-3-v1", "routeIdは現行へ正規化");
+  assert.equal(repaired.version, 2, "versionは現行へ正規化");
+  assert.equal(repaired.routeId, "mori-5-v1", "routeIdは現行へ正規化");
   assert.equal(repaired.routeCompletedRuns, 0, "負の完走数は0");
   assert.deepEqual(repaired.completedLocationIds, ["komorebi_clearing", "mizube"], "完走地点は既知IDをルート順に重複排除");
   assert.equal(repaired.mode, "route", "未知の選択地点は一本道へ戻す");
@@ -290,6 +336,67 @@ function mulberry32(seed) {
     D.normalizeWalkState({ routeCompletedRuns: 2 }),
     "JSON文字列とオブジェクトを同じ決定論状態へ正規化"
   );
+
+  const migratedLegacyLap = D.normalizeWalkState({
+    version: 1,
+    routeId: "mori-3-v1",
+    routeCompletedRuns: 3,
+    completedLocationIds: ["mizube"],
+    mode: "select",
+    selectedLocationId: "mizube",
+    lastCompletedRunId: " legacy-run ",
+    locationRecords: {
+      komorebi_clearing: { plays: 4, bestScore: 321, bestCombo: 18 },
+      mizube: { plays: 1, bestScore: 99, bestCombo: 7 }
+    }
+  });
+  assert.equal(migratedLegacyLap.version, 2, "旧3面保存をv2へ移行する");
+  assert.equal(migratedLegacyLap.routeId, "mori-5-v1", "旧3面保存を5面ルートへ付け替える");
+  assert.equal(migratedLegacyLap.routeCompletedRuns, 3, "旧3面を一周済みなら4面から再開する");
+  assert.equal(D.locationForRun(migratedLegacyLap).id, "mushroom_hill", "移行直後の現在地はきのこのおか");
+  assert.deepEqual(
+    migratedLegacyLap.completedLocationIds,
+    ["komorebi_clearing", "donguri_path", "mizube"],
+    "旧ルート一周済みなら最初の3面を完了済みとして補完する"
+  );
+  assert.equal(migratedLegacyLap.mode, "route", "移行直後は旧選択モードを解除して4面へ案内する");
+  assert.equal(migratedLegacyLap.selectedLocationId, null, "移行直後に旧選択地点を残さない");
+  assert.equal(migratedLegacyLap.lastCompletedRunId, "legacy-run", "移行時も二重完了防止runIdを保持する");
+  assert.deepEqual(
+    migratedLegacyLap.locationRecords,
+    {
+      komorebi_clearing: { plays: 4, bestScore: 321, bestCombo: 18 },
+      mizube: { plays: 1, bestScore: 99, bestCombo: 7 }
+    },
+    "移行時も既存の場所別記録を保持する"
+  );
+
+  const migratedManyLegacyLaps = D.normalizeWalkState({
+    version: 1,
+    routeId: "mori-3-v1",
+    routeCompletedRuns: 77,
+    completedLocationIds: ["komorebi_clearing", "donguri_path", "mizube"]
+  });
+  assert.equal(migratedManyLegacyLaps.routeCompletedRuns, 3, "旧版を何周していても新しい4・5面を飛ばさず4面へ移す");
+  assert.equal(D.locationForRun(migratedManyLegacyLaps).id, "mushroom_hill", "旧版の大きな完走数でも4面から始める");
+
+  const legacyInProgress = D.normalizeWalkState({
+    version: 1,
+    routeId: "mori-3-v1",
+    routeCompletedRuns: 2,
+    completedLocationIds: ["komorebi_clearing", "donguri_path"]
+  });
+  assert.equal(legacyInProgress.routeCompletedRuns, 2, "旧3面を一周前なら進行位置を維持する");
+  assert.equal(D.locationForRun(legacyInProgress).id, "mizube", "旧3面の途中保存は次の未完了面から再開する");
+
+  const currentRouteLap = D.normalizeWalkState({
+    version: 2,
+    routeId: "mori-5-v1",
+    routeCompletedRuns: 5,
+    completedLocationIds: D.ROUTE_IDS
+  });
+  assert.equal(currentRouteLap.routeCompletedRuns, 5, "現行5面保存を旧版移行と誤判定しない");
+  assert.equal(D.locationForRun(currentRouteLap).id, "komorebi_clearing", "現行5面完走後は新しい種で1面へ戻る");
 
   const beforeFirstAdvance = D.normalizeWalkState(null);
   const firstAdvance = D.advanceWalkState(beforeFirstAdvance, {
@@ -330,6 +437,35 @@ function mulberry32(seed) {
   assert.equal(secondAdvance.routeCompletedRuns, 2, "0点完走でも次へ進む");
   assert.equal(secondAdvance.locationRecords.donguri_path.plays, 1, "0点でも完走回数を記録");
   assert.equal(D.locationForRun(secondAdvance).id, "mizube", "2歩目の次はみずべ");
+
+  const thirdAdvance = D.advanceWalkState(secondAdvance, {
+    runId: "run-3",
+    locationId: "mizube",
+    mode: "route",
+    score: 80,
+    bestCombo: 6
+  });
+  assert.equal(thirdAdvance.routeCompletedRuns, 3, "みずべ完走で4面へ進む");
+  assert.equal(D.locationForRun(thirdAdvance).id, "mushroom_hill", "みずべの次はきのこのおか");
+  const fourthAdvance = D.advanceWalkState(thirdAdvance, {
+    runId: "run-4",
+    locationId: "mushroom_hill",
+    mode: "route",
+    score: 120,
+    bestCombo: 10
+  });
+  assert.equal(fourthAdvance.routeCompletedRuns, 4, "きのこのおか完走で5面へ進む");
+  assert.equal(D.locationForRun(fourthAdvance).id, "moonlight_forest", "きのこのおかの次はつきあかりのもり");
+  const fifthAdvance = D.advanceWalkState(fourthAdvance, {
+    runId: "run-5",
+    locationId: "moonlight_forest",
+    mode: "route",
+    score: 150,
+    bestCombo: 12
+  });
+  assert.equal(fifthAdvance.routeCompletedRuns, 5, "つきあかりのもり完走で5面ルートを一周する");
+  assert.equal(D.locationForRun(fifthAdvance).id, "komorebi_clearing", "5面完走後は新しい種で広場へ戻る");
+  assert.deepEqual(fifthAdvance.completedLocationIds, D.ROUTE_IDS, "5面完走時に全地点が完了済みになる");
 
   const wrongRouteLocation = D.advanceWalkState(secondAdvance, {
     runId: "run-other-location",
@@ -720,7 +856,7 @@ function mulberry32(seed) {
     "fx_overheat_swirl.png",
     "fx_sleep_moon_cloud.png",
     "pono_title_highfive.png",
-    "pono_result_bloom.png"
+    "story_moon_flower_bloom.png"
   ];
   const catalogAssetNames = Object.values(D.PARTNER_CATALOG)
     .flatMap(entry => [entry.awake, entry.sleeping].filter(Boolean))
@@ -735,6 +871,10 @@ function mulberry32(seed) {
   }
   assert.match(D.PARTNER_CATALOG.araiguma.awake, /friend_araiguma_awake\.png$/, "awake専用画像を参照する");
   assert.match(D.PARTNER_CATALOG.araiguma.sleeping, /friend_araiguma_sleeping\.png$/, "sleeping専用画像を参照する");
+  assert.match(D.PARTNER_CATALOG.kaeru.awake, /friend_kaeru_awake\.png$/, "みずべのかえるにawake専用画像がある");
+  assert.match(D.PARTNER_CATALOG.kaeru.sleeping, /friend_kaeru_sleeping\.png$/, "みずべのかえるにsleeping専用画像がある");
+  assert.match(D.PARTNER_CATALOG.yamane.awake, /friend_yamane_awake\.png$/, "後半のやまねにawake専用画像がある");
+  assert.match(D.PARTNER_CATALOG.yamane.sleeping, /friend_yamane_sleeping\.png$/, "後半のやまねにsleeping専用画像がある");
   assert.match(D.PARTNER_CATALOG.hikari_momonga.awake, /friend_hikari_momonga_bonus_awake\.png$/, "見た目で区別できるボーナス専用画像を参照する");
   assert.match(gameJs, /HyokkoriLocations/, "game.js が場所・動物カタログを参照する");
   assert.match(indexHtml + gameJs, /fx_sleep_moon_cloud\.png/, "閉眼ポーズに加えて月雲を使う");
@@ -796,7 +936,7 @@ function mulberry32(seed) {
   assert.doesNotMatch(stylesCss, /\.hh-char-wrap\s*\{[^}]*scale\(var\(--depth-scale\)\)/s, "キャラだけへ遠近scaleを二重適用しない");
   assert.match(stylesCss, /\.hh-hole\.is-pressed\s+\.hh-ground-stack\s*\{[^}]*translateX\(-50%\)[^}]*scale\(var\(--depth-scale\)\)[^}]*rotate\(var\(--hideout-rotate\)\)[^}]*scale\(0\.96\)/s, "押した瞬間も接地点基準のstack全体で前後パースを保つ");
   for (const src of ["styles.css", "js/locations.js", "js/game.js"]) {
-    assert.match(indexHtml, new RegExp(`${src.replace(/[./]/g, "\\$&")}\\?v=20260724-1450`), `${src} は1450修正版のキャッシュトークンで読む`);
+    assert.match(indexHtml, new RegExp(`${src.replace(/[./]/g, "\\$&")}\\?v=20260724-1453`), `${src} は1453の5面版キャッシュトークンで読む`);
   }
 }
 
@@ -816,7 +956,10 @@ function mulberry32(seed) {
   assert.match(gameJs, /function\s+preloadLocationAssets\(\s*location\s*\)[\s\S]*?locationAssetUrls\(location\)/, "現在地単位で必須画像を先読みする");
   assert.match(gameJs, /function\s+warmNextLocation\(\s*location\s*\)[\s\S]*?preloadLocationAssets\(location\)/, "遊んでいる間に次の場所だけを温める");
   assert.doesNotMatch(indexHtml, /rel=["']preload["'][^>]*friend_hikari_momonga_bonus_awake\.png/, "初回必須転送へボーナス画像を混ぜない");
-  assert.match(indexHtml, /pono_result_bloom\.png[^>]*loading=["']lazy["']/, "結果ポノは30秒のプレイ中に温め、初回表示を塞がない");
+  assert.match(indexHtml, /id=["']result-visual["'][^>]*loading=["']lazy["']/, "結果画像はlazy読込で初回表示を塞がない");
+  assert.match(gameJs, /FX_IMAGES\s*=\s*\[[\s\S]*?story_moon_flower_bloom\.png[\s\S]*?\]/, "月の花はプレイ中に温めて最終結果へ備える");
+  assert.match(indexHtml, /id=["']cd-story["']/, "連続プレイのカウントダウンに物語文の表示先がある");
+  assert.match(gameJs, /cdStory\.textContent\s*=\s*currentLocation\.startStory/, "各面の開始物語を見えるカウントダウンへ反映する");
 
   for (const id of ["combo-hud", "combo-count", "combo-status-sr", "result-combo", "result-best-combo", "result-combo-new"]) {
     assert.match(indexHtml, new RegExp(`id=["']${id}["']`), `${id} の表示先が存在する`);
@@ -885,6 +1028,12 @@ function mulberry32(seed) {
     assert.match(indexHtml, new RegExp(`id=["']${id}["']`), `${id} の表示先が存在する`);
   }
   assert.equal((indexHtml.match(/class=["'][^"']*walk-dot/g) || []).length, D.ROUTE_IDS.length, "散歩道の点数をルート定義と揃える");
+  assert.match(gameJs, /resultCompletedLap\s*&&\s*currentLocation\s*&&\s*currentLocation\.id\s*===\s*['"]moonlight_forest['"]/, "5面を完走した時だけ最終開花演出にする");
+  assert.match(gameJs, /story_moon_flower_bloom\.png/, "最終結果で月の花の専用画像を使う");
+  assert.match(gameJs, /currentLocation\.resultStory/, "最終結果に場所定義の『つきの はなが さいた！』を使う");
+  assert.match(gameJs, /currentLocation\.afterStory/, "開花後に次の種で周回する物語を案内する");
+  assert.match(stylesCss, /#result-card\.is-final-bloom/, "最終開花だけを見分ける結果カード演出がある");
+  assert.match(stylesCss, /#result-card\s+\.result-pono\.is-moon-flower/, "月の花画像に専用の開花アニメーションがある");
   assert.match(gameJs, /nextLocation\s*=\s*H\.locationForRun\(\s*walkState\s*\)/, "完走後の次地点は保存済み進行から決める");
   assert.match(gameJs, /swapLocation\(\s*targetLocation\s*,\s*false\s*\)[\s\S]*?beginCountdown\(\)/, "つづける操作は次地点の読込完了後にカウントダウンする");
   assert.match(gameJs, /stageEl\.style\.setProperty\(\s*['"]--location-bg['"]/, "背景を場所定義からステージへ反映する");

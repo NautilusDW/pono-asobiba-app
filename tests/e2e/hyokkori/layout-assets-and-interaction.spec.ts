@@ -13,11 +13,15 @@ const PARTNERS = [
   'usagi',
   'tanuki',
   'kawauso',
+  'kaeru',
+  'yamane',
 ];
 const EXPECTED_ASSETS = [
   'bg_world_komorebi_lowangle_20260724.png',
   'bg_world_donguri_overlook_20260724.png',
   'bg_world_mizube_waterline_v2_20260724.png',
+  'bg_world_mushroom_hill_sunset_20260724.png',
+  'bg_world_moonlight_forest_clearing_20260724.png',
   'menu_thumb_highfive_combo.png',
   'hideout_world_komorebi_far_v2_20260724.png',
   'hideout_world_komorebi_near_v2_20260724.png',
@@ -25,12 +29,17 @@ const EXPECTED_ASSETS = [
   'hideout_world_donguri_near_v2_20260724.png',
   'hideout_world_mizube_far_v2_20260724.png',
   'hideout_world_mizube_near_v2_20260724.png',
+  'hideout_world_mushroom_far_20260724.png',
+  'hideout_world_mushroom_near_20260724.png',
+  'hideout_world_moonlight_far_20260724.png',
+  'hideout_world_moonlight_near_20260724.png',
   'fx_highfive_burst.png',
   'fx_leaf_puff.png',
   'fx_overheat_swirl.png',
   'fx_sleep_moon_cloud.png',
   'pono_result_bloom.png',
   'pono_title_highfive.png',
+  'story_moon_flower_bloom.png',
   'friend_hikari_momonga_bonus_awake.png',
   ...PARTNERS.flatMap((id) => [`friend_${id}_awake.png`, `friend_${id}_sleeping.png`]),
 ];
@@ -151,12 +160,75 @@ const LOCATIONS = [
       { x: 80, groundY: 87, depth: 1.02, hideout: 'near', rotate: 0 },
     ],
   },
+  {
+    id: 'mushroom_hill',
+    name: 'きのこの おか',
+    background: 'bg_world_mushroom_hill_sunset_20260724.png',
+    hideouts: {
+      far: 'hideout_world_mushroom_far_20260724.png',
+      near: 'hideout_world_mushroom_near_20260724.png',
+    },
+    hideoutLayouts: {
+      far: {
+        groundAnchorY: 67.8,
+        foregroundTop: 60,
+        windowBottom: 30,
+        charWidth: 50,
+        charLiftCqh: 7.5,
+      },
+      near: {
+        groundAnchorY: 76.3,
+        foregroundTop: 64,
+        windowBottom: 28,
+        charWidth: 55,
+        charLiftCqh: 8,
+      },
+    },
+    slots: [
+      { x: 30, groundY: 55, depth: 0.82, hideout: 'far', rotate: 0 },
+      { x: 71, groundY: 40, depth: 0.86, hideout: 'far', rotate: 0 },
+      { x: 18, groundY: 78, depth: 0.98, hideout: 'near', rotate: 0 },
+      { x: 50, groundY: 84, depth: 1.07, hideout: 'near', rotate: 0 },
+      { x: 82, groundY: 77, depth: 1, hideout: 'near', rotate: 0 },
+    ],
+  },
+  {
+    id: 'moonlight_forest',
+    name: 'つきあかりの もり',
+    background: 'bg_world_moonlight_forest_clearing_20260724.png',
+    hideouts: {
+      far: 'hideout_world_moonlight_far_20260724.png',
+      near: 'hideout_world_moonlight_near_20260724.png',
+    },
+    hideoutLayouts: {
+      far: {
+        groundAnchorY: 65.8,
+        foregroundTop: 60,
+        windowBottom: 30,
+        charWidth: 50,
+        charLiftCqh: 7.5,
+      },
+      near: {
+        groundAnchorY: 67.9,
+        foregroundTop: 61,
+        windowBottom: 28,
+        charWidth: 55,
+        charLiftCqh: 8,
+      },
+    },
+    slots: [
+      { x: 27, groundY: 39, depth: 0.84, hideout: 'far', rotate: 0 },
+      { x: 73, groundY: 39, depth: 0.86, hideout: 'far', rotate: 0 },
+      { x: 21, groundY: 79, depth: 1.04, hideout: 'near', rotate: 0 },
+      { x: 79, groundY: 79, depth: 1.04, hideout: 'near', rotate: 0 },
+    ],
+  },
 ];
 
 function walkStateAt(routeCompletedRuns) {
   return {
-    version: 1,
-    routeId: 'mori-3-v1',
+    version: 2,
+    routeId: 'mori-5-v1',
     routeCompletedRuns,
     completedLocationIds: LOCATIONS.slice(0, routeCompletedRuns % LOCATIONS.length).map(({ id }) => id),
     mode: 'route',
@@ -211,7 +283,7 @@ async function advanceToAwake(page, excludedIndex = null, budgetMs = 8_000) {
   throw new Error('awake のおともだちが時間内に出現しませんでした');
 }
 
-test('3つの絵本世界・場所別の遠近開口・10種の動物を使い、旧世界素材を読み込まない', async ({ page }) => {
+test('5つの絵本世界・場所別の遠近開口・12種の動物を使い、旧世界素材を読み込まない', async ({ page }) => {
   test.setTimeout(35_000);
   await page.setViewportSize({ width: 844, height: 390 });
   await setupApp(page);
@@ -242,7 +314,7 @@ test('3つの絵本世界・場所別の遠近開口・10種の動物を使い�
   await expect(page.locator('.hh-hideout-foreground')).toHaveCount(6);
   expect(await page.locator('.hh-hole').evaluateAll((holes) =>
     holes.every((hole) => hole.tagName === 'BUTTON' && hole.getAttribute('type') === 'button'))).toBe(true);
-  await expect(page.locator('#start-location')).toHaveText('1/3　こもれびの ひろば');
+  await expect(page.locator('#start-location')).toHaveText('1/5　こもれびの ひろば');
 
   const assetResults = await page.evaluate(async ({ base, names }) => Promise.all(names.map(async (name) => {
     const response = await fetch(base + name, { cache: 'no-store' });
@@ -277,7 +349,75 @@ test('3つの絵本世界・場所別の遠近開口・10種の動物を使い�
   expect(pageErrors).toEqual([]);
 });
 
-test('3地点を単色カラコレにせず、色相の豊かさ・明るさ・構図差を保つ', async ({ page }) => {
+test('かえる・やまねの起き寝画像が透過つきでデコードでき、体が端で切れていない', async ({ page }) => {
+  await page.goto('/hyokkori-hightouch/index.html');
+
+  const filenames = [
+    'friend_kaeru_awake.png',
+    'friend_kaeru_sleeping.png',
+    'friend_yamane_awake.png',
+    'friend_yamane_sleeping.png',
+  ];
+  const decoded = await page.evaluate(async ({ base, names }) => Promise.all(names.map(async (name) => {
+    const response = await fetch(base + name, { cache: 'no-store' });
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const image = new Image();
+    image.src = objectUrl;
+    await image.decode();
+
+    const canvas = document.createElement('canvas');
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    context.drawImage(image, 0, 0);
+    URL.revokeObjectURL(objectUrl);
+    const { width, height } = canvas;
+    const pixels = context.getImageData(0, 0, width, height).data;
+    let minX = width;
+    let minY = height;
+    let maxX = -1;
+    let maxY = -1;
+    for (let index = 3; index < pixels.length; index += 4) {
+      if (pixels[index] <= 8) continue;
+      const pixelIndex = (index - 3) / 4;
+      const x = pixelIndex % width;
+      const y = Math.floor(pixelIndex / width);
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+    const alphaAt = (x, y) => pixels[(y * width + x) * 4 + 3];
+    return {
+      name,
+      status: response.status,
+      width,
+      height,
+      bounds: { minX, minY, maxX, maxY },
+      transparentCorners: [
+        alphaAt(0, 0),
+        alphaAt(width - 1, 0),
+        alphaAt(0, height - 1),
+        alphaAt(width - 1, height - 1),
+      ].every((alpha) => alpha === 0),
+    };
+  })), { base: ASSET_BASE, names: filenames });
+
+  for (const asset of decoded) {
+    expect(asset.status).toBe(200);
+    expect([asset.width, asset.height]).toEqual([1200, 1200]);
+    expect(asset.transparentCorners).toBe(true);
+    expect(asset.bounds.minX).toBeGreaterThanOrEqual(24);
+    expect(asset.bounds.minY).toBeGreaterThanOrEqual(24);
+    expect(asset.width - 1 - asset.bounds.maxX).toBeGreaterThanOrEqual(24);
+    expect(asset.height - 1 - asset.bounds.maxY).toBeGreaterThanOrEqual(24);
+    expect(asset.bounds.maxX - asset.bounds.minX).toBeGreaterThan(600);
+    expect(asset.bounds.maxY - asset.bounds.minY).toBeGreaterThan(700);
+  }
+});
+
+test('5地点を単色カラコレにせず、色相の豊かさ・明るさ・構図差を保つ', async ({ page }) => {
   test.setTimeout(35_000);
   await page.setViewportSize({ width: 844, height: 390 });
   await setupApp(page);
@@ -395,15 +535,21 @@ test('3地点を単色カラコレにせず、色相の豊かさ・明るさ・�
 
   const byId = Object.fromEntries(palettes.map((palette) => [palette.id, palette]));
   for (const palette of palettes) {
-    expect(palette.status).toBe(200);
-    expect([palette.width, palette.height]).toEqual([1600, 900]);
-    expect(palette.saturatedRatio).toBeGreaterThan(0.35);
-    expect(palette.dominantHueRatio).toBeLessThan(0.65);
-    expect(palette.hueEntropy).toBeGreaterThan(0.30);
-    expect(palette.centerLuma).toBeGreaterThan(145);
-    expect(palette.centerLuma).toBeLessThan(210);
-    expect(palette.lumaStd).toBeGreaterThan(15);
-    expect(palette.lumaStd).toBeLessThan(35);
+    expect(palette.status, `${palette.id}: 背景レスポンス`).toBe(200);
+    expect([palette.width, palette.height], `${palette.id}: 背景サイズ`).toEqual([1600, 900]);
+    expect(palette.saturatedRatio, `${palette.id}: 彩度`).toBeGreaterThan(0.35);
+    expect(palette.dominantHueRatio, `${palette.id}: 単一色相への偏り`).toBeLessThan(0.65);
+    // The moonlit finale intentionally keeps a tighter blue-violet harmony and
+    // a brighter moonbeam clearing than the daylight stages.
+    const isMoonlight = palette.id === 'moonlight_forest';
+    const minHueEntropy = isMoonlight ? 0.24 : 0.30;
+    const maxCenterLuma = isMoonlight ? 230 : 210;
+    const maxLumaStd = isMoonlight ? 45 : 35;
+    expect(palette.hueEntropy, `${palette.id}: 色相の豊かさ`).toBeGreaterThan(minHueEntropy);
+    expect(palette.centerLuma, `${palette.id}: 中央の最低明度`).toBeGreaterThan(145);
+    expect(palette.centerLuma, `${palette.id}: 中央の最高明度`).toBeLessThan(maxCenterLuma);
+    expect(palette.lumaStd, `${palette.id}: 明暗差の下限`).toBeGreaterThan(15);
+    expect(palette.lumaStd, `${palette.id}: 明暗差の上限`).toBeLessThan(maxLumaStd);
   }
 
   const rgbToLab = (rgb) => {
@@ -454,6 +600,9 @@ test('3地点を単色カラコレにせず、色相の豊かさ・明るさ・�
     [byId.komorebi_clearing, byId.donguri_path],
     [byId.donguri_path, byId.mizube],
     [byId.mizube, byId.komorebi_clearing],
+    [byId.mizube, byId.mushroom_hill],
+    [byId.mushroom_hill, byId.moonlight_forest],
+    [byId.moonlight_forest, byId.komorebi_clearing],
   ];
   const correlations = [];
   for (const [left, right] of pairs) {
@@ -465,7 +614,7 @@ test('3地点を単色カラコレにせず、色相の豊かさ・明るさ・�
   expect(correlations.reduce((sum, value) => sum + value, 0) / correlations.length).toBeLessThan(0.48);
 });
 
-test('3場所×4画面で地面アンカー・遠近・下側マスク・中央コンボ余白を保つ', async ({ page }) => {
+test('5場所×4画面で地面アンカー・遠近・下側マスク・中央コンボ余白を保つ', async ({ page }) => {
   test.setTimeout(70_000);
   await setupApp(page);
   await page.goto('/hyokkori-hightouch/index.html');
@@ -702,7 +851,7 @@ test('右上の月・光・ボーナス表示を動物マスクの外へ分離�
   await setupApp(page);
   await page.goto('/hyokkori-hightouch/index.html');
   await waitForLocation(page, LOCATIONS[0]);
-  // 3場所で最も右へ寄る x=80 の上段穴でも画面端へ切れないことを確認する。
+  // 5場所で最も右へ寄る x=82 の上段穴でも画面端へ切れないことを確認する。
   await loadLocation(page, 1);
 
   for (const viewport of [

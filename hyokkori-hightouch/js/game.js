@@ -70,11 +70,11 @@
     ASSET_BASE + 'fx_overheat_swirl.png',
     ASSET_BASE + 'fx_sleep_moon_cloud.png',
     ASSET_BASE + 'pono_title_highfive.png',
-    ASSET_BASE + 'pono_result_bloom.png'
+    ASSET_BASE + 'story_moon_flower_bloom.png'
   ];
 
   // 起動時は現在地だけを必須読込し、次の場所だけを遊んでいる間に温める。
-  // 3場所すべてを一括取得しないことで、初回通信量と低メモリ端末の負荷を抑える。
+  // 5場所すべてを一括取得しないことで、初回通信量と低メモリ端末の負荷を抑える。
   var assetPromiseByUrl = Object.create(null);
   var loadedAssetUrls = Object.create(null);
   // 10Mbps前後でも背景＋最初に遊べる動物1組を待てる値。
@@ -355,6 +355,10 @@
     var startLocationEl = document.getElementById('start-location');
     if (!startLocationEl || !currentLocation) return;
     startLocationEl.textContent = (routeIndexOf(currentLocation) + 1) + '/' + H.ROUTE_IDS.length + '　' + currentLocation.name;
+    var startDescEl = document.getElementById('start-desc');
+    if (startDescEl) {
+      startDescEl.textContent = currentLocation.startStory || 'おきている どうぶつと\nハイタッチしよう！';
+    }
   }
 
   // ═══ 隠れ場所を場所定義の正規化座標から動的生成 ═══
@@ -1187,8 +1191,10 @@
     var epoch = ++countdownEpoch;
     var cdScreen = document.getElementById('countdown-screen');
     var cdText = document.getElementById('cd-text');
+    var cdStory = document.getElementById('cd-story');
     if (cdScreen) cdScreen.classList.add('show');
     if (cdText) cdText.textContent = currentLocation.name;
+    if (cdStory) cdStory.textContent = currentLocation.startStory || '';
     setTimeout(function () {
       if (epoch === countdownEpoch && cdText) cdText.textContent = 'よーい…';
     }, 400);
@@ -1266,7 +1272,15 @@
         : H.ROUTE_IDS.length + 'このうち ' + completedInLap + 'こ すすんだ');
     }
     var nextEl = document.getElementById('result-next-location');
-    if (nextEl && nextLocation) nextEl.textContent = 'つぎは ' + nextLocation.name;
+    if (nextEl) {
+      var resultStory = resultCompletedLap && currentLocation && currentLocation.afterStory
+        ? currentLocation.afterStory
+        : currentLocation && currentLocation.resultStory;
+      nextEl.textContent = resultStory || (nextLocation ? 'つぎは ' + nextLocation.name : '');
+      if (nextLocation) {
+        nextEl.setAttribute('aria-label', nextEl.textContent + ' つぎは ' + nextLocation.name);
+      }
+    }
   }
 
   function showResult() {
@@ -1278,11 +1292,24 @@
     if (bestComboEl) bestComboEl.textContent = 'きろく ' + lifetimeBestCombo + 'コンボ';
     var comboNewEl = document.getElementById('result-combo-new');
     if (comboNewEl) comboNewEl.classList.toggle('hidden', !comboRecordBroken);
+    var finalBloom = !!(resultCompletedLap && currentLocation && currentLocation.id === 'moonlight_forest');
+    var resultCardEl = document.getElementById('result-card');
+    if (resultCardEl) resultCardEl.classList.toggle('is-final-bloom', finalBloom);
+    var resultVisualEl = document.getElementById('result-visual');
+    if (resultVisualEl) {
+      resultVisualEl.src = ASSET_BASE + (finalBloom
+        ? 'story_moon_flower_bloom.png'
+        : 'pono_title_highfive.png');
+      resultVisualEl.alt = finalBloom
+        ? 'つきの はなが さいたよ'
+        : 'ポノが ハイタッチを しているよ';
+      resultVisualEl.classList.toggle('is-moon-flower', finalBloom);
+    }
     var bannerEl = document.querySelector('#result-card .result-banner');
     if (bannerEl) {
-      if (resultCompletedLap) bannerEl.textContent = 'もりを ひとまわり できた！';
+      if (finalBloom) bannerEl.textContent = currentLocation.resultStory;
       else if (state.score === 0) bannerEl.textContent = 'さいごまで あそべた！';
-      else bannerEl.textContent = 'いっぽ すすんだ！';
+      else bannerEl.textContent = 'ナイス ハイタッチ！';
     }
     renderResultWalkProgress();
     var rank = state.score > 0 && window.saveHighScore
@@ -1371,7 +1398,9 @@
 
   document.body.classList.remove('pono-game-ready');
   document.body.classList.add('pono-game-loading');
-  walkState = readWalkState();
+  // 旧3面ルートの完走済み端末は、正規化した5面状態を起動時に一度だけ保存し、
+  // 次回以降も4面開始を安定して維持する。
+  walkState = writeWalkState(readWalkState());
   currentLocation = H.locationForRun(walkState);
   swapLocation(currentLocation, true).then(function (applied) {
     if (!applied) return;

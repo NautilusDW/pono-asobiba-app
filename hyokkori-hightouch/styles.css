@@ -312,6 +312,7 @@ a:focus-visible {
   font-size: clamp(15px, 2.25vmin, 21px);
   font-weight: 700;
   line-height: 1.65;
+  white-space: pre-line;
 }
 
 #start-screen .tap-btn {
@@ -358,17 +359,32 @@ a:focus-visible {
   display: flex;
 }
 
-#countdown-screen .cd-text {
+#countdown-screen .cd-card {
+  max-width: min(82%, 620px);
   padding: 17px 30px;
   border: 3px solid rgba(255, 255, 255, 0.7);
   border-radius: 24px;
   background: rgba(45, 91, 62, 0.78);
   box-shadow: 0 8px 24px rgba(28, 63, 43, 0.22);
   color: #fff;
+  text-align: center;
+  animation: cd-pop 0.4s ease-out;
+}
+
+#countdown-screen .cd-text {
   font-size: clamp(30px, 5vmin, 50px);
   font-weight: 900;
+  line-height: 1.16;
   text-shadow: 0 3px 8px rgba(0, 0, 0, 0.24);
-  animation: cd-pop 0.4s ease-out;
+}
+
+#countdown-screen .cd-story {
+  margin-top: 7px;
+  font-size: clamp(13px, 2.35vmin, 20px);
+  font-weight: 800;
+  line-height: 1.35;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.24);
+  white-space: pre-line;
 }
 
 @keyframes cd-pop {
@@ -991,6 +1007,25 @@ a:focus-visible {
   filter: drop-shadow(0 9px 10px rgba(55, 91, 45, 0.16));
 }
 
+#result-card.is-final-bloom {
+  border-color: rgba(235, 242, 255, 0.92);
+  background:
+    radial-gradient(circle at 27% 48%, rgba(255, 250, 190, 0.9) 0 8%, rgba(190, 212, 255, 0.5) 28%, transparent 49%),
+    linear-gradient(155deg, #f8f6ff, #dfe9ff 54%, #edf6df);
+  box-shadow: 0 13px 42px rgba(30, 50, 108, 0.36), 0 0 28px rgba(212, 227, 255, 0.72);
+}
+
+#result-card .result-pono.is-moon-flower {
+  max-width: 276px;
+  filter: drop-shadow(0 0 9px rgba(255, 246, 174, 0.88)) drop-shadow(0 10px 13px rgba(62, 76, 143, 0.24));
+  animation: moon-flower-bloom 0.72s cubic-bezier(0.2, 0.88, 0.35, 1.18) both;
+}
+
+@keyframes moon-flower-bloom {
+  from { opacity: 0; transform: translateY(9%) scale(0.72); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 #result-card .result-copy {
   display: flex;
   flex-direction: column;
@@ -998,10 +1033,13 @@ a:focus-visible {
 }
 
 #result-card .result-banner {
+  max-width: 100%;
   margin-bottom: 5px;
   color: var(--forest-ink);
   font-size: clamp(22px, 3.8vmin, 34px);
   font-weight: 900;
+  line-height: 1.2;
+  text-wrap: balance;
 }
 
 #result-card .result-score {
@@ -1355,9 +1393,10 @@ a:focus-visible {
   .hh-char-wrap.is-sleeping .hh-char,
   .hh-char-wrap.is-visible.is-sleeping .hh-sleep-fx,
   #result-card .result-new,
+  #result-card .result-pono.is-moon-flower,
   #landscape-notice .rotate-icon,
   .tut-bubble,
-  #countdown-screen .cd-text {
+  #countdown-screen .cd-card {
     animation: none !important;
   }
 
