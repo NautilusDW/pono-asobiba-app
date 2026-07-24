@@ -155,12 +155,25 @@ namespace Pono.KawaGlint.UI
 
         private void BuildChildren(Transform canvasTransform)
         {
+            // Bottom-left (not top-left, its original spot): the illustrated
+            // Pono sprite (KawaGlintStageBuilder's "Angler") sits near the
+            // top-left of every camera-visible frame at river_asase/
+            // river_kakou (KawaGlintStageBuilder.AnglerArtBottomCenter is a
+            // fixed world position there, never relocated -- river_asase is
+            // this project's regression baseline), and a top-left anchor
+            // here used to sit squarely on top of Pono's head/rod at that
+            // same screen corner. Bottom-left stays clear of Pono at every
+            // location (§D-3's per-location anchors keep Pono's world Y well
+            // above the bottom of frame everywhere) and of NarrationBarBg
+            // (bottom-CENTER, KawaGlintHud), so it is a fix that holds
+            // regardless of which location is active, not just a swap of one
+            // fixed overlap for another.
             var openButton = KawaGlintUiFactory.CreateButton("LocationOpenButton", canvasTransform, OpenButtonLabel, 32, OpenButtonColor, Color.white);
             var openRect = (RectTransform)openButton.transform;
-            openRect.anchorMin = new Vector2(0f, 1f);
-            openRect.anchorMax = new Vector2(0f, 1f);
-            openRect.pivot = new Vector2(0f, 1f);
-            openRect.anchoredPosition = new Vector2(40f, -40f);
+            openRect.anchorMin = new Vector2(0f, 0f);
+            openRect.anchorMax = new Vector2(0f, 0f);
+            openRect.pivot = new Vector2(0f, 0f);
+            openRect.anchoredPosition = new Vector2(40f, 40f);
             openRect.sizeDelta = new Vector2(160f, 72f);
             openButton.onClick.AddListener(Open);
 

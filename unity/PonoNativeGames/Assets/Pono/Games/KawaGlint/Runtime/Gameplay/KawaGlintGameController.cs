@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using Pono.KawaGlint.Core;
 using Pono.KawaGlint.Input;
@@ -141,6 +142,33 @@ namespace Pono.KawaGlint.Gameplay
 
         /// <summary>Current location id (海拡張・実装契約v1.0 §C-1). Null only before Configure runs.</summary>
         public string CurrentLocationId => _currentLocation?.Id;
+
+        /// <summary>
+        /// Raised at the end of a successful <see cref="TrySetLocation"/> with
+        /// the new location's <c>TsuriLocationData.BackgroundKey</c> (never
+        /// null/empty). Bootstrap-only wiring surface: lets
+        /// <c>KawaGlintBootstrap</c> forward the switch to
+        /// <c>KawaGlintStageBuilder.SetBackground</c> without this class
+        /// referencing the stage builder itself (Gameplay stays a pure
+        /// consumer of Rendering's public API, never a coordinator of it).
+        /// </summary>
+        public event Action<string> LocationBackgroundChanged;
+
+        /// <summary>
+        /// Optional hook (set by <c>KawaGlintBootstrap</c>) that resolves a
+        /// location's new rod-tip world position for <see cref="TrySetLocation"/>
+        /// to fold into this controller's own <c>_stage.RodTipWorldPosition</c>
+        /// copy (§D-3) -- unlike <see cref="LocationBackgroundChanged"/> this
+        /// needs a return value, so it is a settable delegate property rather
+        /// than an event; Bootstrap wires it to
+        /// <c>KawaGlintStageBuilder.SetAnglerPosition</c> (which also moves
+        /// the illustrated Pono sprite itself), keeping this class a pure
+        /// consumer of an injected function rather than a caller of Rendering
+        /// APIs directly. Null-safe: a null hook simply leaves
+        /// <c>_stage.RodTipWorldPosition</c> at its Configure-time value,
+        /// matching this method's pre-§D-3 behavior.
+        /// </summary>
+        public Func<string, Vector3> RodTipResolver { get; set; }
 
         public int ConsecutiveMisses => _session != null ? _session.ConsecutiveMisses : 0;
 
@@ -295,6 +323,28 @@ namespace Pono.KawaGlint.Gameplay
             _actors.HideTargetFish();
             _hud.SetPhaseWord(PhaseWordIdle);
             _hud.SetNarration(NarrationIdle);
+
+            if (!string.IsNullOrEmpty(loc.BackgroundKey))
+            {
+                LocationBackgroundChanged?.Invoke(loc.BackgroundKey);
+
+                // §D-3: keep this controller's own _stage.RodTipWorldPosition
+                // copy (read fresh by BeginCast on every cast, see HandleTap)
+                // in sync with wherever Pono now sits, so a cast right after
+                // a location switch starts from the right place.
+                if (RodTipResolver != null)
+                {
+                    var newRodTip = RodTipResolver(loc.BackgroundKey);
+                    _stage = new KawaStageInfo(
+                        _stage.Root,
+                        _stage.WaterlineWorldY,
+                        _stage.WaterWorldRect,
+                        _stage.SkyWorldRect,
+                        _stage.SunViewportPosition,
+                        newRodTip,
+                        _stage.ShoreRightEdgeWorldX);
+                }
+            }
             return true;
         }
 

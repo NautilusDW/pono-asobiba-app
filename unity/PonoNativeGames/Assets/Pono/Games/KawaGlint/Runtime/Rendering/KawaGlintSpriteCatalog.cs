@@ -29,16 +29,19 @@ namespace Pono.KawaGlint.Rendering
     /// <c>fish_salmon</c> -&gt; <c>fish_sake_*</c> (さけ) and
     /// <c>treasure_boot</c> -&gt; <c>fish_nagagutsu_*</c> (ながぐつ).
     ///
-    /// The 10 sea-expansion species (KawaGlint 海拡張 実装契約 v1.0 §D)
-    /// are registered in <see cref="ShadowPaths"/>/<see cref="CatchPaths"/>
-    /// with their eventual art paths, but no art has been generated for them
-    /// yet -- <see cref="LoadFishShadow"/>/<see cref="LoadCatchArt"/>
+    /// The 10 sea-expansion species (KawaGlint 海拡張 実装契約 v1.0 §D) are
+    /// registered in <see cref="ShadowPaths"/>/<see cref="CatchPaths"/>.
+    /// Batch 1467-kawaglint-sea-depth-fishdex-art delivered catch art for
+    /// all 10 (and shadow art for <c>fish_unagi</c> only -- the other 9 sea
+    /// species remain shadow-less by design, since they only ever surface as
+    /// the single illustrated bite target, never as background ambient
+    /// fish) -- <see cref="LoadFishShadow"/>/<see cref="LoadCatchArt"/>
     /// transparently fall back to <see cref="KawaGlintProceduralFishArt"/>'s
     /// per-species procedural silhouette when the Resources lookup for a
     /// *known* id comes back empty (an *unknown* id is still a hard error,
-    /// unchanged). Once real art lands for a given species, dropping its PNG
-    /// into <c>Content/Resources/KawaGlint/Sprites/</c> makes the fallback
-    /// stop firing for that id with zero code changes here.
+    /// unchanged). Once shadow art lands for one of the remaining 9, dropping
+    /// its PNG into <c>Content/Resources/KawaGlint/Sprites/</c> makes the
+    /// fallback stop firing for that id with zero code changes here.
     /// </summary>
     public static class KawaGlintSpriteCatalog
     {
@@ -56,8 +59,9 @@ namespace Pono.KawaGlint.Rendering
             { "zarigani", "KawaGlint/Sprites/fish_zarigani_shadow" },
             { "fish_salmon", "KawaGlint/Sprites/fish_sake_shadow" }, // file name is "sake", not "salmon"
             { "treasure_boot", "KawaGlint/Sprites/fish_nagagutsu_shadow" }, // file name is "nagagutsu", not "boot"
-            // Sea-expansion species (§D-2): art not generated yet, so these
-            // paths currently always miss and fall back to
+            // Sea-expansion species (§D-2): batch 1467 delivered shadow art
+            // for fish_unagi only (see class doc) -- the remaining 9 paths
+            // below currently always miss and fall back to
             // KawaGlintProceduralFishArt below. Kept registered (rather than
             // omitted) so a future art drop-in needs no code change.
             { "fish_unagi", "KawaGlint/Sprites/fish_unagi_shadow" },
@@ -79,23 +83,26 @@ namespace Pono.KawaGlint.Rendering
             { "zarigani", "KawaGlint/Sprites/fish_zarigani_catch" },
             { "fish_salmon", "KawaGlint/Sprites/fish_sake_catch" }, // file name is "sake", not "salmon"
             { "treasure_boot", "KawaGlint/Sprites/fish_nagagutsu_catch" }, // file name is "nagagutsu", not "boot"
-            // Sea-expansion species (§D-2): see ShadowPaths comment above.
+            // Sea-expansion species (§D-2): batch 1467 delivered catch art
+            // for all 10 (see class doc); shadow art is fish_unagi-only
+            // (see ShadowPaths comment above).
             { "fish_unagi", "KawaGlint/Sprites/fish_unagi_catch" },
             { "fish_aji", "KawaGlint/Sprites/fish_aji_catch" },
             { "fish_ebi", "KawaGlint/Sprites/fish_ebi_catch" },
             { "fish_karei", "KawaGlint/Sprites/fish_karei_catch" },
-            { "hitode", "KawaGlint/Sprites/fish_hitode_catch" },
-            { "treasure_kaigara", "KawaGlint/Sprites/fish_kaigara_catch" }, // file base is "kaigara", not "treasure_kaigara"
+            { "hitode", "KawaGlint/Sprites/hitode_catch" }, // file base is "hitode_catch", not "fish_hitode_catch"
+            { "treasure_kaigara", "KawaGlint/Sprites/treasure_kaigara_catch" }, // batch 1467 delivered the full id as the file base, not "kaigara"
             { "fish_iwashi", "KawaGlint/Sprites/fish_iwashi_catch" },
             { "fish_tai", "KawaGlint/Sprites/fish_tai_catch" },
             { "fish_ika", "KawaGlint/Sprites/fish_ika_catch" },
             { "fish_maguro", "KawaGlint/Sprites/fish_maguro_catch" },
         };
 
-        // Sea-expansion location background art (§D-2). No caller passes a
-        // non-null key yet -- KawaGlintStageBuilder still always calls the
-        // parameterless LoadBackground() -- this exists only as the receiving
-        // end for a future per-location art integration task.
+        // Sea-expansion location background art (§D-2). Keyed by
+        // TsuriLocationData.BackgroundKey; KawaGlintStageBuilder resolves the
+        // active location's key through LoadBackground(string) both at
+        // initial Build() and again via SetBackground() on every
+        // TrySetLocation switch (see KawaGlintStageBuilder/KawaGlintBootstrap).
         private static readonly Dictionary<string, string> BackgroundPaths = new Dictionary<string, string>
         {
             { "bg_tsuri_river_kakou", "KawaGlint/Sprites/bg_tsuri_river_kakou" },
@@ -103,6 +110,23 @@ namespace Pono.KawaGlint.Rendering
             { "bg_tsuri_sea_iwaba", "KawaGlint/Sprites/bg_tsuri_sea_iwaba" },
             { "bg_tsuri_sea_oki", "KawaGlint/Sprites/bg_tsuri_sea_oki" },
         };
+
+        // Seaweed/hiding-prop decor art (batch 1467, §D-3 depth dressing).
+        // Keys are exactly the delivered file base names (no species-id
+        // indirection needed -- decor isn't keyed by TsuriFishData at all).
+        // Placement (sway animation, sorting order, which decor appears at
+        // which location/niche) is a later integration task; this catalog
+        // only loads the art.
+        private static readonly HashSet<string> DecorKeys = new HashSet<string>
+        {
+            "kawa_weed_01", "kawa_weed_02", "kawa_weed_03",
+            "kawa_rock_01", "kawa_rock_02",
+            "kawa_log_01",
+            "umi_kelp_01", "umi_kelp_02", "umi_kelp_03",
+            "umi_coral_01", "umi_coral_02",
+            "umi_rock_01", "umi_rock_02",
+        };
+        private const string DecorPathPrefix = "KawaGlint/Sprites/Decor/";
 
         private static readonly Dictionary<string, Sprite> Sprites = new Dictionary<string, Sprite>();
 
@@ -169,12 +193,13 @@ namespace Pono.KawaGlint.Rendering
         }
 
         /// <summary>
-        /// Location-keyed background art (§D-2). Falls back to the shared
+        /// Location-keyed background art (§D-2), e.g.
+        /// <c>TsuriLocationData.BackgroundKey</c>. Falls back to the shared
         /// river cross-section (<see cref="LoadBackground()"/>) when
-        /// <paramref name="backgroundKey"/> is null/unmapped/unresolved --
-        /// every location renders that same background today, so this
-        /// overload currently has no caller; it exists purely as the receiving
-        /// end for a future per-location art integration task.
+        /// <paramref name="backgroundKey"/> is null/unmapped/unresolved (this
+        /// is also exactly river_asase's own key, "bg_river_crosssection",
+        /// which is deliberately absent from <see cref="BackgroundPaths"/> --
+        /// it always resolves through this same fallback).
         /// </summary>
         public static Sprite LoadBackground(string backgroundKey)
         {
@@ -187,6 +212,28 @@ namespace Pono.KawaGlint.Rendering
                 }
             }
             return LoadBackground();
+        }
+
+        /// <summary>
+        /// Seaweed/hiding-prop decor art for <paramref name="key"/> (a file
+        /// base name from <see cref="DecorKeys"/>, e.g. "kawa_weed_01").
+        /// Pivoted bottom-center so callers can root each piece on the
+        /// riverbed/seafloor at world Y directly, matching <see cref="LoadAngler"/>'s
+        /// convention for surface-anchored art. Null for an unknown key or a
+        /// known key whose Resources asset hasn't been imported yet -- unlike
+        /// <see cref="LoadFishShadow"/>/<see cref="LoadCatchArt"/> there is no
+        /// procedural decor fallback, so callers should simply skip absent
+        /// decor rather than treat null as an error.
+        /// </summary>
+        public static Sprite LoadDecor(string key)
+        {
+            if (string.IsNullOrEmpty(key) || !DecorKeys.Contains(key))
+            {
+                Debug.LogError($"KawaGlint: unknown decor key '{key}'");
+                return null;
+            }
+
+            return LoadSprite(DecorPathPrefix + key, BottomCenterPivot, logMissing: false);
         }
 
         private static Sprite LoadSprite(string path, Vector2 pivot, bool logMissing = true)

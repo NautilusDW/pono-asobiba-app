@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Pono.KawaGlint.Rendering
@@ -64,6 +65,16 @@ namespace Pono.KawaGlint.Rendering
     /// procedural placeholders when the corresponding Resources asset is
     /// absent, so this class keeps working with zero .prefab/.mat/texture
     /// assets if the art hasn't been imported yet.
+    ///
+    /// On top of either backdrop path, <see cref="BuildDecor"/> (§D-4, batch
+    /// 1467's seaweed/hiding-prop "props" delivery) additively places each
+    /// location's own independently-swaying weed layer plus a few static
+    /// rock/coral/log accents -- some behind the fish-shadow sorting order
+    /// (background scenery), some in front of it (a "near" prop a fish can
+    /// visually swim behind). See the <c>DecorPlacement</c> table's own
+    /// comment for the per-location design rationale, and
+    /// <see cref="SetDecor"/> for the live location-switch counterpart to
+    /// <see cref="SetBackground"/>/<see cref="SetAnglerPosition"/>.
     /// </summary>
     public static class KawaGlintStageBuilder
     {
@@ -97,8 +108,10 @@ namespace Pono.KawaGlint.Rendering
         private const int SunGlowSortingOrder = 6;
         private const int CloudsSortingOrder = 8;
         private const int RiverbedSortingOrder = 10;
+        private const int DecorBackSortingOrder = 11; // §D-4 (batch 1467 depth dressing): above Riverbed(10)/BackgroundArt(2), below fish shadows (KawaGlintActorsBuilder.FishSortingOrder=14) -- a "far" decor prop (weeds, a background rock/coral) always reads as scenery a swimming fish passes in front of.
         private const int PlantsSortingOrder = 12;
         private const int MotesSortingOrder = 18;
+        private const int DecorFrontSortingOrder = 20; // §D-4: above fish shadows(14) and Motes(18), below Surface(30, KawaGlintBootstrap.SurfaceSortingOrder)/ripple-rings/fishing-line/bobber(32-35)/Shore(40)/Angler(42) -- a "near" decor prop (a rock/log a fish can visually swim behind) genuinely occludes the fish layer without ever drawing over the water surface, line, or Pono.
         private const int ShoreSortingOrder = 40;
         private const int AnglerSortingOrder = 42;
 
@@ -131,8 +144,39 @@ namespace Pono.KawaGlint.Rendering
         // (tmp/alpha_pending/1458-kawaglint-fish-art/bg_metrics.json:
         // waterline_from_top01). Used to align the art's drawn water
         // surface to the shared WaterlineWorldY contract regardless of
-        // camera aspect -- see BuildBackgroundArt.
+        // camera aspect -- see BuildBackgroundArt. Also doubles as the
+        // fallback value in BackgroundWaterlineFromTop01 below for any
+        // backgroundKey that isn't one of the sea-expansion locations
+        // (river_asase's own key, "bg_river_crosssection", is deliberately
+        // absent from that dictionary for the same reason it's absent from
+        // KawaGlintSpriteCatalog.BackgroundPaths -- it always resolves here).
         private const float BgWaterlineFromTop01 = 0.4138157894736842f;
+
+        // Per-location background art's own baked-in waterline row (§D-2),
+        // measured by the batch 1467-kawaglint-sea-depth-fishdex-art asset
+        // pipeline (tmp/alpha_pending/1467-kawaglint-sea-depth-fishdex-art/
+        // backgrounds/bg_metrics_locations.json: waterline_from_top01 per
+        // file) -- same role as BgWaterlineFromTop01 above, generalized to
+        // one value per TsuriLocationData.BackgroundKey. Resolved via
+        // ResolveWaterlineFromTop01, which falls back to
+        // BgWaterlineFromTop01 for a null/unmapped key.
+        private static readonly Dictionary<string, float> BackgroundWaterlineFromTop01 = new Dictionary<string, float>
+        {
+            { "bg_tsuri_river_kakou", 0.3862f },
+            { "bg_tsuri_sea_sunahama", 0.3961f },
+            { "bg_tsuri_sea_iwaba", 0.3941f },
+            { "bg_tsuri_sea_oki", 0.3763f },
+        };
+
+        private static float ResolveWaterlineFromTop01(string backgroundKey)
+        {
+            if (!string.IsNullOrEmpty(backgroundKey)
+                && BackgroundWaterlineFromTop01.TryGetValue(backgroundKey, out var value))
+            {
+                return value;
+            }
+            return BgWaterlineFromTop01;
+        }
 
         // Extra uniform scale on top of the strict cover-fit minimum, so
         // the refraction pass's underwater UV distortion never samples
@@ -159,13 +203,209 @@ namespace Pono.KawaGlint.Rendering
         private const float PonoRodTipU = 0.9605878423513694f;
         private const float PonoRodTipV = 0.7213541666666667f;
 
+        // Per-location Pono bottom-center world anchor (§D-3 placement),
+        // keyed exactly like BackgroundWaterlineFromTop01/BackgroundPaths.
+        // The single pono_angler_side.png art asset is reused unscaled at
+        // every location (batch 1467 delivered no location-specific Pono
+        // art), so only the ANCHOR moves -- picked per location by locating
+        // that background's own "seat" feature (pier deck / low tide rock /
+        // a small boat's low freeboard) in the delivered art:
+        //   bg_tsuri_sea_sunahama: wooden pier deck, right side, well above
+        //     the waterline (elevated walkway).
+        //   bg_tsuri_sea_iwaba: a low rock right at the shore's edge, right
+        //     side (the rocky cliff itself starts further right/up; this is
+        //     the lowest ledge, close to the water like river_asase's own
+        //     rocks).
+        //   bg_tsuri_sea_oki: beside the small distant rowboat, right of
+        //     center, close to the waterline (shallow freeboard) -- "deep
+        //     open, no floor by design" so this is a deliberate compromise,
+        //     not a literal seat.
+        // river_asase (null/"bg_river_crosssection") and river_kakou
+        // ("bg_tsuri_river_kakou") are BOTH deliberately absent: river_asase
+        // is the regression baseline and must resolve to AnglerArtBottomCenter
+        // unchanged, and river_kakou's own left-side dune/grass shoreline
+        // happens to already sit almost exactly where that same fallback
+        // anchor lands (verified against the delivered art), so no override
+        // is needed there either -- see ResolveAnglerAnchor.
+        private static readonly Dictionary<string, Vector3> AnglerAnchorByBackgroundKey = new Dictionary<string, Vector3>
+        {
+            { "bg_tsuri_sea_sunahama", new Vector3(4.14f, 2.85f, 0f) },
+            { "bg_tsuri_sea_iwaba", new Vector3(2.59f, 1.89f, 0f) },
+            { "bg_tsuri_sea_oki", new Vector3(4.20f, 2.03f, 0f) },
+        };
+
+        private static Vector3 ResolveAnglerAnchor(string backgroundKey)
+        {
+            if (!string.IsNullOrEmpty(backgroundKey)
+                && AnglerAnchorByBackgroundKey.TryGetValue(backgroundKey, out var anchor))
+            {
+                return anchor;
+            }
+            return AnglerArtBottomCenter;
+        }
+
+        // ---------------------------------------------------------------
+        // Decor / depth dressing (§D-4, batch 1467-kawaglint-sea-depth-fishdex-art
+        // "props" delivery): independently-swaying weed tufts plus a couple
+        // of static rock/coral/log accents per location, keyed exactly like
+        // BackgroundPaths/AnglerAnchorByBackgroundKey above. Unlike the
+        // background/angler art, decor is additive over EITHER the art
+        // background or the procedural placeholder path -- it is a new
+        // foreground/background dressing layer, not a replacement for
+        // anything -- so BuildDecor (see below) runs unconditionally in
+        // Build(), including for river_asase (this project's regression
+        // baseline): asase's own entry below is deliberately back-layer-only
+        // (see its own comment) so nothing it adds can visually change
+        // anything the pre-§D-4 baseline already drew, only add to it.
+        // ---------------------------------------------------------------
+
+        /// <summary>One decor prop instance: which art (<see cref="KawaGlintSpriteCatalog.LoadDecor"/> key), where, how big, and how it behaves.</summary>
+        private readonly struct DecorPlacement
+        {
+            public readonly string Key;
+            public readonly float WorldX;
+            public readonly float WorldHeight;
+
+            // true: sortingOrder = DecorFrontSortingOrder (drawn in front of
+            // fish shadows -- a "near" prop a fish can visually swim/hide
+            // behind). false: DecorBackSortingOrder (drawn behind fish
+            // shadows -- a "far" prop that always reads as background
+            // scenery, never occluding anything).
+            public readonly bool Foreground;
+
+            // true: registered with KawaGlintStageContent.RegisterPlant for
+            // the same per-instance independent sway animation the
+            // procedural water-plant blades use (see BuildPlants) -- used
+            // for every weed/kelp key. false: a single small randomized
+            // static tilt is applied once and never animated -- used for
+            // every rock/coral/log key (these do not sway).
+            public readonly bool Sway;
+
+            // Multiplied over the sprite's own colors; Color.white (opaque,
+            // untinted) for every prop except sea_oki's deliberately hazy,
+            // slightly-desaturated pair (see OkiHazeTint) -- sea_oki's
+            // DeepOpen niche is explicitly "no floor by design" (see
+            // AnglerAnchorByBackgroundKey's own comment), so its decor stays
+            // sparse and reads as distant rather than a false seafloor.
+            public readonly Color Tint;
+
+            public DecorPlacement(string key, float worldX, float worldHeight, bool foreground, bool sway)
+                : this(key, worldX, worldHeight, foreground, sway, Color.white)
+            {
+            }
+
+            public DecorPlacement(string key, float worldX, float worldHeight, bool foreground, bool sway, Color tint)
+            {
+                Key = key;
+                WorldX = worldX;
+                WorldHeight = worldHeight;
+                Foreground = foreground;
+                Sway = sway;
+                Tint = tint;
+            }
+        }
+
+        // river_asase's own key ("bg_river_crosssection") doubles as the
+        // fallback target for a null/unmapped backgroundKey (mirrors
+        // BackgroundPaths/ResolveWaterlineFromTop01's fallback convention),
+        // rather than being omitted like AnglerAnchorByBackgroundKey's
+        // river_asase entry -- decor needs its OWN asase-specific props
+        // (new dressing, not a shared placeholder), so it cannot reuse that
+        // other table's "omit = fall back to a shared constant" shape.
+        private const string DefaultDecorBackgroundKey = "bg_river_crosssection";
+
+        // Distant/hazy tint for sea_oki's sparse pair (see DecorPlacement.Tint doc).
+        private static readonly Color OkiHazeTint = new Color(0.74f, 0.83f, 0.92f, 0.82f);
+
+        private static readonly Dictionary<string, DecorPlacement[]> DecorPlacementsByBackgroundKey = new Dictionary<string, DecorPlacement[]>
+        {
+            {
+                // river_asase (regression baseline): back-layer only by
+                // design (see the class-level §D-4 comment) -- all three
+                // reed/weed variants (independent sway each) plus the big
+                // single boulder, positioned well clear of Pono's own -7.2
+                // corner.
+                DefaultDecorBackgroundKey, new[]
+                {
+                    new DecorPlacement("kawa_weed_01", -2.0f, 1.5f, foreground: false, sway: true),
+                    new DecorPlacement("kawa_weed_02", 1.4f, 1.0f, foreground: false, sway: true),
+                    new DecorPlacement("kawa_weed_03", -4.2f, 1.2f, foreground: false, sway: true),
+                    new DecorPlacement("kawa_rock_01", 0.0f, 0.9f, foreground: false, sway: false),
+                }
+            },
+            {
+                // river_kakou: sunset river mouth. The fallen log is this
+                // location's one "near" hiding prop -- per the batch 1467
+                // asset-mapping note, it stands in for a rock gap.
+                "bg_tsuri_river_kakou", new[]
+                {
+                    new DecorPlacement("kawa_log_01", 2.3f, 0.85f, foreground: true, sway: false),
+                    new DecorPlacement("kawa_weed_03", -1.0f, 1.6f, foreground: false, sway: true),
+                    new DecorPlacement("kawa_rock_02", 4.3f, 0.5f, foreground: false, sway: false),
+                }
+            },
+            {
+                // sea_sunahama: sandy pier. TsuriWorldData has zero
+                // RockCover spawns here, so no "near" hiding rock -- just
+                // sand-friendly kelp and one sun-bleached boulder, all back.
+                "bg_tsuri_sea_sunahama", new[]
+                {
+                    new DecorPlacement("umi_rock_01", -1.5f, 1.1f, foreground: false, sway: false),
+                    new DecorPlacement("umi_kelp_03", 1.2f, 1.0f, foreground: false, sway: true),
+                    new DecorPlacement("umi_kelp_01", -4.3f, 1.3f, foreground: false, sway: true),
+                }
+            },
+            {
+                // sea_iwaba: this project's RockCover-niche location -- the
+                // reef cluster is a genuine "near" hiding prop for
+                // fish_ika/fish_tai/fish_ebi (matches this niche's own
+                // pre-bite narration, "いわの かげで なにか うごいたよ…").
+                "bg_tsuri_sea_iwaba", new[]
+                {
+                    new DecorPlacement("umi_rock_02", -2.2f, 1.6f, foreground: true, sway: false),
+                    new DecorPlacement("umi_coral_01", 4.0f, 1.2f, foreground: false, sway: false),
+                    new DecorPlacement("umi_kelp_02", -4.6f, 1.3f, foreground: false, sway: true),
+                }
+            },
+            {
+                // sea_oki: open deep water off the boat. DeepOpen is
+                // explicitly "no floor by design" -- sparse, small, back
+                // only, hazed (OkiHazeTint) so it reads as distant rather
+                // than a false seafloor.
+                "bg_tsuri_sea_oki", new[]
+                {
+                    new DecorPlacement("umi_coral_02", -2.6f, 0.9f, foreground: false, sway: false, OkiHazeTint),
+                    new DecorPlacement("umi_kelp_02", 1.8f, 0.8f, foreground: false, sway: true, OkiHazeTint),
+                }
+            },
+        };
+
+        private static string ResolveDecorBackgroundKey(string backgroundKey)
+        {
+            if (!string.IsNullOrEmpty(backgroundKey) && DecorPlacementsByBackgroundKey.ContainsKey(backgroundKey))
+            {
+                return backgroundKey;
+            }
+            return DefaultDecorBackgroundKey;
+        }
+
         // Stock URP 2D shader (ships with the render pipeline, not a project
         // asset) — using it directly is what makes these sprites/particles
         // render correctly under the 2D Renderer without depending on any
         // Light2D being present in the scene, since it is the unlit variant.
         private const string SpriteUnlitShaderName = "Universal Render Pipeline/2D/Sprite-Unlit-Default";
 
-        public static KawaStageInfo Build(Transform parent, Camera camera)
+        /// <summary>
+        /// Builds the stage. <paramref name="backgroundKey"/> selects the
+        /// initial background art (see <c>TsuriLocationData.BackgroundKey</c>)
+        /// -- null (the default) resolves to river_asase's own background,
+        /// preserving this method's exact prior behavior for every existing
+        /// caller. Pass a non-null key to open directly on a sea-expansion
+        /// location's background; use <see cref="SetBackground"/> afterwards
+        /// to switch it live once the stage already exists (e.g. on a
+        /// TrySetLocation location change).
+        /// </summary>
+        public static KawaStageInfo Build(Transform parent, Camera camera, string backgroundKey = null)
         {
             if (parent == null)
             {
@@ -204,7 +444,7 @@ namespace Pono.KawaGlint.Rendering
             var spriteMaterial = CreateSharedMaterial("KawaGlint Sprite (Runtime)", texture: null);
             content.RegisterGeneratedAsset(spriteMaterial);
 
-            var backgroundArtSprite = KawaGlintSpriteCatalog.LoadBackground();
+            var backgroundArtSprite = KawaGlintSpriteCatalog.LoadBackground(backgroundKey);
             if (backgroundArtSprite != null)
             {
                 // The full-art background already contains sky, sun glow,
@@ -213,7 +453,9 @@ namespace Pono.KawaGlint.Rendering
                 // of any of those on top would double-draw them. Motes and
                 // the angler are unaffected (the art has neither) and stay
                 // below.
-                BuildBackgroundArt(root.transform, visibleRect, backgroundArtSprite, spriteMaterial);
+                var backgroundRenderer = BuildBackgroundArt(
+                    root.transform, visibleRect, backgroundArtSprite, spriteMaterial, ResolveWaterlineFromTop01(backgroundKey));
+                content.SetBackgroundArtRenderer(backgroundRenderer, visibleRect);
             }
             else
             {
@@ -226,7 +468,13 @@ namespace Pono.KawaGlint.Rendering
                 BuildShoreBank(content, root.transform, visibleRect, spriteMaterial);
             }
 
-            var rodTipWorldPosition = BuildAngler(content, root.transform, spriteMaterial);
+            // §D-4: additive over either path above (art or procedural) --
+            // see the Decor placement table's class-level comment for why
+            // this call is unconditional rather than living inside the
+            // if/else.
+            BuildDecor(content, root.transform, waterRect, spriteMaterial, backgroundKey, random);
+
+            var rodTipWorldPosition = BuildAngler(content, root.transform, spriteMaterial, backgroundKey);
 
             var particleTexture = CreateSoftCircleTexture();
             content.RegisterGeneratedAsset(particleTexture);
@@ -389,7 +637,25 @@ namespace Pono.KawaGlint.Rendering
         // given Build() call.
         // ---------------------------------------------------------------
 
-        private static void BuildBackgroundArt(Transform parent, Rect visibleRect, Sprite sprite, Material material)
+        private static SpriteRenderer BuildBackgroundArt(
+            Transform parent, Rect visibleRect, Sprite sprite, Material material, float waterlineFromTop01)
+        {
+            var renderer = CreateSpriteRendererObject(
+                "BackgroundArt", parent, sprite, material, BackgroundArtSortingOrder, Vector3.zero);
+            ApplyBackgroundArt(renderer, visibleRect, sprite, waterlineFromTop01);
+            return renderer;
+        }
+
+        /// <summary>
+        /// (Re)fits <paramref name="renderer"/> to display <paramref name="sprite"/>
+        /// cover-fit + waterline-aligned within <paramref name="visibleRect"/>,
+        /// per <paramref name="waterlineFromTop01"/> (that sprite's own
+        /// baked-in waterline row, see BackgroundWaterlineFromTop01). Shared
+        /// by the initial BuildBackgroundArt call and <see cref="SetBackground"/>'s
+        /// live location-switch swap so both go through the exact same
+        /// cover-fit/alignment math.
+        /// </summary>
+        private static void ApplyBackgroundArt(SpriteRenderer renderer, Rect visibleRect, Sprite sprite, float waterlineFromTop01)
         {
             // Cover-fit + waterline alignment, uniform scale only -- the
             // art's own aspect ratio (~1.7684, not a clean 16:9) is
@@ -402,8 +668,8 @@ namespace Pono.KawaGlint.Rendering
             var below = Mathf.Max(0f, WaterlineWorldY - visibleRect.yMin);
             var s = Mathf.Max(
                 visibleRect.width / size.x,
-                above / (size.y * BgWaterlineFromTop01),
-                below / (size.y * (1f - BgWaterlineFromTop01)))
+                above / (size.y * waterlineFromTop01),
+                below / (size.y * (1f - waterlineFromTop01)))
                 * BackgroundArtOversampleFactor;
 
             // Anchors the art's own measured waterline row (bg_metrics.json,
@@ -411,12 +677,48 @@ namespace Pono.KawaGlint.Rendering
             // in water surface lines up with KawaSurfaceBand/refraction
             // regardless of camera aspect -- computed from camera.aspect via
             // visibleRect, never a hardcoded 16:9 assumption.
-            var centerY = WaterlineWorldY - (0.5f - BgWaterlineFromTop01) * size.y * s;
-            var position = new Vector3(visibleRect.center.x, centerY, 0f);
+            var centerY = WaterlineWorldY - (0.5f - waterlineFromTop01) * size.y * s;
 
-            var renderer = CreateSpriteRendererObject(
-                "BackgroundArt", parent, sprite, material, BackgroundArtSortingOrder, position);
+            renderer.sprite = sprite;
+            renderer.transform.position = new Vector3(visibleRect.center.x, centerY, 0f);
             renderer.transform.localScale = new Vector3(s, s, 1f);
+        }
+
+        /// <summary>
+        /// Live location-switch entry point (§D-2): swaps an already-built
+        /// stage's background art to <paramref name="backgroundKey"/>'s art
+        /// (falling back to river_asase's background for a null/unmapped key
+        /// or a still-unimported Resources asset, exactly like
+        /// <see cref="KawaGlintSpriteCatalog.LoadBackground(string)"/>).
+        /// No-ops (logs nothing) if <paramref name="stage"/> was built while
+        /// running the procedural-placeholder path (no art imported at all)
+        /// -- the procedural sky/water/riverbed/plants are location-agnostic
+        /// by design and intentionally never swapped here. Only the
+        /// background art itself moves; every other module keys off the
+        /// fixed <see cref="WaterlineWorldY"/> contract, not this art, so
+        /// nothing else needs to be touched.
+        /// </summary>
+        public static void SetBackground(KawaStageInfo stage, string backgroundKey)
+        {
+            if (stage.Root == null)
+            {
+                return;
+            }
+
+            var content = stage.Root.GetComponent<KawaGlintStageContent>();
+            var renderer = content != null ? content.BackgroundArtRenderer : null;
+            if (renderer == null)
+            {
+                return;
+            }
+
+            var sprite = KawaGlintSpriteCatalog.LoadBackground(backgroundKey);
+            if (sprite == null)
+            {
+                return; // shouldn't happen -- LoadBackground always falls back to the default art
+            }
+
+            ApplyBackgroundArt(renderer, content.BackgroundVisibleRect, sprite, ResolveWaterlineFromTop01(backgroundKey));
         }
 
         // ---------------------------------------------------------------
@@ -843,15 +1145,15 @@ namespace Pono.KawaGlint.Rendering
         // position the fishing line/bobber should draw to.
         // ---------------------------------------------------------------
 
-        private static Vector3 BuildAngler(KawaGlintStageContent content, Transform parent, Material material)
+        private static Vector3 BuildAngler(KawaGlintStageContent content, Transform parent, Material material, string backgroundKey)
         {
             var artSprite = KawaGlintSpriteCatalog.LoadAngler();
             return artSprite != null
-                ? BuildAnglerArt(parent, artSprite, material)
+                ? BuildAnglerArt(content, parent, artSprite, material, backgroundKey)
                 : BuildAnglerPlaceholder(content, parent, material);
         }
 
-        private static Vector3 BuildAnglerArt(Transform parent, Sprite sprite, Material material)
+        private static Vector3 BuildAnglerArt(KawaGlintStageContent content, Transform parent, Sprite sprite, Material material, string backgroundKey)
         {
             // Uniform scale derived from a fixed world height only; width is
             // whatever the sprite's own aspect ratio makes it (never
@@ -862,17 +1164,71 @@ namespace Pono.KawaGlint.Rendering
 
             // Sprite pivot is bottom-center (0.5, 0), so the GameObject's
             // own world position IS the bottom-center anchor -- no extra
-            // offset math needed here.
+            // offset math needed here. anchor is location-dependent (§D-3,
+            // see AnglerAnchorByBackgroundKey/ResolveAnglerAnchor) --
+            // river_asase/river_kakou fall back to the original
+            // AnglerArtBottomCenter constant, preserving this method's exact
+            // prior behavior for those two locations.
+            var anchor = ResolveAnglerAnchor(backgroundKey);
             var renderer = CreateSpriteRendererObject(
-                "Angler", parent, sprite, material, AnglerSortingOrder, AnglerArtBottomCenter);
+                "Angler", parent, sprite, material, AnglerSortingOrder, anchor);
             renderer.transform.localScale = new Vector3(scale, scale, 1f);
+
+            // Recorded so SetAnglerPosition (a later TrySetLocation switch)
+            // can reposition this same renderer + recompute its rod tip
+            // without rebuilding the stage, exactly mirroring
+            // BackgroundArtRenderer/SetBackground's own live-swap pattern.
+            content.SetAnglerRenderer(renderer, worldWidth);
 
             // Rod-tip loop position derived from the measured UV anchor
             // (pono_anchor.json, module A, batch 1458) rather than a
             // hand-picked world constant, so the fishing line/bobber always
-            // line up with wherever the drawn rod actually points.
-            return AnglerArtBottomCenter
+            // line up with wherever the drawn rod actually points. The UV
+            // offset itself is intrinsic to the art (never the background),
+            // so it is added to whichever anchor this location resolved to.
+            return anchor
                 + new Vector3((PonoRodTipU - 0.5f) * worldWidth, PonoRodTipV * AnglerArtWorldHeight, 0f);
+        }
+
+        /// <summary>
+        /// Live location-switch entry point (§D-3): repositions an
+        /// already-built stage's illustrated Pono sprite to
+        /// <paramref name="backgroundKey"/>'s own anchor (see
+        /// <see cref="AnglerAnchorByBackgroundKey"/>/<see cref="ResolveAnglerAnchor"/>)
+        /// and recomputes the rod-tip world position from the same fixed
+        /// UV offset <see cref="BuildAnglerArt"/> used (that offset is
+        /// intrinsic to the art itself, not the background, so it never
+        /// needs to change). Returns the new rod-tip position so callers can
+        /// forward it to whatever else caches it (KawaGlintActorsController's
+        /// fishing-line anchor, KawaGlintGameController's own
+        /// <c>_stage.RodTipWorldPosition</c> copy).
+        ///
+        /// No-ops and returns <paramref name="fallbackRodTip"/> unchanged if
+        /// <paramref name="stage"/>'s angler was built on the
+        /// procedural-placeholder path (no art imported at all) -- that
+        /// placeholder is location-agnostic by design and intentionally
+        /// never repositioned here, exactly like <see cref="SetBackground"/>'s
+        /// own no-op for that same path.
+        /// </summary>
+        public static Vector3 SetAnglerPosition(KawaStageInfo stage, string backgroundKey, Vector3 fallbackRodTip)
+        {
+            if (stage.Root == null)
+            {
+                return fallbackRodTip;
+            }
+
+            var content = stage.Root.GetComponent<KawaGlintStageContent>();
+            var renderer = content != null ? content.AnglerRenderer : null;
+            if (renderer == null)
+            {
+                return fallbackRodTip;
+            }
+
+            var anchor = ResolveAnglerAnchor(backgroundKey);
+            renderer.transform.position = anchor;
+
+            return anchor
+                + new Vector3((PonoRodTipU - 0.5f) * content.AnglerWorldWidth, PonoRodTipV * AnglerArtWorldHeight, 0f);
         }
 
         private static Vector3 BuildAnglerPlaceholder(KawaGlintStageContent content, Transform parent, Material material)
@@ -948,6 +1304,146 @@ namespace Pono.KawaGlint.Rendering
             texture.SetPixels32(pixels);
             texture.Apply(false, false);
             return texture;
+        }
+
+        // ---------------------------------------------------------------
+        // Decor / depth dressing (§D-4) — see the DecorPlacement table's
+        // class-level comment above for the design rationale. Builds EVERY
+        // location's container up front (not just the current one) so a
+        // later live location switch (SetDecor) only has to toggle
+        // GameObject.SetActive on already-built containers, exactly like
+        // KawaGlintStageContent's own doc comment on RegisterDecorContainer
+        // explains -- no destroy/rebuild, and the sway animation registered
+        // below keeps harmlessly ticking on inactive containers too.
+        // ---------------------------------------------------------------
+
+        private static void BuildDecor(
+            KawaGlintStageContent content,
+            Transform parent,
+            Rect waterRect,
+            Material material,
+            string backgroundKey,
+            System.Random random)
+        {
+            var activeKey = ResolveDecorBackgroundKey(backgroundKey);
+            foreach (var entry in DecorPlacementsByBackgroundKey)
+            {
+                var containerGo = new GameObject($"Decor_{entry.Key}");
+                containerGo.transform.SetParent(parent, false);
+
+                var placements = entry.Value;
+                for (var i = 0; i < placements.Length; i++)
+                {
+                    BuildDecorInstance(content, containerGo.transform, waterRect, material, placements[i], i, random);
+                }
+
+                // Inactive containers still get their sway registered (see
+                // BuildDecorInstance) and their sprites loaded -- both are
+                // harmless/cheap while hidden, and it means SetDecor never
+                // needs to lazily build anything on a first switch to that
+                // location.
+                containerGo.SetActive(entry.Key == activeKey);
+                content.RegisterDecorContainer(entry.Key, containerGo);
+            }
+        }
+
+        private static void BuildDecorInstance(
+            KawaGlintStageContent content,
+            Transform parent,
+            Rect waterRect,
+            Material material,
+            DecorPlacement placement,
+            int index,
+            System.Random random)
+        {
+            var sprite = KawaGlintSpriteCatalog.LoadDecor(placement.Key);
+            if (sprite == null)
+            {
+                // LoadDecor has no procedural fallback by design (see its
+                // own doc comment) -- a not-yet-imported key is simply
+                // skipped rather than treated as an error or drawing a
+                // placeholder.
+                return;
+            }
+
+            // Fixed world height, width derived from the sprite's own
+            // aspect ratio via a single uniform scale -- identical
+            // never-stretch recipe to BuildAnglerArt/BuildPlants.
+            var size = sprite.bounds.size;
+            var scale = placement.WorldHeight / size.y;
+
+            // Bottom-center pivot (LoadDecor's convention) sits each piece
+            // right on the seafloor/riverbed -- waterRect.yMin is used
+            // rather than a hardcoded world Y so this stays correct
+            // regardless of the camera's actual aspect/orthographicSize,
+            // with the same small lift-off-the-edge BuildStones uses.
+            var worldPosition = new Vector3(placement.WorldX, waterRect.yMin + 0.05f, 0f);
+
+            var sortingOrder = placement.Foreground ? DecorFrontSortingOrder : DecorBackSortingOrder;
+            var renderer = CreateSpriteRendererObject(
+                $"Decor{index}_{placement.Key}", parent, sprite, material, sortingOrder, worldPosition);
+            renderer.transform.localScale = new Vector3(scale, scale, 1f);
+            if (placement.Tint != Color.white)
+            {
+                renderer.color = placement.Tint;
+            }
+
+            if (placement.Sway)
+            {
+                // Same per-instance independent sway recipe as the
+                // procedural water-plant blades (BuildPlants) -- reusing
+                // KawaGlintStageContent.RegisterPlant/Update rather than a
+                // second animation system.
+                var baseRotation = NextFloat(random, -3f, 3f);
+                var swaySpeed = NextFloat(random, 0.5f, 1.1f);
+                var swayPhase = NextFloat(random, 0f, Mathf.PI * 2f);
+                content.RegisterPlant(renderer.transform, baseRotation, swaySpeed, swayPhase);
+            }
+            else
+            {
+                // Rocks/coral/log never sway -- a single small randomized
+                // tilt, applied once, keeps a row of them from reading as
+                // mechanically identical copies.
+                var angles = renderer.transform.localEulerAngles;
+                angles.z = NextFloat(random, -3f, 3f);
+                renderer.transform.localEulerAngles = angles;
+            }
+        }
+
+        /// <summary>
+        /// Live location-switch entry point (§D-4): switches an
+        /// already-built stage's active decor container to
+        /// <paramref name="backgroundKey"/>'s own set (falling back to
+        /// river_asase's for a null/unmapped key, exactly like
+        /// <see cref="ResolveDecorBackgroundKey"/> everywhere else) by
+        /// toggling <c>GameObject.SetActive</c> -- every location's decor
+        /// was already built by <see cref="BuildDecor"/>, so this never
+        /// destroys or (re)builds anything. No-op if <paramref name="stage"/>
+        /// has no <see cref="KawaGlintStageContent"/> (shouldn't happen for
+        /// any stage <see cref="Build"/> produced).
+        /// </summary>
+        public static void SetDecor(KawaStageInfo stage, string backgroundKey)
+        {
+            if (stage.Root == null)
+            {
+                return;
+            }
+
+            var content = stage.Root.GetComponent<KawaGlintStageContent>();
+            if (content == null)
+            {
+                return;
+            }
+
+            var activeKey = ResolveDecorBackgroundKey(backgroundKey);
+            foreach (var key in DecorPlacementsByBackgroundKey.Keys)
+            {
+                var container = content.GetDecorContainer(key);
+                if (container != null)
+                {
+                    container.SetActive(key == activeKey);
+                }
+            }
         }
 
         // ---------------------------------------------------------------

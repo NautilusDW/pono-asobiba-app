@@ -52,11 +52,52 @@ namespace Pono.KawaGlint.Rendering
         private readonly List<UnityEngine.Object> _generatedAssets = new List<UnityEngine.Object>();
         private readonly List<PlantEntry> _plants = new List<PlantEntry>();
         private readonly List<CloudEntry> _clouds = new List<CloudEntry>();
+        private readonly Dictionary<string, GameObject> _decorContainers = new Dictionary<string, GameObject>();
 
         private bool _hasSun;
         private SunEntry _sun;
         private float _cloudWrapMinX;
         private float _cloudWrapMaxX;
+
+        /// <summary>
+        /// The background art SpriteRenderer built by <c>KawaGlintStageBuilder.BuildBackgroundArt</c>
+        /// (null when the stage was built on the procedural-placeholder path,
+        /// i.e. no art has been imported at all). Exposed so
+        /// <c>KawaGlintStageBuilder.SetBackground</c> can swap it live on a
+        /// location change without rebuilding the whole stage.
+        /// </summary>
+        internal SpriteRenderer BackgroundArtRenderer { get; private set; }
+
+        /// <summary>The visible-world Rect the background art was originally cover-fit against (see <c>SetBackgroundArtRenderer</c>); reused by every later <c>SetBackground</c> swap so the cover-fit math is always computed against the same frame.</summary>
+        internal Rect BackgroundVisibleRect { get; private set; }
+
+        /// <summary>Records the background art renderer + the visible-world Rect it was built against (called once, from <c>KawaGlintStageBuilder.Build</c>). <paramref name="renderer"/> may be null (procedural-placeholder path).</summary>
+        internal void SetBackgroundArtRenderer(SpriteRenderer renderer, Rect visibleRect)
+        {
+            BackgroundArtRenderer = renderer;
+            BackgroundVisibleRect = visibleRect;
+        }
+
+        /// <summary>
+        /// The illustrated-Pono SpriteRenderer built by
+        /// <c>KawaGlintStageBuilder.BuildAnglerArt</c> (null when the stage
+        /// was built on the procedural-placeholder path, i.e. no art has
+        /// been imported at all). Exposed so
+        /// <c>KawaGlintStageBuilder.SetAnglerPosition</c> can reposition it
+        /// live on a location change without rebuilding the whole stage --
+        /// same role as <see cref="BackgroundArtRenderer"/>.
+        /// </summary>
+        internal SpriteRenderer AnglerRenderer { get; private set; }
+
+        /// <summary>The illustrated Pono sprite's own world-space width at its fixed <c>AnglerArtWorldHeight</c> scale (never reassigned per location); reused by every later <c>SetAnglerPosition</c> call to recompute the rod-tip offset.</summary>
+        internal float AnglerWorldWidth { get; private set; }
+
+        /// <summary>Records the angler renderer + its world width (called once, from <c>KawaGlintStageBuilder.Build</c>).</summary>
+        internal void SetAnglerRenderer(SpriteRenderer renderer, float worldWidth)
+        {
+            AnglerRenderer = renderer;
+            AnglerWorldWidth = worldWidth;
+        }
 
         /// <summary>Tracks a runtime-only asset (Texture2D/Sprite/Mesh/Material) for destruction in OnDestroy.</summary>
         internal void RegisterGeneratedAsset(UnityEngine.Object asset)
@@ -83,6 +124,31 @@ namespace Pono.KawaGlint.Rendering
                 SwaySpeed = swaySpeed,
                 SwayPhase = swayPhase
             });
+        }
+
+        /// <summary>
+        /// Records one location's decor container (§D-4, batch 1467
+        /// seaweed/hiding-prop art), keyed exactly like
+        /// <c>KawaGlintStageBuilder.DecorPlacementsByBackgroundKey</c>.
+        /// <c>KawaGlintStageBuilder.BuildDecor</c> builds EVERY location's
+        /// container up front (not just the initial one), so a later
+        /// <c>SetDecor</c> location switch only has to toggle
+        /// <c>GameObject.SetActive</c> on the already-built containers
+        /// rather than destroy/rebuild anything -- the per-instance sway
+        /// registered via <see cref="RegisterPlant"/> keeps animating
+        /// harmlessly on an inactive container too (a Transform property
+        /// write doesn't require its GameObject to be active), so nothing
+        /// needs to be un-registered on a switch either.
+        /// </summary>
+        internal void RegisterDecorContainer(string backgroundKey, GameObject container)
+        {
+            _decorContainers[backgroundKey] = container;
+        }
+
+        /// <summary>The decor container previously registered for <paramref name="backgroundKey"/> via <see cref="RegisterDecorContainer"/>, or null if that key was never registered.</summary>
+        internal GameObject GetDecorContainer(string backgroundKey)
+        {
+            return _decorContainers.TryGetValue(backgroundKey, out var container) ? container : null;
         }
 
         internal void RegisterCloud(Transform cloudTransform, float speed, float halfWidth)

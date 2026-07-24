@@ -453,6 +453,24 @@ namespace Pono.KawaGlint.Rendering
             _lineBaseWidth = lineRenderer != null ? lineRenderer.widthMultiplier : 1f;
         }
 
+        /// <summary>
+        /// Re-anchors the fishing line's start point (§D-3 location switch)
+        /// without touching the LineRenderer/buffer set up by
+        /// <see cref="SetFishingLine"/> -- called by
+        /// <c>KawaGlintBootstrap</c> (a different asmdef, hence public
+        /// rather than internal like this class's other Set*/Register*
+        /// members, which are only ever called from within this same
+        /// Rendering assembly by <c>KawaGlintActorsBuilder</c>) right after
+        /// <c>KawaGlintStageBuilder.SetAnglerPosition</c> moves the
+        /// illustrated Pono sprite itself, so the idle/attached line drawn
+        /// every frame (see <c>Update</c>'s <c>start = _rodTipWorldPosition</c>)
+        /// never visually detaches from wherever Pono now sits.
+        /// </summary>
+        public void SetRodTipWorldPosition(Vector3 rodTipWorldPosition)
+        {
+            _rodTipWorldPosition = rodTipWorldPosition;
+        }
+
         private void Update()
         {
             var time = Time.time;

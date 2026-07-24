@@ -28,6 +28,7 @@ namespace Pono.KawaGlint.Bootstrap
         private KawaGlintBootstrap _bootstrap;
         private string _outputPath;
         private string _mode;
+        private string _location;
         private float _delaySeconds = DefaultDelaySeconds;
         private bool _quitAfterCapture;
 
@@ -51,6 +52,18 @@ namespace Pono.KawaGlint.Bootstrap
             capture._mode = TryReadArgument("-ponoSpikeCaptureMode", out var mode)
                 ? mode.ToLowerInvariant()
                 : "full";
+            // §D-3 QA-only extension: opt-in (default null = river_asase,
+            // this project's regression baseline, exactly as before this
+            // argument existed) location override so a CLI capture pass can
+            // screenshot Pono's placement at each sea-expansion location
+            // without needing a real device tap through the location-select
+            // panel. TrySetLocation itself still runs every one of its usual
+            // guards (Idle-phase gate, TsuriWorldData normalization/unlock
+            // check) -- this only supplies the id, same as a real UI tap
+            // would.
+            capture._location = TryReadArgument("-ponoSpikeCaptureLocation", out var location)
+                ? location
+                : null;
             capture._quitAfterCapture = HasArgument("-ponoQuitAfterCapture");
             if (TryReadArgument("-ponoSpikeCaptureDelay", out var delay)
                 && float.TryParse(delay, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedDelay))
@@ -66,6 +79,11 @@ namespace Pono.KawaGlint.Bootstrap
             yield return null;
 
             ApplyMode(_mode);
+
+            if (!string.IsNullOrEmpty(_location) && _bootstrap != null && _bootstrap.GameController != null)
+            {
+                _bootstrap.GameController.TrySetLocation(_location);
+            }
 
             yield return new WaitForSecondsRealtime(_delaySeconds);
 
@@ -184,6 +202,7 @@ namespace Pono.KawaGlint.Bootstrap
             var lines = new[]
             {
                 $"mode={_mode}",
+                $"location={(string.IsNullOrEmpty(_location) ? "(default)" : _location)}",
                 $"delay={_delaySeconds.ToString("0.00", CultureInfo.InvariantCulture)}",
                 $"renderer={(_bootstrap != null ? _bootstrap.RendererLabel : "no-bootstrap")}",
                 $"refraction={EffectStateLabel(KawaGlintBootstrap.KawaEffect.Refraction, _refractionEnabled)}",

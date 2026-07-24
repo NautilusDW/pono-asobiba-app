@@ -1,4 +1,5 @@
 using System;
+using Pono.KawaGlint.Core;
 using Pono.KawaGlint.Gameplay;
 using Pono.KawaGlint.Rendering;
 using Pono.KawaGlint.UI;
@@ -83,7 +84,15 @@ namespace Pono.KawaGlint.Bootstrap
                 return;
             }
 
-            _stage = KawaGlintStageBuilder.Build(transform, _camera);
+            // Opens on TsuriWorldData's default location's own background key
+            // (river_asase -> "bg_river_crosssection") -- identical to the
+            // prior parameterless Build() call for every existing scene,
+            // since KawaGlintGameController.Configure independently
+            // normalizes _currentLocation to this same default (§D-2 initial
+            // wiring; TrySetLocation switches drive KawaGlintStageBuilder.SetBackground
+            // below instead of ever rebuilding the stage).
+            var initialLocation = TsuriWorldData.GetLocationById(TsuriWorldData.DefaultLocationId);
+            _stage = KawaGlintStageBuilder.Build(transform, _camera, initialLocation?.BackgroundKey);
 
             // KawaSurfaceBand.Create is a graceful no-op (returns null) when its shader is
             // missing/unsupported - every caller here (SetEffectEnabled/IsEffectAvailable) already
@@ -142,6 +151,20 @@ namespace Pono.KawaGlint.Bootstrap
                 gameControllerGo.transform.SetParent(transform, false);
                 _gameController = gameControllerGo.AddComponent<KawaGlintGameController>();
 
+                // §D-2: forwards every TrySetLocation switch to the stage's
+                // background art -- the only piece of a location change that
+                // touches Rendering, so it is wired here (Bootstrap) rather
+                // than inside KawaGlintGameController itself.
+                _gameController.LocationBackgroundChanged += OnLocationBackgroundChanged;
+
+                // §D-3: same wiring principle, extended to Pono's own
+                // location-specific placement -- repositions the illustrated
+                // Pono sprite AND the actors module's cached fishing-line
+                // anchor, then hands the recomputed rod tip back so
+                // KawaGlintGameController can fold it into its own _stage
+                // copy (see TrySetLocation/RodTipResolver's doc comments).
+                _gameController.RodTipResolver = ResolveRodTipForLocation;
+
                 // 海拡張 (実装契約v1.0 §C-3): fishdex ローカルストアを配線し、ロケーション
                 // 選択パネルを構築する。 fishdex の保存先は persistentDataPath 配下の
                 // 専用サブディレクトリ (TsuriDexStore がアトミック書込を担当)。
@@ -151,9 +174,39 @@ namespace Pono.KawaGlint.Bootstrap
 
                 var locationPanel = KawaGlintLocationSelectPanel.Build(transform);
                 locationPanel.Configure(_gameController, hud.InputSurface, fishdex.ZoneCatchCount);
+
+                // おさかなずかん 閲覧画面 (Phase C): データ層 (fishdex) は上で構築済みの
+                // インスタンスをそのまま読み取り専用で共有する -- KawaGlintFishdexService/
+                // TsuriDexStore は一切変更しない (UI 層のみの新設)。
+                var fishdexPanel = KawaGlintFishdexPanel.Build(transform);
+                // locationPanel is passed so KawaGlintFishdexPanel.Open can refuse to open on
+                // top of an already-open location-select dialog (see that method's own doc
+                // comment -- the two panels' Canvases have no other mutual-exclusion).
+                fishdexPanel.Configure(_gameController, hud.InputSurface, fishdex, locationPanel);
             }
 
             KawaGlintQaCapture.AttachIfRequested(gameObject, this);
+        }
+
+        private void OnLocationBackgroundChanged(string backgroundKey)
+        {
+            KawaGlintStageBuilder.SetBackground(_stage, backgroundKey);
+            // §D-4: keeps the depth-dressing decor (weeds/rocks/coral) in
+            // sync with whichever location's background/Pono anchor just
+            // switched -- every location's decor was already built by
+            // KawaGlintStageBuilder.BuildDecor, so this only toggles which
+            // container is active.
+            KawaGlintStageBuilder.SetDecor(_stage, backgroundKey);
+        }
+
+        private Vector3 ResolveRodTipForLocation(string backgroundKey)
+        {
+            var newRodTip = KawaGlintStageBuilder.SetAnglerPosition(_stage, backgroundKey, _stage.RodTipWorldPosition);
+            if (_actors != null)
+            {
+                _actors.SetRodTipWorldPosition(newRodTip);
+            }
+            return newRodTip;
         }
 
         /// <summary>Toggles one effect on/off at runtime (used by the QA capture harness and available for manual testing).</summary>
