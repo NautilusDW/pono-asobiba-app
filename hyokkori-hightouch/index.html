@@ -42,7 +42,7 @@ window.__showHyokkoriLoadError=function(){
 <script src="../common/menu.js"></script>
 <script src="../common/highscore.js"></script>
 
-<link rel="stylesheet" href="styles.css?v=20260724-1456">
+<link rel="stylesheet" href="styles.css?v=20260724-1459">
 </head>
 <body>
 
@@ -100,8 +100,8 @@ window.__showHyokkoriLoadError=function(){
            groundAnchorYをstack内で上へ戻して、遠近scale後も地面から浮かせない。 -->
       <span class="hh-ground-stack">
         <img class="hh-hideout hh-hideout-base hh-mound" alt="" draggable="false" aria-hidden="true">
-        <!-- 動物本体だけを窓でマスクする。月・光・加点表示は同じwrap内の
-             マスク外レイヤーに置き、右上や上端が途中で切れないようにする。 -->
+        <!-- 動物本体の最終的な下辺は、外装ごとの専用alpha maskを掛けた手前絵で隠す。
+             月・光・加点表示は同じwrap内のマスク外レイヤーに置き、欠けさせない。 -->
         <span class="hh-char-wrap">
           <span class="hh-window">
             <span class="hh-char-rise">
@@ -160,9 +160,9 @@ window.__showHyokkoriLoadError=function(){
   </div>
 </div>
 
-<script src="js/locations.js?v=20260724-1456"></script>
+<script src="js/locations.js?v=20260724-1459"></script>
 <script src="js/logic.js?v=20260723-1442"></script>
-<script src="js/game.js?v=20260724-1456" onerror="window.__showHyokkoriLoadError()"></script>
+<script src="js/game.js?v=20260724-1459" onerror="window.__showHyokkoriLoadError()"></script>
 <script>
 window.setTimeout(function(){
   if(!document.body.classList.contains('pono-game-ready'))window.__showHyokkoriLoadError();

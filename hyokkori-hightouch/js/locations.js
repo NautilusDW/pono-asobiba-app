@@ -54,19 +54,23 @@ var LOCATIONS = [
         groundAnchorY: 78.2,
         foregroundTop: 67,
         windowBottom: 36.26,
+        windowSafetyBottom: 28.58,
         charWidth: 52,
-        charLiftPct: 18.34
+        charLiftPct: 18.34,
+        foregroundMask: ASSET_BASE + 'mask_hideout_world_komorebi_far_v2_20260724.png'
       },
       near: {
         groundAnchorY: 75.3,
         foregroundTop: 64,
         windowBottom: 35.75,
+        windowSafetyBottom: 24.26,
         charWidth: 58,
-        charLiftPct: 19.56
+        charLiftPct: 19.56,
+        foregroundMask: ASSET_BASE + 'mask_hideout_world_komorebi_near_v2_20260724.png'
       }
     },
     slots: [
-      { x: 30.8, groundY: 52, depth: 0.82, hideout: 'far', rotate: 0 },
+      { x: 30.8, groundY: 54, depth: 0.82, hideout: 'far', rotate: 0 },
       { x: 78, groundY: 49, depth: 0.88, hideout: 'far', rotate: 0 },
       { x: 24, groundY: 70.5, depth: 0.93, hideout: 'near', rotate: 0 },
       { x: 76, groundY: 70, depth: 0.95, hideout: 'near', rotate: 0 },
@@ -92,15 +96,19 @@ var LOCATIONS = [
         groundAnchorY: 68.2,
         foregroundTop: 60,
         windowBottom: 28.87,
+        windowSafetyBottom: 40.33,
         charWidth: 48,
-        charLiftPct: 18.34
+        charLiftPct: 18.34,
+        foregroundMask: ASSET_BASE + 'mask_hideout_world_donguri_far_v2_20260724.png'
       },
       near: {
         groundAnchorY: 81,
         foregroundTop: 64,
         windowBottom: 42.72,
+        windowSafetyBottom: 35.02,
         charWidth: 52,
-        charLiftPct: 20.79
+        charLiftPct: 20.79,
+        foregroundMask: ASSET_BASE + 'mask_hideout_world_donguri_near_v2_20260724.png'
       }
     },
     slots: [
@@ -129,15 +137,19 @@ var LOCATIONS = [
         groundAnchorY: 69.8,
         foregroundTop: 64,
         windowBottom: 27.36,
+        windowSafetyBottom: 24.58,
         charWidth: 50,
-        charLiftPct: 17.12
+        charLiftPct: 17.12,
+        foregroundMask: ASSET_BASE + 'mask_hideout_world_mizube_far_v2_20260724.png'
       },
       near: {
         groundAnchorY: 66.8,
         foregroundTop: 56,
         windowBottom: 34.06,
+        windowSafetyBottom: 25.99,
         charWidth: 55,
-        charLiftPct: 19.56
+        charLiftPct: 19.56,
+        foregroundMask: ASSET_BASE + 'mask_hideout_world_mizube_near_v2_20260724.png'
       }
     },
     slots: [
@@ -165,15 +177,19 @@ var LOCATIONS = [
         groundAnchorY: 67.8,
         foregroundTop: 60,
         windowBottom: 28.92,
+        windowSafetyBottom: 34.42,
         charWidth: 50,
-        charLiftPct: 18.34
+        charLiftPct: 18.34,
+        foregroundMask: ASSET_BASE + 'mask_hideout_world_mushroom_far_20260724.png'
       },
       near: {
         groundAnchorY: 76.3,
         foregroundTop: 64,
         windowBottom: 36.79,
+        windowSafetyBottom: 30.59,
         charWidth: 55,
-        charLiftPct: 19.56
+        charLiftPct: 19.56,
+        foregroundMask: ASSET_BASE + 'mask_hideout_world_mushroom_near_20260724.png'
       }
     },
     slots: [
@@ -203,15 +219,19 @@ var LOCATIONS = [
         groundAnchorY: 65.8,
         foregroundTop: 60,
         windowBottom: 24.92,
+        windowSafetyBottom: 26.25,
         charWidth: 50,
-        charLiftPct: 18.34
+        charLiftPct: 18.34,
+        foregroundMask: ASSET_BASE + 'mask_hideout_world_moonlight_far_20260724.png'
       },
       near: {
         groundAnchorY: 67.9,
         foregroundTop: 61,
         windowBottom: 26.97,
+        windowSafetyBottom: 25.92,
         charWidth: 55,
-        charLiftPct: 19.56
+        charLiftPct: 19.56,
+        foregroundMask: ASSET_BASE + 'mask_hideout_world_moonlight_near_20260724.png'
       }
     },
     slots: [

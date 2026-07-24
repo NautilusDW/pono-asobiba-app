@@ -33,6 +33,16 @@ const EXPECTED_ASSETS = [
   'hideout_world_mushroom_near_20260724.png',
   'hideout_world_moonlight_far_20260724.png',
   'hideout_world_moonlight_near_20260724.png',
+  'mask_hideout_world_komorebi_far_v2_20260724.png',
+  'mask_hideout_world_komorebi_near_v2_20260724.png',
+  'mask_hideout_world_donguri_far_v2_20260724.png',
+  'mask_hideout_world_donguri_near_v2_20260724.png',
+  'mask_hideout_world_mizube_far_v2_20260724.png',
+  'mask_hideout_world_mizube_near_v2_20260724.png',
+  'mask_hideout_world_mushroom_far_20260724.png',
+  'mask_hideout_world_mushroom_near_20260724.png',
+  'mask_hideout_world_moonlight_far_20260724.png',
+  'mask_hideout_world_moonlight_near_20260724.png',
   'fx_highfive_burst.png',
   'fx_leaf_puff.png',
   'fx_overheat_swirl.png',
@@ -77,19 +87,23 @@ const LOCATIONS = [
         groundAnchorY: 78.2,
         foregroundTop: 67,
         windowBottom: 36.26,
+        windowSafetyBottom: 28.58,
         charWidth: 52,
         charLiftPct: 18.34,
+        foregroundMask: 'mask_hideout_world_komorebi_far_v2_20260724.png',
       },
       near: {
         groundAnchorY: 75.3,
         foregroundTop: 64,
         windowBottom: 35.75,
+        windowSafetyBottom: 24.26,
         charWidth: 58,
         charLiftPct: 19.56,
+        foregroundMask: 'mask_hideout_world_komorebi_near_v2_20260724.png',
       },
     },
     slots: [
-      { x: 30.8, groundY: 52, depth: 0.82, hideout: 'far', rotate: 0 },
+      { x: 30.8, groundY: 54, depth: 0.82, hideout: 'far', rotate: 0 },
       { x: 78, groundY: 49, depth: 0.88, hideout: 'far', rotate: 0 },
       { x: 24, groundY: 70.5, depth: 0.93, hideout: 'near', rotate: 0 },
       { x: 76, groundY: 70, depth: 0.95, hideout: 'near', rotate: 0 },
@@ -110,15 +124,19 @@ const LOCATIONS = [
         groundAnchorY: 68.2,
         foregroundTop: 60,
         windowBottom: 28.87,
+        windowSafetyBottom: 40.33,
         charWidth: 48,
         charLiftPct: 18.34,
+        foregroundMask: 'mask_hideout_world_donguri_far_v2_20260724.png',
       },
       near: {
         groundAnchorY: 81,
         foregroundTop: 64,
         windowBottom: 42.72,
+        windowSafetyBottom: 35.02,
         charWidth: 52,
         charLiftPct: 20.79,
+        foregroundMask: 'mask_hideout_world_donguri_near_v2_20260724.png',
       },
     },
     slots: [
@@ -142,15 +160,19 @@ const LOCATIONS = [
         groundAnchorY: 69.8,
         foregroundTop: 64,
         windowBottom: 27.36,
+        windowSafetyBottom: 24.58,
         charWidth: 50,
         charLiftPct: 17.12,
+        foregroundMask: 'mask_hideout_world_mizube_far_v2_20260724.png',
       },
       near: {
         groundAnchorY: 66.8,
         foregroundTop: 56,
         windowBottom: 34.06,
+        windowSafetyBottom: 25.99,
         charWidth: 55,
         charLiftPct: 19.56,
+        foregroundMask: 'mask_hideout_world_mizube_near_v2_20260724.png',
       },
     },
     slots: [
@@ -173,15 +195,19 @@ const LOCATIONS = [
         groundAnchorY: 67.8,
         foregroundTop: 60,
         windowBottom: 28.92,
+        windowSafetyBottom: 34.42,
         charWidth: 50,
         charLiftPct: 18.34,
+        foregroundMask: 'mask_hideout_world_mushroom_far_20260724.png',
       },
       near: {
         groundAnchorY: 76.3,
         foregroundTop: 64,
         windowBottom: 36.79,
+        windowSafetyBottom: 30.59,
         charWidth: 55,
         charLiftPct: 19.56,
+        foregroundMask: 'mask_hideout_world_mushroom_near_20260724.png',
       },
     },
     slots: [
@@ -205,15 +231,19 @@ const LOCATIONS = [
         groundAnchorY: 65.8,
         foregroundTop: 60,
         windowBottom: 24.92,
+        windowSafetyBottom: 26.25,
         charWidth: 50,
         charLiftPct: 18.34,
+        foregroundMask: 'mask_hideout_world_moonlight_far_20260724.png',
       },
       near: {
         groundAnchorY: 67.9,
         foregroundTop: 61,
         windowBottom: 26.97,
+        windowSafetyBottom: 25.92,
         charWidth: 55,
         charLiftPct: 19.56,
+        foregroundMask: 'mask_hideout_world_moonlight_near_20260724.png',
       },
     },
     slots: [
@@ -224,6 +254,14 @@ const LOCATIONS = [
     ],
   },
 ];
+const EXPECTED_FOREGROUND_MASKS = LOCATIONS.flatMap((location) => (
+  ['far', 'near'].map((variant) => location.hideoutLayouts[variant].foregroundMask)
+));
+
+function insetBottomPercent(clipPath) {
+  const values = String(clipPath).match(/-?\d+(?:\.\d+)?(?=%)/g);
+  return values && values.length >= 3 ? Number(values[2]) : Number.NaN;
+}
 
 function walkStateAt(routeCompletedRuns) {
   return {
@@ -315,6 +353,11 @@ test('5つの絵本世界・場所別の遠近開口・12種の動物を使い�
   expect(await page.locator('.hh-hole').evaluateAll((holes) =>
     holes.every((hole) => hole.tagName === 'BUTTON' && hole.getAttribute('type') === 'button'))).toBe(true);
   await expect(page.locator('#start-location')).toHaveText('1/5　こもれびの ひろば');
+  expect(EXPECTED_FOREGROUND_MASKS).toHaveLength(10);
+  expect(new Set(EXPECTED_FOREGROUND_MASKS).size).toBe(10);
+  for (const maskName of EXPECTED_FOREGROUND_MASKS) {
+    expect(EXPECTED_ASSETS).toContain(maskName);
+  }
 
   const assetResults = await page.evaluate(async ({ base, names }) => Promise.all(names.map(async (name) => {
     const response = await fetch(base + name, { cache: 'no-store' });
@@ -347,6 +390,76 @@ test('5つの絵本世界・場所別の遠近開口・12種の動物を使い�
   expect(assetResponses.filter(({ status }) => status >= 400)).toEqual([]);
   expect(consoleErrors).toEqual([]);
   expect(pageErrors).toEqual([]);
+});
+
+test('10種類の手前マスクは透過つきで、中央の前縁が水平直線ではない', async ({ page }) => {
+  await page.goto('/hyokkori-hightouch/index.html');
+  const contours = await page.evaluate(async ({ base, maskNames }) => Promise.all(
+    maskNames.map(async (name) => {
+      const image = new Image();
+      image.decoding = 'async';
+      await new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = () => reject(new Error(`${name} をデコードできません`));
+        image.src = base + name;
+      });
+      if (typeof image.decode === 'function') {
+        try { await image.decode(); } catch (_error) { /* onload済みならCanvasで監査可能 */ }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext('2d', { willReadFrequently: true });
+      context.drawImage(image, 0, 0);
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+      const startX = Math.floor(canvas.width * 0.28);
+      const endX = Math.ceil(canvas.width * 0.72);
+      const stepX = Math.max(1, Math.floor(canvas.width / 240));
+      const firstOpaqueY = [];
+      let transparentPixels = 0;
+      let opaquePixels = 0;
+
+      for (let y = 0; y < canvas.height; y += 1) {
+        for (let x = 0; x < canvas.width; x += stepX) {
+          const alpha = pixels[(y * canvas.width + x) * 4 + 3];
+          if (alpha <= 8) transparentPixels += 1;
+          if (alpha >= 247) opaquePixels += 1;
+        }
+      }
+      for (let x = startX; x <= endX; x += stepX) {
+        for (let y = 0; y < canvas.height; y += 1) {
+          if (pixels[(y * canvas.width + x) * 4 + 3] >= 128) {
+            firstOpaqueY.push(y);
+            break;
+          }
+        }
+      }
+
+      return {
+        name,
+        width: canvas.width,
+        height: canvas.height,
+        transparentPixels,
+        opaquePixels,
+        sampledColumns: firstOpaqueY.length,
+        distinctBoundaryRows: new Set(firstOpaqueY).size,
+        boundaryRange: firstOpaqueY.length
+          ? Math.max(...firstOpaqueY) - Math.min(...firstOpaqueY)
+          : 0,
+      };
+    }),
+  ), { base: ASSET_BASE, maskNames: EXPECTED_FOREGROUND_MASKS });
+
+  expect(contours).toHaveLength(10);
+  for (const contour of contours) {
+    expect(contour.width, `${contour.name}: 正方形幅`).toBe(contour.height);
+    expect(contour.transparentPixels, `${contour.name}: 透明域`).toBeGreaterThan(0);
+    expect(contour.opaquePixels, `${contour.name}: 不透明な手前域`).toBeGreaterThan(0);
+    expect(contour.sampledColumns, `${contour.name}: 中央域の前縁`).toBeGreaterThan(20);
+    expect(contour.distinctBoundaryRows, `${contour.name}: 水平線ではない前縁`).toBeGreaterThan(3);
+    expect(contour.boundaryRange, `${contour.name}: 前縁の上下変化`).toBeGreaterThan(4);
+  }
 });
 
 test('かえる・やまねの起き寝画像が透過つきでデコードでき、体が端で切れていない', async ({ page }) => {
@@ -614,7 +727,7 @@ test('5地点を単色カラコレにせず、色相の豊かさ・明るさ・�
   expect(correlations.reduce((sum, value) => sum + value, 0) / correlations.length).toBeLessThan(0.48);
 });
 
-test('5場所×4画面で地面アンカー・遠近・下側マスク・中央コンボ余白を保つ', async ({ page }) => {
+test('5場所×4画面で地面アンカー・遠近・専用輪郭マスク・中央コンボ余白を保つ', async ({ page }) => {
   test.setTimeout(70_000);
   await setupApp(page);
   await page.goto('/hyokkori-hightouch/index.html');
@@ -671,6 +784,7 @@ test('5場所×4画面で地面アンカー・遠近・下側マスク・中央�
             const foregroundRect = foreground.getBoundingClientRect();
             const baseRect = base.getBoundingClientRect();
             const hitRect = hole.getBoundingClientRect();
+            const foregroundStyle = getComputedStyle(foreground);
             const windowCenterX = windowRect.left + windowRect.width / 2;
             const windowCenterY = windowRect.top + windowRect.height / 2;
             const foregroundCenterX = foregroundRect.left + foregroundRect.width / 2;
@@ -682,6 +796,9 @@ test('5場所×4画面で地面アンカー・遠近・下側マスク・中央�
             const groundAnchorY = Number.parseFloat(holeStyle.getPropertyValue('--ground-anchor-y'));
             const foregroundTop = Number.parseFloat(holeStyle.getPropertyValue('--foreground-top'));
             const windowBottom = Number.parseFloat(holeStyle.getPropertyValue('--window-bottom'));
+            const windowSafetyBottom = Number.parseFloat(
+              holeStyle.getPropertyValue('--window-safety-bottom'),
+            );
             const charWidth = Number.parseFloat(holeStyle.getPropertyValue('--char-width'));
             const charLiftPct = Number.parseFloat(holeStyle.getPropertyValue('--char-ground-lift'));
             const slotX = Number.parseFloat(hole.style.getPropertyValue('--slot-x'));
@@ -691,8 +808,13 @@ test('5場所×4画面で地面アンカー・遠近・下側マスク・中央�
             const stackGroundX = stackRect.left + stackRect.width / 2;
             const stackGroundY = stackRect.top;
             const baseAnchorY = baseRect.top + baseRect.height * groundAnchorY / 100;
-            const foregroundVisibleTop = foregroundRect.top + foregroundRect.height * foregroundTop / 100;
-            const windowVisibleBottom = windowRect.top + windowRect.height * (1 - windowBottom / 100);
+            const foregroundMaskImage = (
+              foregroundStyle.maskImage && foregroundStyle.maskImage !== 'none'
+                ? foregroundStyle.maskImage
+                : foregroundStyle.webkitMaskImage
+            );
+            const foregroundMaskSize = foregroundStyle.maskSize || foregroundStyle.webkitMaskSize;
+            const foregroundMaskRepeat = foregroundStyle.maskRepeat || foregroundStyle.webkitMaskRepeat;
             return {
               tagName: hole.tagName,
               type: hole.getAttribute('type'),
@@ -702,8 +824,11 @@ test('5場所×4画面で地面アンカー・遠近・下側マスク・中央�
               hideoutVariant: hole.dataset.hideoutVariant,
               windowZ: Number(getComputedStyle(windowEl).zIndex),
               foregroundZ: Number(getComputedStyle(foreground).zIndex),
-              pointerEvents: getComputedStyle(foreground).pointerEvents,
-              foregroundClip: getComputedStyle(foreground).clipPath,
+              pointerEvents: foregroundStyle.pointerEvents,
+              foregroundClip: foregroundStyle.clipPath,
+              foregroundMaskImage,
+              foregroundMaskSize,
+              foregroundMaskRepeat,
               windowClip: getComputedStyle(windowEl).clipPath,
               stackTransformOriginY: Number.parseFloat(stackStyle.transformOrigin.split(' ')[1]),
               depthScale: Number.parseFloat(holeStyle.getPropertyValue('--depth-scale')),
@@ -711,6 +836,7 @@ test('5場所×4画面で地面アンカー・遠近・下側マスク・中央�
               groundAnchorY,
               foregroundTop,
               windowBottom,
+              windowSafetyBottom,
               charWidth,
               charLiftPct,
               slotX,
@@ -746,7 +872,6 @@ test('5場所×4画面で地面アンカー・遠近・下側マスク・中央�
                 baseCenterY - foregroundCenterY,
               ),
               baseForegroundWidthError: Math.abs(baseRect.width - foregroundRect.width),
-              maskSeamDelta: foregroundVisibleTop - windowVisibleBottom,
             };
           }),
         };
@@ -768,7 +893,12 @@ test('5場所×4画面で地面アンカー・遠近・下側マスク・中央�
         expect(hole.foregroundPath).toBe(hole.basePath);
         expect(hole.foregroundZ).toBeGreaterThan(hole.windowZ);
         expect(hole.pointerEvents).toBe('none');
-        expect(hole.foregroundClip).not.toBe('none');
+        expect(hole.foregroundClip).toBe('none');
+        expect(hole.foregroundMaskImage).toContain(
+          `${ASSET_BASE}${location.hideoutLayouts[slot.hideout].foregroundMask}`,
+        );
+        expect(hole.foregroundMaskSize).toBe('100% 100%');
+        expect(hole.foregroundMaskRepeat).toBe('no-repeat');
         expect(hole.windowClip).not.toBe('none');
         expect(hole.hitWidth).toBeGreaterThanOrEqual(44);
         expect(hole.hitHeight).toBeGreaterThanOrEqual(44);
@@ -794,6 +924,18 @@ test('5場所×4画面で地面アンカー・遠近・下側マスク・中央�
         expect(hole.groundAnchorY).toBe(location.hideoutLayouts[slot.hideout].groundAnchorY);
         expect(hole.foregroundTop).toBe(location.hideoutLayouts[slot.hideout].foregroundTop);
         expect(hole.windowBottom).toBe(location.hideoutLayouts[slot.hideout].windowBottom);
+        expect(hole.windowSafetyBottom).toBe(
+          location.hideoutLayouts[slot.hideout].windowSafetyBottom,
+        );
+        expect(hole.windowSafetyBottom).not.toBe(hole.windowBottom);
+        expect(
+          Math.abs(insetBottomPercent(hole.windowClip) - hole.windowSafetyBottom),
+          `${location.id} ${viewport.width}x${viewport.height} hole ${index}: 安全クリップ下端`,
+        ).toBeLessThan(0.001);
+        expect(
+          Math.abs(insetBottomPercent(hole.windowClip) - hole.windowBottom),
+          `${location.id} ${viewport.width}x${viewport.height} hole ${index}: 旧水平線を表示へ戻さない`,
+        ).toBeGreaterThan(0.001);
         expect(hole.charWidth).toBe(location.hideoutLayouts[slot.hideout].charWidth);
         expect(hole.charLiftPct).toBe(location.hideoutLayouts[slot.hideout].charLiftPct);
         expect(
@@ -820,10 +962,6 @@ test('5場所×4画面で地面アンカー・遠近・下側マスク・中央�
           hole.baseForegroundWidthError,
           `${location.id} ${viewport.width}x${viewport.height} hole ${index}: 前後画像の幅`,
         ).toBeLessThanOrEqual(0.5);
-        expect(
-          Math.abs(hole.maskSeamDelta),
-          `${location.id} ${viewport.width}x${viewport.height} hole ${index}: 動物窓と手前縁の接合`,
-        ).toBeLessThanOrEqual(1.5);
       }
 
       const far = geometry.holes.filter((hole) => hole.hideoutVariant === 'far');
@@ -1056,6 +1194,9 @@ test('右上の月・光・ボーナス表示を動物マスクの外へ分離�
         windowOverflow: getComputedStyle(windowEl).overflow,
         windowClip: getComputedStyle(windowEl).clipPath,
         windowBottom: Number.parseFloat(getComputedStyle(hole).getPropertyValue('--window-bottom')),
+        windowSafetyBottom: Number.parseFloat(
+          getComputedStyle(hole).getPropertyValue('--window-safety-bottom'),
+        ),
         characterMasked: windowEl.contains(rise) && windowEl.contains(character),
         effectsOutsideMask: effects.every((effect) => effect.parentElement === wrap && !windowEl.contains(effect)),
         moonOpacity,
@@ -1079,7 +1220,13 @@ test('右上の月・光・ボーナス表示を動物マスクの外へ分離�
     expect(geometry.wrapOverflow).toBe('visible');
     expect(geometry.windowOverflow).toBe('visible');
     expect(geometry.windowClip).toContain('-30%');
-    expect(geometry.windowClip).toContain(`${geometry.windowBottom}%`);
+    expect(geometry.windowSafetyBottom).not.toBe(geometry.windowBottom);
+    expect(
+      Math.abs(insetBottomPercent(geometry.windowClip) - geometry.windowSafetyBottom),
+    ).toBeLessThan(0.001);
+    expect(
+      Math.abs(insetBottomPercent(geometry.windowClip) - geometry.windowBottom),
+    ).toBeGreaterThan(0.001);
     expect(geometry.characterMasked).toBe(true);
     expect(geometry.effectsOutsideMask).toBe(true);
     expect(geometry.moonOpacity).toBe(1);

@@ -433,6 +433,8 @@ a:focus-visible {
   --ground-anchor-y: 75%;
   --foreground-top: 62%;
   --window-bottom: 35.5%;
+  --window-safety-bottom: 24%;
+  --foreground-mask: none;
   --char-width: 58%;
   --char-ground-lift: 18.34%;
 }
@@ -486,10 +488,25 @@ a:focus-visible {
 .hh-hideout-foreground {
   z-index: 4;
   /*
-   * 穴の暗部より下だけを前葉として重ねる。
-   * キャラ窓の下端とわずかに重ね、出現途中も下から透けないようにする。
+   * mask-image非対応ブラウザだけは従来の水平前景を安全なfallbackとして使う。
+   * 対応環境では各外装の実際の葉・土・石の輪郭を写した専用alpha maskへ切り替える。
    */
   clip-path: inset(var(--foreground-top) 0 0 0);
+}
+
+@supports ((-webkit-mask-image: linear-gradient(#000, #000)) or (mask-image: linear-gradient(#000, #000))) {
+  .hh-hideout-foreground {
+    clip-path: none;
+    -webkit-mask-image: var(--foreground-mask);
+    -webkit-mask-position: 0 0;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: 100% 100%;
+    mask-image: var(--foreground-mask);
+    mask-mode: alpha;
+    mask-position: 0 0;
+    mask-repeat: no-repeat;
+    mask-size: 100% 100%;
+  }
 }
 
 /*
@@ -515,11 +532,12 @@ a:focus-visible {
   inset: 0;
   z-index: 3;
   /*
-   * 下辺だけを固定マスクにする。上・左右は30%広げ、ボーナス画像内の星と
-   * キャラdrop-shadowまで欠けずに見せる。隠れ中の本体は104%下なので漏れない。
+   * 表示上の下辺は専用foreground maskの葉・土・石が作る。ここは外装の一番下から
+   * 動物が漏れない位置まで下げた安全クリップだけにし、直線を画面へ露出させない。
+   * 上・左右は30%広げ、ボーナス画像内の星とdrop-shadowを欠けさせない。
    */
   overflow: visible;
-  clip-path: inset(-30% -30% var(--window-bottom) -30%);
+  clip-path: inset(-30% -30% var(--window-safety-bottom) -30%);
 }
 
 .hh-char-rise {

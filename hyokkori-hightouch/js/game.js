@@ -83,7 +83,16 @@
 
   function locationFrameAssetUrls(location) {
     var hideouts = location.hideouts || {};
-    return [location.background, hideouts.far, hideouts.near].filter(Boolean);
+    var layouts = location.hideoutLayouts || {};
+    var farLayout = layouts.far || {};
+    var nearLayout = layouts.near || {};
+    return [
+      location.background,
+      hideouts.far,
+      hideouts.near,
+      farLayout.foregroundMask,
+      nearLayout.foregroundMask
+    ].filter(Boolean);
   }
 
   function locationAssetUrls(location) {
@@ -453,7 +462,14 @@
       node.style.setProperty('--ground-anchor-y', groundAnchorY + '%');
       node.style.setProperty('--foreground-top', (Number(hideoutLayout.foregroundTop) || 60) + '%');
       node.style.setProperty('--window-bottom', (Number(hideoutLayout.windowBottom) || 35.5) + '%');
+      node.style.setProperty('--window-safety-bottom', (Number(hideoutLayout.windowSafetyBottom) || 24) + '%');
       node.style.setProperty('--char-width', (Number(hideoutLayout.charWidth) || 58) + '%');
+      var foregroundMask = hideoutLayout.foregroundMask;
+      if (!foregroundMask) throw new Error('かくればしょの てまえマスクが ありません');
+      node.style.setProperty(
+        '--foreground-mask',
+        'url("' + foregroundMask.replace(/"/g, '\\"') + '")'
+      );
       var charLiftPct = Number(hideoutLayout.charLiftPct);
       if (isFinite(charLiftPct) && charLiftPct > 0 && charLiftPct < 50) {
         // stackは正方形。背景・外装と同じ基準にすることで、cqhのclamp差により

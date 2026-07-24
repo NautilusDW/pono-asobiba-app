@@ -1,5 +1,12 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2377: ひょっこりハイタッチの全5面far／near外装へ、実際の葉・土・石・根の
+// 前縁を写した10枚の専用alpha maskを追加。動物を水平線で切らず、同じ外装画像の
+// 手前部分を輪郭どおり重ねて隠す。従来の直線clipは外装下端の漏れ防止位置へ下げ、
+// 月・光・加点表示の上／左右は切らない。こもれび左上は背景の地面帯へ2%下げた。
+// hyokkori-hightouch/index.html の個別queryを1459へ更新。ゲーム個別ファイルと画像は
+// network-first配信のためCRITICAL_ASSETSには追加しない。play.html
+// PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2377)。
 // v2376: なぞなぞトレイン町面「ぴたっと停車」を、独自の接近レイヤー(#townDockApproachLayer、
 // v2375で新設)ごと廃止し、本物のworldXスクロール+本物の.tun.station駅ゲートへ全面移行。
 // buildWorld()にisTownDockStage()専用の最小分岐を追加し、既存の5駅ループと同じ
@@ -1062,7 +1069,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2376;
+const CACHE_VERSION = 2377;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
