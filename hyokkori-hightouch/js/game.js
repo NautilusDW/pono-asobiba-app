@@ -532,6 +532,11 @@
   var comboHudEl = document.getElementById('combo-hud');
   var comboCountEl = document.getElementById('combo-count');
   var comboStatusEl = document.getElementById('combo-status-sr');
+  var sleepMissFeedbackEl = document.getElementById('sleep-miss-feedback');
+  var sleepMissFeedbackTimer = 0;
+  var sleepMissFeedbackToken = 0;
+  var SLEEP_MISS_STATUS = 'ねてるよ。おきるまで まってね';
+  var SLEEP_MISS_FEEDBACK_MS = Math.round(L.SLEEP_PENALTY_LOCK * 1000);
   var reducedMotionQuery = null;
   try { reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)'); } catch (e) {}
 
@@ -577,7 +582,60 @@
   var resultCompletedLap = false;
   var nextWarmTimer = 0;
 
+  function clearSleepMissVisuals() {
+    if (sleepMissFeedbackEl) sleepMissFeedbackEl.classList.remove('is-visible');
+    for (var i = 0; i < holeRefs.length; i++) {
+      holeRefs[i].wrap.classList.remove('is-wobble', 'is-sleep-miss');
+      holeRefs[i].hole.classList.remove('is-sleep-target');
+    }
+  }
+
+  function hideSleepMissFeedback() {
+    sleepMissFeedbackToken += 1;
+    if (sleepMissFeedbackTimer) {
+      clearTimeout(sleepMissFeedbackTimer);
+      sleepMissFeedbackTimer = 0;
+    }
+    clearSleepMissVisuals();
+    if (comboStatusEl && comboStatusEl.textContent === SLEEP_MISS_STATUS) {
+      comboStatusEl.textContent = '';
+    }
+  }
+
+  function triggerSleepMissFeedback() {
+    if (sleepMissFeedbackTimer) clearTimeout(sleepMissFeedbackTimer);
+    var token = ++sleepMissFeedbackToken;
+    if (sleepMissFeedbackEl) {
+      sleepMissFeedbackEl.classList.remove('is-visible');
+      void sleepMissFeedbackEl.offsetWidth;
+      sleepMissFeedbackEl.classList.add('is-visible');
+    }
+    // applyTapResult() の直後に updateHud() がコンボ終了を反映するため、
+    // 同じタスクの最後で「ねてるよ」へ一本化して二重読み上げを避ける。
+    setTimeout(function () {
+      if (token !== sleepMissFeedbackToken || !comboStatusEl) return;
+      comboStatusEl.textContent = '';
+      requestAnimationFrame(function () {
+        if (token === sleepMissFeedbackToken && comboStatusEl) {
+          comboStatusEl.textContent = SLEEP_MISS_STATUS;
+        }
+      });
+    }, 0);
+    sleepMissFeedbackTimer = setTimeout(function () {
+      if (token !== sleepMissFeedbackToken) return;
+      sleepMissFeedbackTimer = 0;
+      // 非表示タブなどで上のrequestAnimationFrameだけ遅れた場合も、
+      // 終了後に古い読み上げ文言を復活させない。
+      sleepMissFeedbackToken += 1;
+      clearSleepMissVisuals();
+      if (comboStatusEl && comboStatusEl.textContent === SLEEP_MISS_STATUS) {
+        comboStatusEl.textContent = '';
+      }
+    }, SLEEP_MISS_FEEDBACK_MS);
+  }
+
   function resetGameState() {
+    hideSleepMissFeedback();
     state = L.createInitialState();
     holes = [];
     for (var i = 0; i < holeRefs.length; i++) {
@@ -617,13 +675,13 @@
     var refs = holeRefs[idx];
     if (!refs) return;
     delete refs.wrap.dataset.partner;
-    refs.wrap.classList.remove('is-visible', 'is-sleeping', 'is-hit', 'is-wobble', 'is-bonus');
+    refs.wrap.classList.remove('is-visible', 'is-sleeping', 'is-hit', 'is-wobble', 'is-sleep-miss', 'is-bonus');
     if (refs.bonusBadge) refs.bonusBadge.classList.remove('show');
     if (refs.scorePop) {
       refs.scorePop.classList.remove('show', 'is-bonus');
       refs.scorePop.textContent = '';
     }
-    refs.hole.classList.remove('is-locked');
+    refs.hole.classList.remove('is-locked', 'is-sleep-target');
     refs.hole.setAttribute('aria-label', 'おともだちが でてくる ばしょ');
   }
 
@@ -744,7 +802,8 @@
     refs.hole.setAttribute('aria-label', isBonus
       ? '30てんの ひかりモモンガ ハイタッチ'
       : (kind === 'awake' ? 'ハイタッチする おともだち' : 'ねている おともだち'));
-    refs.wrap.classList.remove('is-hit', 'is-wobble', 'is-bonus');
+    refs.hole.classList.remove('is-sleep-target');
+    refs.wrap.classList.remove('is-hit', 'is-wobble', 'is-sleep-miss', 'is-bonus');
     refs.wrap.classList.toggle('is-sleeping', kind === 'sleeping');
     refs.wrap.classList.toggle('is-bonus', !!isBonus);
     if (refs.bonusBadge) refs.bonusBadge.classList.toggle('show', !!isBonus);
@@ -762,7 +821,8 @@
     var refs = holeRefs[idx];
     if (refs) {
       refs.visualToken = (refs.visualToken || 0) + 1;
-      refs.wrap.classList.remove('is-visible', 'is-sleeping', 'is-bonus');
+      refs.wrap.classList.remove('is-visible', 'is-sleeping', 'is-wobble', 'is-sleep-miss', 'is-bonus');
+      refs.hole.classList.remove('is-sleep-target');
       if (refs.bonusBadge) refs.bonusBadge.classList.remove('show');
       refs.hole.setAttribute('aria-label', 'おともだちが でてくる ばしょ');
     }
@@ -777,7 +837,7 @@
     var epoch = refs.epoch;
     setTimeout(function () {
       if (epoch !== boardEpoch || (refs.visualToken || 0) !== token || (holes[idx] && holes[idx].occupant)) return;
-      refs.wrap.classList.remove('is-visible', 'is-sleeping', 'is-hit', 'is-bonus');
+      refs.wrap.classList.remove('is-visible', 'is-sleeping', 'is-hit', 'is-wobble', 'is-sleep-miss', 'is-bonus');
       if (refs.bonusBadge) refs.bonusBadge.classList.remove('show');
       refs.hole.setAttribute('aria-label', 'おともだちが でてくる ばしょ');
     // reduced-motion時は動かさず、加点表示を読める短い静止時間だけ残す。
@@ -916,11 +976,25 @@
 
   // ═══ 音 (WebAudio 直接合成。 pakupaku-catch と同型の簡易トーン) ═══
   var audioCtx = null;
-  function ensureAudio() {
-    if (audioCtx) { if (audioCtx.state === 'suspended') audioCtx.resume(); return; }
+  function resumeAudioContext(ctx) {
+    if (!ctx || (ctx.state !== 'suspended' && ctx.state !== 'interrupted')) return;
     try {
-      var Ctor = window.AudioContext || window.webkitAudioContext;
-      if (Ctor) audioCtx = new Ctor();
+      var resumeResult = ctx.resume();
+      if (resumeResult && typeof resumeResult.catch === 'function') {
+        resumeResult.catch(function () {});
+      }
+    } catch (e) {}
+  }
+  function ensureAudio() {
+    if (audioCtx && audioCtx.state === 'closed') audioCtx = null;
+    try {
+      if (!audioCtx) {
+        var Ctor = window.AudioContext || window.webkitAudioContext;
+        if (Ctor) audioCtx = new Ctor();
+      }
+      // iOS/WebKitは生成直後から suspended/interrupted の場合がある。
+      // 必ずユーザー操作の同じ呼び出し内でresumeを開始し、音だけの失敗は画面反応を止めない。
+      resumeAudioContext(audioCtx);
     } catch (e) {}
   }
   function tone(freq, startOffset, dur, type, gainVal) {
@@ -939,13 +1013,46 @@
       osc.stop(t0 + dur + 0.02);
     } catch (e) {}
   }
+  function slideTone(fromFreq, toFreq, startOffset, dur, gainVal) {
+    if (!audioCtx) return;
+    var osc = null;
+    var gain = null;
+    try {
+      var t0 = audioCtx.currentTime + (startOffset || 0);
+      var t1 = t0 + dur;
+      osc = audioCtx.createOscillator();
+      gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(fromFreq, t0);
+      osc.frequency.exponentialRampToValueAtTime(toFreq, t1);
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(gainVal, t0 + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t1);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.onended = function () {
+        try { osc.disconnect(); } catch (e) {}
+        try { gain.disconnect(); } catch (e2) {}
+      };
+      osc.start(t0);
+      osc.stop(t1 + 0.02);
+    } catch (e) {
+      try { if (osc) osc.disconnect(); } catch (e2) {}
+      try { if (gain) gain.disconnect(); } catch (e3) {}
+    }
+  }
   function playHitSound() { tone(660, 0, 0.08, 'triangle', 0.11); tone(880, 0.06, 0.1, 'triangle', 0.1); }
   function playBonusSound() {
     tone(784, 0, 0.10, 'triangle', 0.12);
     tone(1047, 0.07, 0.13, 'triangle', 0.11);
     tone(1319, 0.14, 0.16, 'triangle', 0.10);
   }
-  function playSleepSound() { tone(220, 0, 0.16, 'sine', 0.08); }
+  // 成功音の上昇2音と逆向きの、柔らかい下降2音。警報のような鋭さは避ける。
+  // 30ms遅らせ、iOSの短いハプティクス代替音と重なりすぎないようにする。
+  function playSleepSound() {
+    slideTone(392, 330, 0.03, 0.11, 0.075);
+    slideTone(294, 220, 0.17, 0.17, 0.085);
+  }
   function playWhiffSound() { tone(180, 0, 0.08, 'sine', 0.05); }
   function playFanfare() {
     [523, 659, 784, 1047, 1319].forEach(function (f, i) { tone(f, i * 0.11, 0.18, 'triangle', 0.13); });
@@ -1150,7 +1257,22 @@
       }
       case 'sleepPenalty': {
         var refsS = idx !== null ? holeRefs[idx] : null;
-        if (refsS) retriggerClass(refsS.wrap, 'is-wobble', 900);
+        if (idx !== null && holes[idx] && holes[idx].occupant) {
+          // 出現終了ぎりぎりのタップでも、1秒の案内途中で寝姿を消さない。
+          holes[idx].occupant.showUntil = Math.max(
+            holes[idx].occupant.showUntil,
+            state.elapsed + L.SLEEP_PENALTY_LOCK
+          );
+        }
+        if (refsS) {
+          retriggerClass(refsS.wrap, 'is-wobble', SLEEP_MISS_FEEDBACK_MS);
+          retriggerClass(refsS.wrap, 'is-sleep-miss', SLEEP_MISS_FEEDBACK_MS);
+          retriggerClass(refsS.hole, 'is-sleep-target', SLEEP_MISS_FEEDBACK_MS);
+        }
+        // 1秒の入力ロックを見た目でも共有し、直後の正しいタップが無反応に見えないようにする。
+        boardLockedUntil = Math.max(boardLockedUntil, state.inputLockUntil || 0);
+        updateBoardLockVisual();
+        triggerSleepMissFeedback();
         if (window.Haptics) window.Haptics.fire('gachaTurn3');
         playSleepSound();
         break;
@@ -1161,6 +1283,7 @@
         break;
       }
       case 'overheat': {
+        hideSleepMissFeedback();
         boardLockedUntil = state.time + L.OVERHEAT_LOCK;
         triggerOverheatBanner();
         if (window.Haptics) window.Haptics.fire('capsuleCrack');
@@ -1317,6 +1440,7 @@
     if (phase === 'result') return;
     phase = 'result';
     setBoardInteractive(false);
+    hideSleepMissFeedback();
     hideComboHud(true);
     advanceCompletedRunOnce();
     if (window.incrementStat) window.incrementStat('hyokkori_games', 1);

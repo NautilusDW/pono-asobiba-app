@@ -225,6 +225,66 @@ a:focus-visible {
   100% { opacity: 1; transform: scale(1) rotate(0); }
 }
 
+/*
+ * 寝ている子へのタップは、遠景の小さな吹き出しだけに頼らず中央でも知らせる。
+ * 箱は置かず、色だけでなく大きな×とかな文字を組み合わせて一瞬で区別する。
+ */
+#sleep-miss-feedback {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 735;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(1px, 1cqh, 8px);
+  width: min(76%, 430px);
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, -50%) scale(0.72);
+  text-align: center;
+  pointer-events: none;
+}
+
+#sleep-miss-feedback.is-visible {
+  visibility: visible;
+  animation: hh-sleep-miss-center 1s ease-out both;
+}
+
+.sleep-miss-mark {
+  color: var(--coral);
+  font-size: clamp(64px, 17vmin, 118px);
+  font-size: clamp(64px, 17cqh, 118px);
+  font-weight: 900;
+  line-height: 0.72;
+  -webkit-text-stroke: clamp(3px, 0.65cqh, 6px) var(--cream);
+  paint-order: stroke fill;
+  text-shadow:
+    0 4px 0 rgba(83, 62, 47, 0.28),
+    0 0 16px rgba(255, 250, 240, 0.92);
+}
+
+.sleep-miss-copy {
+  color: #fffdf2;
+  font-size: clamp(22px, 5.4vmin, 40px);
+  font-size: clamp(22px, 5.4cqh, 40px);
+  font-weight: 900;
+  line-height: 1;
+  -webkit-text-stroke: clamp(2px, 0.42cqh, 4px) var(--forest-ink);
+  paint-order: stroke fill;
+  text-shadow: 0 3px 7px rgba(31, 60, 43, 0.48);
+  white-space: nowrap;
+}
+
+@keyframes hh-sleep-miss-center {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.72); }
+  14% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+  25% { opacity: 1; transform: translate(-50%, -50%) scale(0.97); }
+  34%, 76% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -54%) scale(0.98); }
+}
+
 #hud .hud-timer.hud-low {
   color: #c9672f;
   background: rgba(255, 244, 218, 0.94);
@@ -446,6 +506,11 @@ a:focus-visible {
 
 .hh-hole.is-locked {
   opacity: 0.62;
+}
+
+/* ロック中も、いま触れた寝姿だけは明るく残して原因を結び付ける。 */
+.hh-hole.is-locked.is-sleep-target {
+  opacity: 1;
 }
 
 .hh-hideout,
@@ -782,6 +847,26 @@ a:focus-visible {
   0% { opacity: 0; transform: translateX(-50%) scale(0.58); }
   25%, 70% { opacity: 1; transform: translateX(-50%) scale(1); }
   100% { opacity: 0; transform: translateX(-50%) translateY(-8px) scale(1); }
+}
+
+/* 触れた寝姿を一度だけ穴へ沈め、月もしるしとして大きく反応させる。 */
+.hh-char-wrap.is-sleep-miss .hh-char-rise {
+  animation: hh-sleep-duck 0.56s ease-out;
+}
+
+@keyframes hh-sleep-duck {
+  0%, 100% { transform: translate(-50%, 0) scale(1); }
+  28%, 54% { transform: translate(-50%, 7%) scale(0.95); }
+}
+
+.hh-char-wrap.is-visible.is-sleeping.is-sleep-miss .hh-sleep-fx {
+  animation: hh-sleep-moon-alert 0.56s ease-out;
+}
+
+@keyframes hh-sleep-moon-alert {
+  0%, 100% { opacity: 1; transform: translateY(2%) rotate(-2deg) scale(1); }
+  36% { opacity: 1; transform: translateY(-5%) rotate(2deg) scale(1.24); }
+  68% { opacity: 1; transform: translateY(0) rotate(-1deg) scale(0.96); }
 }
 
 /* 空振りは小さな葉っぱの煙だけ。 */
@@ -1410,6 +1495,8 @@ a:focus-visible {
   .hh-char-wrap.is-visible:not(.is-sleeping) .hh-sparkle,
   .hh-char-wrap.is-sleeping .hh-char,
   .hh-char-wrap.is-visible.is-sleeping .hh-sleep-fx,
+  .hh-char-wrap.is-wobble .hh-char,
+  .hh-char-wrap.is-sleep-miss .hh-char-rise,
   #result-card .result-new,
   #result-card .result-pono.is-moon-flower,
   #landscape-notice .rotate-icon,
@@ -1441,6 +1528,13 @@ a:focus-visible {
     opacity: 1;
     transform: translateX(-50%) scale(1);
     animation: none;
+  }
+
+  #sleep-miss-feedback.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -50%) scale(1);
+    animation: none !important;
   }
 
   .hh-dust.is-active {

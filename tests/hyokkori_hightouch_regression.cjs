@@ -992,9 +992,9 @@ function mulberry32(seed) {
   assert.match(gameJs, /resolveHoleFromPoint\([^)]*\)\s*\{[\s\S]*?resolveVisibleCharacterFromPoint\(/, "DOMの穴判定より先に見えている動物を解決する");
   assert.match(gameJs, /imageRect\.width\s*\*\s*0\.12[\s\S]*?bestDistance/, "動物サイズに沿う余白と最短候補で隣穴の誤反応を防ぐ");
   assert.match(gameJs, /phase\s*!==\s*['"]playing['"]\s*\|\|\s*tutorialOpen\s*\|\|\s*boardEl\.hasAttribute\(\s*['"]inert['"]\s*\)/, "説明中・非操作中は救済判定を背後へ通さない");
-  for (const src of ["styles.css", "js/locations.js", "js/game.js"]) {
-    assert.match(indexHtml, new RegExp(`${src.replace(/[./]/g, "\\$&")}\\?v=20260724-1462`), `${src} は1462の地面配置・どんぐり手前縁版キャッシュトークンで読む`);
-  }
+  assert.match(indexHtml, /styles\.css\?v=20260724-1464/, "styles.css は1464の睡眠タップ反応版キャッシュトークンで読む");
+  assert.match(indexHtml, /js\/game\.js\?v=20260724-1464/, "game.js は1464の睡眠タップ反応版キャッシュトークンで読む");
+  assert.match(indexHtml, /js\/locations\.js\?v=20260724-1462/, "locations.js は1462の地面配置・どんぐり手前縁版を維持する");
 }
 
 // ── 11b. ボーナス出現・リアルタイムコンボ・最大記録UI ──────────────
@@ -1058,7 +1058,46 @@ function mulberry32(seed) {
   assert.match(stylesCss, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?#combo-hud\.is-slam\s+\.combo-core[\s\S]*?animation:\s*none\s*!important/, "うごきをへらす設定で文字スラムを停止する");
 }
 
-// ── 11c. 可変場所・シャッフル袋・さんぽ保存の実行時結線 ─────────────
+// ── 11c. 寝ている子への幼児向け失敗フィードバック ───────────────
+{
+  const feedbackTag = indexHtml.match(/<div\b[^>]*id=["']sleep-miss-feedback["'][^>]*>/);
+  assert.ok(feedbackTag, "寝ている子への中央フィードバックがある");
+  assert.match(feedbackTag[0], /aria-hidden=["']true["']/, "見える中央表示は読み上げを二重発火しない");
+  assert.match(indexHtml, /class=["']sleep-miss-mark["'][^>]*>×</, "色だけでなく大きな×で失敗を示す");
+  assert.match(indexHtml, /class=["']sleep-miss-copy["'][^>]*>ねてるよ</, "幼児向けの短いかな文言を表示する");
+
+  const feedbackRuleMatch = stylesCss.match(/#sleep-miss-feedback\s*\{([^}]*)\}/s);
+  assert.ok(feedbackRuleMatch, "中央睡眠フィードバックのCSS規則がある");
+  assert.match(feedbackRuleMatch[1], /top:\s*50%/, "睡眠フィードバックを画面中央へ置く");
+  assert.match(feedbackRuleMatch[1], /left:\s*50%/, "睡眠フィードバックを横中央へ置く");
+  assert.match(feedbackRuleMatch[1], /z-index:\s*735/, "中央コンボより手前へ出す");
+  assert.match(feedbackRuleMatch[1], /pointer-events:\s*none/, "失敗表示で次の操作面を塞がない");
+  assert.match(stylesCss, /\.sleep-miss-mark\s*\{[^}]*font-size:\s*clamp\(\s*64px\s*,/s, "×は短い画面でも64px以上にする");
+  assert.match(stylesCss, /#sleep-miss-feedback\.is-visible\s*\{[^}]*hh-sleep-miss-center/s, "約1秒の中央表示アニメーションを持つ");
+  assert.match(stylesCss, /\.hh-char-wrap\.is-sleep-miss\s+\.hh-char-rise/, "触れた寝姿を局所的にも反応させる");
+  assert.match(stylesCss, /\.is-sleeping\.is-sleep-miss\s+\.hh-sleep-fx/, "月のしるしも失敗時に反応させる");
+  assert.match(stylesCss, /\.hh-hole\.is-locked\.is-sleep-target\s*\{[^}]*opacity:\s*1/s, "触れた寝姿だけはロック中も明るく残す");
+  assert.match(stylesCss, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?#sleep-miss-feedback\.is-visible\s*\{[^}]*animation:\s*none\s*!important/s, "うごきを減らす設定でも中央表示を静止して残す");
+  assert.match(stylesCss, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.hh-char-wrap\.is-sleep-miss\s+\.hh-char-rise[\s\S]*?animation:\s*none\s*!important/s, "うごきを減らす設定では寝姿を沈めない");
+
+  assert.match(gameJs, /SLEEP_MISS_FEEDBACK_MS\s*=\s*Math\.round\(L\.SLEEP_PENALTY_LOCK\s*\*\s*1000\)/, "中央表示時間を1秒入力ロックと同期する");
+  assert.match(gameJs, /case\s+['"]sleepPenalty['"][\s\S]*?showUntil\s*=\s*Math\.max\([\s\S]*?state\.elapsed\s*\+\s*L\.SLEEP_PENALTY_LOCK/s, "出現終了ぎりぎりでも寝姿を案内終了まで残す");
+  assert.match(gameJs, /case\s+['"]sleepPenalty['"][\s\S]*?is-sleep-miss[\s\S]*?is-sleep-target[\s\S]*?boardLockedUntil\s*=\s*Math\.max\([\s\S]*?state\.inputLockUntil[\s\S]*?triggerSleepMissFeedback\(\)/s, "局所反応・対象強調・見える入力ロック・中央表示を同期する");
+  assert.match(gameJs, /function\s+triggerSleepMissFeedback\(\)[\s\S]*?SLEEP_MISS_STATUS[\s\S]*?SLEEP_MISS_FEEDBACK_MS/s, "中央表示と読み上げを専用タイマーで解除する");
+  assert.match(gameJs, /sleepMissFeedbackTimer\s*=\s*setTimeout\([\s\S]*?sleepMissFeedbackToken\s*\+=\s*1[\s\S]*?clearSleepMissVisuals\(\)/s, "終了後に遅い読み上げフレームを無効化し局所反応も一括解除する");
+  assert.match(gameJs, /function\s+resetGameState\(\)\s*\{\s*hideSleepMissFeedback\(\)/, "再挑戦時に失敗表示を消す");
+  assert.match(gameJs, /function\s+finishGame\(\)[\s\S]*?hideSleepMissFeedback\(\)[\s\S]*?hideComboHud/s, "結果へ進む前に失敗表示を消す");
+  assert.match(gameJs, /case\s+['"]overheat['"]\s*:\s*\{[\s\S]*?hideSleepMissFeedback\(\)/, "連打案内へ切り替わる時に睡眠表示を重ねない");
+  assert.match(gameJs, /function\s+retractHole\([^)]*\)[\s\S]*?is-wobble[\s\S]*?is-sleep-miss/s, "寝姿が引っ込む時に局所表示だけを空中へ残さない");
+
+  assert.match(gameJs, /function\s+resumeAudioContext\([^)]*\)[\s\S]*?['"]suspended['"][\s\S]*?['"]interrupted['"][\s\S]*?\.resume\(\)/s, "WebKitの生成直後suspended/interrupted AudioContextを同じ操作内で再開する");
+  assert.match(gameJs, /function\s+slideTone\([^)]*\)[\s\S]*?frequency\.exponentialRampToValueAtTime[\s\S]*?gain\.exponentialRampToValueAtTime/s, "否定音はクリックを避けた周波数・音量包絡にする");
+  assert.match(gameJs, /function\s+playSleepSound\(\)\s*\{\s*slideTone\(392,\s*330,\s*0\.03,\s*0\.11,\s*0\.075\);\s*slideTone\(294,\s*220,\s*0\.17,\s*0\.17,\s*0\.085\);/s, "成功音と逆向きの柔らかい下降2音を使う");
+  assert.match(gameJs, /osc\.onended\s*=\s*function[\s\S]*?osc\.disconnect\(\)[\s\S]*?gain\.disconnect\(\)/s, "短いSEのAudioNodeを終了後に切断する");
+  assert.doesNotMatch(indexHtml + gameJs, /\.(?:mp3|wav|ogg)(?:["'?]|$)/i, "音声・TTS素材を追加せずWebAudioのSEだけを使う");
+}
+
+// ── 11d. 可変場所・シャッフル袋・さんぽ保存の実行時結線 ─────────────
 {
   assert.match(gameJs, /var\s+H\s*=\s*window\.HyokkoriLocations/, "場所APIをboot内で受け取る");
   assert.match(gameJs, /var\s+PARTNER_CATALOG\s*=\s*H\.PARTNER_CATALOG/, "動物画像の正本を場所カタログへ一本化する");

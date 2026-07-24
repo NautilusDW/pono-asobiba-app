@@ -42,7 +42,7 @@ window.__showHyokkoriLoadError=function(){
 <script src="../common/menu.js"></script>
 <script src="../common/highscore.js"></script>
 
-<link rel="stylesheet" href="styles.css?v=20260724-1462">
+<link rel="stylesheet" href="styles.css?v=20260724-1464">
 </head>
 <body>
 
@@ -73,6 +73,13 @@ window.__showHyokkoriLoadError=function(){
       <span id="combo-count">0</span>
       <span class="combo-label">コンボ</span>
     </div>
+  </div>
+
+  <!-- 寝ている子へのタップだけに出す、遠近に縮小されない中央フィードバック。
+       見える文字は装飾扱いとし、読み上げは既存の combo-status-sr へ一度だけ流す。 -->
+  <div id="sleep-miss-feedback" aria-hidden="true">
+    <span class="sleep-miss-mark">×</span>
+    <span class="sleep-miss-copy">ねてるよ</span>
   </div>
 
   <div id="start-screen">
@@ -162,7 +169,7 @@ window.__showHyokkoriLoadError=function(){
 
 <script src="js/locations.js?v=20260724-1462"></script>
 <script src="js/logic.js?v=20260723-1442"></script>
-<script src="js/game.js?v=20260724-1462" onerror="window.__showHyokkoriLoadError()"></script>
+<script src="js/game.js?v=20260724-1464" onerror="window.__showHyokkoriLoadError()"></script>
 <script>
 window.setTimeout(function(){
   if(!document.body.classList.contains('pono-game-ready'))window.__showHyokkoriLoadError();
