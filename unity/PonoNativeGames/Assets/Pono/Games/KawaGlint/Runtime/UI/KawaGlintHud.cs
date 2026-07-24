@@ -88,10 +88,43 @@ namespace Pono.KawaGlint.UI
         private static readonly int WagSpeedId = Shader.PropertyToID("_WagSpeed");
         private static readonly int WagWaveId = Shader.PropertyToID("_WagWave");
 
-        /// <summary>Catch-banner rarity dot colors -- the single shared source for both this HUD's
-        /// default banner state and <see cref="Gameplay.KawaGlintGameController"/>'s dot-color lookup.</summary>
+        /// <summary>
+        /// Rarity dot colours -- the single shared source for the catch banner,
+        /// <see cref="Gameplay.KawaGlintGameController"/>'s banner lookup and
+        /// <see cref="KawaGlintFishdexPanel"/>'s detail dot.
+        ///
+        /// batch:1470 §X-6 fix: both call sites used to hard-code the same
+        /// <c>Rarity == Rare ? gold : cyan</c> two-way branch, so うなぎ/まぐろ
+        /// (Super) were painted the exact same cyan as あゆ (Normal) -- the
+        /// rarest catches in the game were visually indistinguishable from the
+        /// most common one. Always go through <see cref="RarityDotColor"/>.
+        ///
+        /// The Rendering assembly cannot reference this class (its asmdef only
+        /// references the two URP packages), so it keeps its own copy in
+        /// <c>KawaGlintRarityPalette</c>; an EditMode test asserts the two
+        /// tables stay identical.
+        /// </summary>
         public static readonly Color RarityNormalColor = new Color32(0x7F, 0xD0, 0xE8, 0xFF);
         public static readonly Color RarityRareColor = new Color32(0xFF, 0xD9, 0x3D, 0xFF);
+        public static readonly Color RaritySuperColor = new Color32(0xFF, 0x7F, 0xD1, 0xFF);
+        /// <summary>やわらかいラベンダー。 暗色・紫単体の不気味さを避ける (3〜7歳向け要件)。</summary>
+        public static readonly Color RarityLegendaryColor = new Color32(0xB9, 0xA0, 0xFF, 0xFF);
+
+        /// <summary>
+        /// rarity tier (0=Normal / 1=Rare / 2=Super / 3=Legendary) → ドット色。
+        /// tier は必ず内部で clamp するので、将来 rarity 段が増えても
+        /// 「いま持っている一番豪華な色」に劣化するだけで例外は出ない。
+        /// </summary>
+        public static Color RarityDotColor(int tier)
+        {
+            switch (Mathf.Clamp(tier, 0, 3))
+            {
+                case 1: return RarityRareColor;
+                case 2: return RaritySuperColor;
+                case 3: return RarityLegendaryColor;
+                default: return RarityNormalColor;
+            }
+        }
 
         private Text _phaseWord;
         private Text _narrationBar;

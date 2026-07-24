@@ -149,6 +149,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-24T21:38:52Z - KawaGlint batch:1470 WS-D (ウキ改善+食いつき牽引描写): KawaGlintPullMath/BobberArt/BobberWake/KawaBobberSubmerge.shader 新規、KawaGlintBobber 牽引/傾き/ぷかっ/submerge MPB 拡張、SplashEffect scale 引数、EditMode/PlayMode テスト追加
+- **タスク**: KawaGlint batch:1470 WS-D (ウキ改善+食いつき牽引描写): KawaGlintPullMath/BobberArt/BobberWake/KawaBobberSubmerge.shader 新規、KawaGlintBobber 牽引/傾き/ぷかっ/submerge MPB 拡張、SplashEffect scale 引数、EditMode/PlayMode テスト追加
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
 ### 2026-07-24T19:29:06Z - KawaGlint本番アート統合+ロケーション別ポノ配置+奥行き演出+図鑑UI実装(クロスレビューで実バグ2件検出・修正・独立検証込み)
 - **タスク**: KawaGlint本番アート統合+ロケーション別ポノ配置+奥行き演出+図鑑UI実装(クロスレビューで実バグ2件検出・修正・独立検証込み)
 - **結果**: 成功
@@ -242,19 +255,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-07-24T16:24:18Z - KawaGlint背景4点生成(river_kakou/sea_sunahama/sea_iwaba/sea_oki、gpt_image_2、水面線QA+リテイク4回)
 - **タスク**: KawaGlint背景4点生成(river_kakou/sea_sunahama/sea_iwaba/sea_oki、gpt_image_2、水面線QA+リテイク4回)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-24T16:20:54Z - KawaGlint海藻/水草6点+隠れ物オブジェクト7点をGPT Image 2で生成(マゼンタ/緑キー使い分け)、全点視覚QA合格
-- **タスク**: KawaGlint海藻/水草6点+隠れ物オブジェクト7点をGPT Image 2で生成(マゼンタ/緑キー使い分け)、全点視覚QA合格
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 0

@@ -12,6 +12,26 @@ using System.Collections.Generic;
 
 namespace Pono.KawaGlint.Core
 {
+    /// <summary>
+    /// batch:1470 実装契約 §A-5 新設: 1回の抽選に効く「セッションの記憶」だけを
+    /// まとめた入力オブジェクト。 純データなので EditMode テストから任意の状態を
+    /// 直接組み立てられる (セッション全体を作らなくてよい)。
+    /// </summary>
+    public sealed class TsuriDrawContext
+    {
+        /// <summary>直近に捕獲した speciesId (新しい順)。 null/空 = ペナルティ無し。</summary>
+        public IReadOnlyList<string> RecentCatchIds;
+
+        /// <summary>最後に rare 以上を捕獲してからのキャスト数 (レアリティ pity の入力)。</summary>
+        public int DryCastsSinceRarity;
+
+        /// <summary>図鑑既登録の speciesId。 **null = はじめて出会うボーナス無効**。</summary>
+        public IReadOnlyCollection<string> KnownSpeciesIds;
+
+        /// <summary>何の記憶も無い素の文脈 (テスト・既定値用)。</summary>
+        public static readonly TsuriDrawContext Neutral = new TsuriDrawContext();
+    }
+
     public static class TsuriCore
     {
         // ═══ セッション生成 ══════════════════════════════════════════════
@@ -34,149 +54,203 @@ namespace Pono.KawaGlint.Core
                 PityBySpecies = new Dictionary<string, float>(),
                 SessionSeenIds = new List<string>(),
                 FloorHeldSec = 0f,
-                CaughtLog = new List<TsuriCaughtEntry>()
+                CaughtLog = new List<TsuriCaughtEntry>(),
+                RecentCatchIds = new List<string>(),
+                DryCastsSinceRarity = 0,
+                KnownSpeciesIds = null
             };
             return session;
         }
 
         /// <summary>
-        /// 海拡張 (実装契約v1.0 §A-4) 新設オーバーロード。 weightMulBySpeciesId (通常
-        /// TsuriWorldData.BuildWeightMulMap の結果) をセッションに紐づける。
-        /// null を渡した場合は既存2引数版と完全に同じ結果になる (Core 既存パス保証)。
+        /// batch:1470 実装契約 §A-5: ロケーションの Spawns 台帳付きセッション。
+        /// spawns に null を渡した場合は2引数版と完全に同じ (全種 WeightMul 1.0 / floor 無し)。
         /// </summary>
         public static TsuriSession CreateSession(
-            IReadOnlyList<TsuriSpecies> pool, TsuriMode mode,
-            IReadOnlyDictionary<string, float> weightMulBySpeciesId)
+            IReadOnlyList<TsuriSpecies> pool, IReadOnlyList<TsuriSpawnEntry> spawns, TsuriMode mode)
         {
             var session = CreateSession(pool, mode);
-            session.SpeciesWeightMulById = CloneWeightMulMap(weightMulBySpeciesId);
+            session.SpawnEntries = spawns != null ? new List<TsuriSpawnEntry>(spawns) : null;
             return session;
         }
 
-        /// <summary>weightMulBySpeciesId の防御的コピー。 null 入力は null を返す (現行パス維持)。</summary>
-        private static Dictionary<string, float> CloneWeightMulMap(IReadOnlyDictionary<string, float> weightMulBySpeciesId)
-        {
-            if (weightMulBySpeciesId == null)
-            {
-                return null;
-            }
-
-            var map = new Dictionary<string, float>();
-            foreach (var kv in weightMulBySpeciesId)
-            {
-                map[kv.Key] = kv.Value;
-            }
-            return map;
-        }
-
-        // ═══ 抽選 ════════════════════════════════════════════════════════
+        // ═══ 抽選 (1段絶対重みモデル・実装契約 §A-5) ══════════════════════
         /// <summary>
-        /// speciesPool + sessionSeenIds から、種ごとの選択確率 (0〜1、合計1) を
-        /// 解析的に計算する純関数。 PickSpecies() の内部でも使うが、テスト側が
-        /// System.Random に依存せず抽選ロジックを検証できるよう公開もしている。
+        /// 種ごとの選択確率 (0〜1、合計1) を解析的に計算する純関数。
         ///
-        /// アルゴリズム: (1) プールに存在するレアリティだけで RarityBaseWeight を
-        /// 相対比較 (2) 同一レアリティ内では species.Weight の比率で配分
-        /// (3) sessionSeenIds に含まれる種は SessionDedupeWeightMul を掛けて重み減衰。
+        /// <code>
+        /// W(i) = RarityBaseWeight(rarity_i)      // 100 / 13 / 2.0 / 0.55
+        ///      × SpeciesWeightMul_i              // 同レアリティ内の相対倍率 (0.20〜1.50)
+        ///      × LocationWeightMul_i             // TsuriSpawnEntry.WeightMul
+        ///      × RecentPenalty(i)                // 直近捕獲なら ×0.80
+        ///      × RarityPity()                    // rarity != Normal に一律 ×min(6.0, 1+0.25*max(0,Dry-8))
+        ///      × FirstEncounterBonus(i)          // 図鑑未登録なら ×1.6
+        /// P(i) = W(i) / ΣW
+        /// </code>
+        /// その後 <see cref="TsuriSpawnEntry.MinProbability"/> の floor を適用し、
+        /// floor を受けなかった種で残りを再正規化する (合計は必ず 1)。
+        ///
+        /// ★旧モデルとの決定的な違い★ 「レアリティ層シェアを先に決めてから層内で配分」
+        /// という2段正規化を**やめた**。 旧式は rare が1種しか居ないロケーションで
+        /// その1種に層シェア全部 (25/95 = 26.3%) が乗るため、さけ/たいが常連になっていた。
         /// </summary>
         public static Dictionary<string, double> ComputeSpeciesProbabilities(
-            IReadOnlyList<TsuriSpecies> speciesPool, IReadOnlyList<string> sessionSeenIds)
+            IReadOnlyList<TsuriSpecies> speciesPool,
+            IReadOnlyList<TsuriSpawnEntry> spawns,
+            TsuriDrawContext ctx)
         {
             var probs = new Dictionary<string, double>();
             var pool = speciesPool;
-            var seen = sessionSeenIds ?? Array.Empty<string>();
             if (pool == null || pool.Count == 0)
             {
                 return probs;
             }
 
-            var rarityOrder = new List<TsuriRarity>();
-            var byRarity = new Dictionary<TsuriRarity, List<TsuriSpecies>>();
+            var context = ctx ?? TsuriDrawContext.Neutral;
+            float pityMul = TsuriTuning.RarityPityMul(context.DryCastsSinceRarity);
+
+            var weights = new double[pool.Count];
+            double total = 0;
             for (int i = 0; i < pool.Count; i++)
             {
                 var sp = pool[i];
-                if (!byRarity.ContainsKey(sp.Rarity))
-                {
-                    byRarity[sp.Rarity] = new List<TsuriSpecies>();
-                    rarityOrder.Add(sp.Rarity);
-                }
-                byRarity[sp.Rarity].Add(sp);
-            }
+                double w = TsuriTuning.RarityBaseWeight(sp.Rarity);
+                w *= sp.SpeciesWeightMul > 0f ? sp.SpeciesWeightMul : 1.0;
+                w *= LocationWeightMul(spawns, sp.Id);
 
-            var rarityWeights = new double[rarityOrder.Count];
-            double rarityTotal = 0;
-            for (int i = 0; i < rarityOrder.Count; i++)
-            {
-                rarityWeights[i] = TsuriTuning.RarityBaseWeight(rarityOrder[i]);
-                rarityTotal += rarityWeights[i];
-            }
-
-            for (int idx = 0; idx < rarityOrder.Count; idx++)
-            {
-                double rarityShare = rarityTotal > 0 ? rarityWeights[idx] / rarityTotal : 0;
-                var speciesInRarity = byRarity[rarityOrder[idx]];
-                var speciesWeights = new double[speciesInRarity.Count];
-                double speciesTotal = 0;
-                for (int i = 0; i < speciesInRarity.Count; i++)
+                if (context.RecentCatchIds != null && Contains(context.RecentCatchIds, sp.Id))
                 {
-                    var sp = speciesInRarity[i];
-                    double w = sp.Weight > 0 ? sp.Weight : 1;
-                    if (Contains(seen, sp.Id))
-                    {
-                        w *= TsuriTuning.SessionDedupeWeightMul;
-                    }
-                    speciesWeights[i] = w;
-                    speciesTotal += w;
+                    w *= TsuriTuning.RecentCatchWeightMul;
                 }
 
-                for (int i = 0; i < speciesInRarity.Count; i++)
+                // レアリティ pity は rare/super/legendary に**一律**で掛ける
+                // (層別に別倍率を掛けてはならない -- 契約 §A-5 適用ルール 1)。
+                if (sp.Rarity != TsuriRarity.Normal)
                 {
-                    double share = speciesTotal > 0 ? speciesWeights[i] / speciesTotal : 0;
-                    probs[speciesInRarity[i].Id] = rarityShare * share;
+                    w *= pityMul;
                 }
-            }
 
-            return probs;
-        }
+                // KnownSpeciesIds が null のときは「図鑑情報が無い」= ボーナス無効。
+                if (context.KnownSpeciesIds != null && !ContainsId(context.KnownSpeciesIds, sp.Id))
+                {
+                    w *= TsuriTuning.FirstEncounterWeightMul;
+                }
 
-        /// <summary>
-        /// 海拡張 (実装契約v1.0 §A-4) 新設オーバーロード。 map が null/空の場合は既存2引数版の
-        /// 結果をそのまま返す (ビット同一)。 それ以外は既存計算の結果 probs に対し
-        /// probs[id] *= mul (未指定は既定1.0) した後、合計1に再正規化する
-        /// (rarity階層構造そのものには手を入れない)。
-        /// </summary>
-        public static Dictionary<string, double> ComputeSpeciesProbabilities(
-            IReadOnlyList<TsuriSpecies> speciesPool, IReadOnlyList<string> sessionSeenIds,
-            IReadOnlyDictionary<string, float> weightMulBySpeciesId)
-        {
-            var baseProbs = ComputeSpeciesProbabilities(speciesPool, sessionSeenIds);
-            if (weightMulBySpeciesId == null || weightMulBySpeciesId.Count == 0)
-            {
-                return baseProbs;
-            }
-
-            var weighted = new Dictionary<string, double>();
-            double total = 0;
-            foreach (var kv in baseProbs)
-            {
-                float mul = weightMulBySpeciesId.TryGetValue(kv.Key, out var m) ? m : 1f;
-                double w = kv.Value * mul;
-                weighted[kv.Key] = w;
+                weights[i] = w;
                 total += w;
             }
 
             if (total <= 0)
             {
-                // 全滅防止の防御的フォールバック(通常到達しない)。
-                return baseProbs;
+                // 全滅防止 (通常到達しない)。 均等割で返す。
+                for (int i = 0; i < pool.Count; i++)
+                {
+                    probs[pool[i].Id] = 1.0 / pool.Count;
+                }
+                return probs;
             }
 
-            var result = new Dictionary<string, double>();
-            foreach (var kv in weighted)
+            for (int i = 0; i < pool.Count; i++)
             {
-                result[kv.Key] = kv.Value / total;
+                probs[pool[i].Id] = weights[i] / total;
             }
-            return result;
+
+            ApplyMinProbabilityFloor(probs, pool, spawns);
+            return probs;
+        }
+
+        /// <summary>
+        /// MinProbability の floor 適用 + 残りの再正規化 (合計1を保つ)。
+        /// F = { i | MinProbability_i &gt; 0 かつ P(i) &lt; MinProbability_i } とし、
+        /// F は floor 値に固定、F 以外は (1 - ΣMinProbability_F) の比例配分にする。
+        /// </summary>
+        private static void ApplyMinProbabilityFloor(
+            Dictionary<string, double> probs,
+            IReadOnlyList<TsuriSpecies> pool,
+            IReadOnlyList<TsuriSpawnEntry> spawns)
+        {
+            if (spawns == null || spawns.Count == 0)
+            {
+                return;
+            }
+
+            List<string> floored = null;
+            double flooredSum = 0;
+            for (int i = 0; i < spawns.Count; i++)
+            {
+                var entry = spawns[i];
+                if (entry == null || entry.MinProbability <= 0f || string.IsNullOrEmpty(entry.SpeciesId))
+                {
+                    continue;
+                }
+                if (!probs.TryGetValue(entry.SpeciesId, out var p) || p >= entry.MinProbability)
+                {
+                    continue;
+                }
+
+                (floored ?? (floored = new List<string>())).Add(entry.SpeciesId);
+                flooredSum += entry.MinProbability;
+                probs[entry.SpeciesId] = entry.MinProbability;
+            }
+
+            if (floored == null)
+            {
+                return;
+            }
+
+            double remaining = 1.0 - flooredSum;
+            if (remaining <= 0)
+            {
+                // floor の合計が 1 を超える病的な台帳 (設計上あり得ない)。
+                // 全体を正規化して合計1だけは死守する。
+                double sum = 0;
+                foreach (var kv in probs) sum += kv.Value;
+                if (sum > 0)
+                {
+                    foreach (var id in new List<string>(probs.Keys)) probs[id] /= sum;
+                }
+                return;
+            }
+
+            double restTotal = 0;
+            for (int i = 0; i < pool.Count; i++)
+            {
+                var id = pool[i].Id;
+                if (!floored.Contains(id) && probs.TryGetValue(id, out var p)) restTotal += p;
+            }
+
+            if (restTotal <= 0)
+            {
+                return;
+            }
+
+            double scale = remaining / restTotal;
+            for (int i = 0; i < pool.Count; i++)
+            {
+                var id = pool[i].Id;
+                if (!floored.Contains(id) && probs.TryGetValue(id, out var p))
+                {
+                    probs[id] = p * scale;
+                }
+            }
+        }
+
+        /// <summary>Spawns 台帳からロケーション別 WeightMul を引く (未登録は 1.0)。</summary>
+        private static double LocationWeightMul(IReadOnlyList<TsuriSpawnEntry> spawns, string speciesId)
+        {
+            if (spawns == null)
+            {
+                return 1.0;
+            }
+            for (int i = 0; i < spawns.Count; i++)
+            {
+                var entry = spawns[i];
+                if (entry != null && entry.SpeciesId == speciesId)
+                {
+                    return entry.WeightMul > 0f ? entry.WeightMul : 1.0;
+                }
+            }
+            return 1.0;
         }
 
         private static bool Contains(IReadOnlyList<string> list, string value)
@@ -192,31 +266,36 @@ namespace Pono.KawaGlint.Core
         }
 
         /// <summary>
-        /// 加重抽選で1種を選ぶ。 pityBySpecies は今回 (Phase0) は抽選そのものには
-        /// 使わず、Tick() 側の bite 窓計算にのみ使う契約 (pity=窓を広げる、出現率には
-        /// 介入しない)。 引数に残してあるのは契約どおり + 将来の拡張余地のため。
+        /// <see cref="IReadOnlyCollection{T}"/> には Contains が無い (ICollection 側の
+        /// メンバなので) ため、LINQ を持ち込まずに線形探索する。 呼び出し側が
+        /// HashSet を渡していても要素数は高々30なのでコストは無視できる。
         /// </summary>
-        public static string PickSpecies(
-            IReadOnlyList<TsuriSpecies> speciesPool,
-            IReadOnlyDictionary<string, float> pityBySpecies,
-            IReadOnlyList<string> sessionSeenIds,
-            Random random)
+        private static bool ContainsId(IReadOnlyCollection<string> ids, string value)
         {
-            // 4引数版は5引数版へ null 委譲する (ComputeSpeciesProbabilities の3引数版が
-            // map==null 時に2引数版の結果をそのまま返すため、挙動はビット同一)。
-            return PickSpecies(speciesPool, pityBySpecies, sessionSeenIds, random, null);
+            if (ids is HashSet<string> set)
+            {
+                return set.Contains(value);
+            }
+            foreach (var id in ids)
+            {
+                if (id == value)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>
-        /// 海拡張 (実装契約v1.0 §A-4) 新設オーバーロード。 weightMulBySpeciesId が null の
-        /// 場合は既存4引数版と完全に同じ抽選結果になる (Core 既存パス保証)。
+        /// 加重抽選で1種を選ぶ (実装契約 §A-5)。 <see cref="ComputeSpeciesProbabilities"/> と
+        /// 同一の確率表を使うので、テスト側は解析値と実抽選のどちらでも検証できる。
+        /// **同じ種が連続で出ることを一切禁止していない** (独立抽選)。
         /// </summary>
         public static string PickSpecies(
             IReadOnlyList<TsuriSpecies> speciesPool,
-            IReadOnlyDictionary<string, float> pityBySpecies,
-            IReadOnlyList<string> sessionSeenIds,
-            Random random,
-            IReadOnlyDictionary<string, float> weightMulBySpeciesId)
+            IReadOnlyList<TsuriSpawnEntry> spawns,
+            TsuriDrawContext ctx,
+            Random random)
         {
             var pool = speciesPool;
             if (pool == null || pool.Count == 0)
@@ -224,7 +303,7 @@ namespace Pono.KawaGlint.Core
                 return null;
             }
 
-            var probs = ComputeSpeciesProbabilities(pool, sessionSeenIds ?? Array.Empty<string>(), weightMulBySpeciesId);
+            var probs = ComputeSpeciesProbabilities(pool, spawns, ctx);
             double total = 0;
             for (int i = 0; i < pool.Count; i++)
             {
@@ -250,6 +329,21 @@ namespace Pono.KawaGlint.Core
             return pool[pool.Count - 1].Id;
         }
 
+        /// <summary>セッションの記憶 (RecentCatchIds / DryCasts / KnownSpeciesIds) から抽選文脈を作る。</summary>
+        public static TsuriDrawContext DrawContextOf(TsuriSession session)
+        {
+            if (session == null)
+            {
+                return TsuriDrawContext.Neutral;
+            }
+            return new TsuriDrawContext
+            {
+                RecentCatchIds = session.RecentCatchIds,
+                DryCastsSinceRarity = session.DryCastsSinceRarity,
+                KnownSpeciesIds = session.KnownSpeciesIds
+            };
+        }
+
         // ═══ セッション進行 (Cast / Tick / TapHook / TapRenda) ════════════
 
         /// <summary>
@@ -273,7 +367,12 @@ namespace Pono.KawaGlint.Core
                 max = tmp;
             }
 
-            next.SpeciesId = PickSpecies(next.SpeciesPool, next.PityBySpecies, next.SessionSeenIds, random, next.SpeciesWeightMulById);
+            // レアリティ pity の空キャストカウンタは**抽選の前に**進める
+            // (契約 §A-5 適用ルール 3: DryCastsSinceRarity は Cast() のたびに +1)。
+            // これで RarityPityStartCasts=8 が「8キャスト目から効き始める」と読める。
+            next.DryCastsSinceRarity += 1;
+
+            next.SpeciesId = PickSpecies(next.SpeciesPool, next.SpawnEntries, DrawContextOf(next), random);
             next.WaitRemainingSec = min + (float)(random.NextDouble() * (max - min));
             next.BiteWindowRemainingSec = 0f;
             next.GaugePct = 0f;
@@ -284,8 +383,9 @@ namespace Pono.KawaGlint.Core
         }
 
         /// <summary>
-        /// 海拡張 (実装契約v1.0 §A-4) 新設: ロケーション切替。 pity/misses/CaughtLog/
-        /// SessionSeenIds/Mode を保持したまま pool と weightMul を差し替える。
+        /// ロケーション切替 (実装契約 §A-5 適用ルール 4)。 pity/misses/CaughtLog/
+        /// SessionSeenIds/Mode/**RecentCatchIds/DryCastsSinceRarity/KnownSpeciesIds** を
+        /// 保持したまま pool と Spawns 台帳を差し替える。
         /// Phase が Idle/Landed/Escaped 以外なら複製をそのまま返す no-op (Cast と同じ
         /// ガード形)。 成立時は Phase=Idle, SpeciesId=null, Wait/Bite/Gauge/FloorHeld/
         /// RendaElapsed = 0 にリセットする (=Idle 画面へ戻す)。
@@ -293,7 +393,7 @@ namespace Pono.KawaGlint.Core
         public static TsuriSession WithSpeciesPool(
             TsuriSession session,
             IReadOnlyList<TsuriSpecies> pool,
-            IReadOnlyDictionary<string, float> weightMulBySpeciesId)
+            IReadOnlyList<TsuriSpawnEntry> spawns)
         {
             var next = session.Clone();
             if (next.Phase != TsuriPhase.Idle && next.Phase != TsuriPhase.Landed && next.Phase != TsuriPhase.Escaped)
@@ -302,7 +402,7 @@ namespace Pono.KawaGlint.Core
             }
 
             next.SpeciesPool = pool != null ? new List<TsuriSpecies>(pool) : new List<TsuriSpecies>();
-            next.SpeciesWeightMulById = CloneWeightMulMap(weightMulBySpeciesId);
+            next.SpawnEntries = spawns != null ? new List<TsuriSpawnEntry>(spawns) : null;
 
             next.Phase = TsuriPhase.Idle;
             next.SpeciesId = null;
@@ -429,7 +529,13 @@ namespace Pono.KawaGlint.Core
             return next; // Idle/Landed/Escaped: 何もしない
         }
 
-        /// <summary>Landed 確定時の共通後処理 (SessionSeenIds 追記 + CaughtLog 追記)。 next を mutate する。</summary>
+        /// <summary>
+        /// Landed 確定時の共通後処理。 next を mutate する。
+        /// SessionSeenIds は**抽選からは参照しなくなった**が記録は継続する
+        /// (契約 1-B 裁定: 将来の treasure_* prefix ルールの足場、コスト0)。
+        /// batch:1470 で RecentCatchIds / DryCastsSinceRarity / KnownSpeciesIds の
+        /// 更新もここに集約した (捕獲=landed が唯一の更新点、遭遇では動かない)。
+        /// </summary>
         private static void MarkLanded(TsuriSession next, long nowMs)
         {
             if (!Contains(next.SessionSeenIds, next.SpeciesId))
@@ -437,6 +543,44 @@ namespace Pono.KawaGlint.Core
                 next.SessionSeenIds.Add(next.SpeciesId);
             }
             next.CaughtLog.Add(new TsuriCaughtEntry { SpeciesId = next.SpeciesId, AtMs = nowMs });
+
+            // 直近捕獲メモリ (新しいものが先頭、RecentCatchMemory 件でトリム)。
+            if (next.RecentCatchIds == null)
+            {
+                next.RecentCatchIds = new List<string>();
+            }
+            next.RecentCatchIds.Remove(next.SpeciesId);
+            next.RecentCatchIds.Insert(0, next.SpeciesId);
+            while (next.RecentCatchIds.Count > TsuriTuning.RecentCatchMemory)
+            {
+                next.RecentCatchIds.RemoveAt(next.RecentCatchIds.Count - 1);
+            }
+
+            // レアリティ pity のリセットは「捕獲」でのみ起きる (逃したら伸び続ける)。
+            var landedSpecies = FindInPool(next.SpeciesPool, next.SpeciesId);
+            if (landedSpecies != null && landedSpecies.Rarity != TsuriRarity.Normal)
+            {
+                next.DryCastsSinceRarity = 0;
+            }
+
+            // 図鑑既登録集合 (非 null のときのみ) -- 2匹目からは初遭遇ボーナスが消える。
+            next.KnownSpeciesIds?.Add(next.SpeciesId);
+        }
+
+        private static TsuriSpecies FindInPool(IReadOnlyList<TsuriSpecies> pool, string speciesId)
+        {
+            if (pool == null || string.IsNullOrEmpty(speciesId))
+            {
+                return null;
+            }
+            for (int i = 0; i < pool.Count; i++)
+            {
+                if (pool[i] != null && pool[i].Id == speciesId)
+                {
+                    return pool[i];
+                }
+            }
+            return null;
         }
 
         /// <summary>

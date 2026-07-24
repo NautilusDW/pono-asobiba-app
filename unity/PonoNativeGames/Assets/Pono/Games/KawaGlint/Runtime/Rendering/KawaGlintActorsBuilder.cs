@@ -7,11 +7,15 @@ namespace Pono.KawaGlint.Rendering
     /// shadows, the bobber (ウキ), its ripple rings, and the fishing line --
     /// procedurally under a given parent transform. Every texture is a
     /// code-generated <see cref="Texture2D"/> and every material a plain
-    /// <c>new Material(shader)</c> built from a stock URP 2D shader; this
-    /// class has zero dependency on any other KawaGlint module's C# types
-    /// (per DESIGN.md's cross-module dependency rule) and therefore always
-    /// succeeds regardless of whether the refraction/surface shaders are
-    /// available on the current platform.
+    /// <c>new Material(shader)</c> built from a stock URP 2D shader.
+    ///
+    /// Dependency rule (updated): this class may use static helpers and plain
+    /// component types from <i>within its own Rendering assembly</i> (the
+    /// sprite catalog, the silhouette/rarity tables, the actor components it
+    /// attaches). What it must never depend on is another <i>module</i> --
+    /// the refraction and surface passes in particular -- so that it always
+    /// succeeds regardless of whether those shaders are available on the
+    /// current platform.
     ///
     /// The refraction full-screen pass (a different module) is screen-space
     /// below the waterline, so every underwater sprite built here wobbles
@@ -30,6 +34,14 @@ namespace Pono.KawaGlint.Rendering
         // modules (refraction/surface own 0-30; the bobber's ripple rings,
         // the fishing line and the bobber itself own the remaining gaps).
         private const int FishSortingOrder = 14;
+
+        // Rare-fish aura brackets the fish silhouette: the halo glows from
+        // behind it (13, the gap directly under the fish) and the sparkles
+        // drift in front of it (15, the gap directly above, still under the
+        // caustics at 16).
+        private const int RareHaloSortingOrder = 13;
+        private const int RareSparkleSortingOrder = 15;
+
         private const int RippleRingSortingOrder = 32;
         private const int FishingLineSortingOrder = 33;
         private const int BobberSortingOrder = 34;
@@ -46,14 +58,20 @@ namespace Pono.KawaGlint.Rendering
         private const int FishTextureHeight = 64;
         private const int FishCount = 4;
 
-        // Fixed index -> species assignment for the four ambient fish (batch:
-        // 1458-kawaglint-fish-art). Deliberately NOT drawn from `random` --
-        // it's a static assortment decision, not a per-run one -- so the
-        // System.Random(20260724) draw order/count below is completely
-        // unaffected by which species art loads. `treasure_boot` (ながぐつ)
-        // is excluded from the ambient pool by design (it's a one-off gag
-        // catch, not a background swimmer).
-        private static readonly string[] AmbientFishSpeciesIds =
+        // Species the four ambient fish start out as: river_asase's own
+        // roster, because that is the location the game always opens on. This
+        // is only a starting value -- the Gameplay layer calls
+        // KawaGlintActorsController.SetAmbientSpecies on every location switch
+        // so the background swimmers actually match the water the player is
+        // looking at. (Before that call existed, あゆ and ざりがに swam around
+        // in the open sea.)
+        //
+        // Deliberately NOT drawn from `random` -- it's a static assortment
+        // decision, not a per-run one -- so the System.Random(20260724) draw
+        // order/count below is completely unaffected by which species art
+        // loads. `treasure_boot` (ながぐつ) is excluded by design: it's a
+        // one-off gag catch, not a background swimmer.
+        private static readonly string[] DefaultAmbientFishSpeciesIds =
         {
             "fish_ayu", "fish_nijimasu", "fish_salmon", "zarigani"
         };
@@ -81,22 +99,19 @@ namespace Pono.KawaGlint.Rendering
         // as the most solid fish in the water.
         private const float IllustratedAmbientFishAlpha = 0.9f;
 
-        private const int BobberTextureWidth = 64;
-        private const int BobberTextureHeight = 96;
-        private const float BobberWorldHeight = 0.55f;
+        // Taller than the old 0.55: the float is the thing the player watches
+        // for the entire wait, and at 0.55 the redrawn art's antenna and
+        // waistline were too small to read on a phone. QA adjustment range is
+        // 0.58-0.76; changing it needs a device check, because it also changes
+        // the float's size relative to the 1.2-2.5 unit fish.
+        private const float BobberWorldHeight = KawaGlintBobberArt.RecommendedBobberWorldHeight;
         private const float BobberRestX = 1.8f;
 
-        // Top ~46% of the texture is the red dome, so the dome/white split
-        // sits at v = 1 - 0.46 = 0.54 (v = 0 bottom row, v = 1 top row).
-        private const float BobberSplitV = 0.54f;
-        private const float BobberWaistHalfBandV = 3f / BobberTextureHeight; // ~3px thin waistline
-
-        private static readonly Color BobberRedColor = HexColor(0xE9, 0x4B, 0x4B);
-        private static readonly Color BobberWhiteColor = Color.white;
-        private static readonly Color BobberWaistColor = HexColor(0x33, 0x33, 0x33);
-
         private const int RingTextureSize = 128;
-        private const int RingCount = 2;
+
+        // Single source shared with the controller, which needs the same
+        // count to reason about the rings' combined pulse rate.
+        private const int RingCount = KawaGlintActorsController.RingCount;
         private const float RingNormalizedRadius = 0.42f;
         private const float RingNormalizedThickness = 0.09f;
 
@@ -172,9 +187,21 @@ namespace Pono.KawaGlint.Rendering
 
             // Built last and after every seeded random draw above, so the
             // four ambient fish keep their reproducible placement regardless
-            // of this addition. Shares the ambient fish silhouette
+            // of this addition (this now also builds the rare-fish aura, which
+            // must obey the same rule). Shares the ambient fish silhouette
             // texture/sprite rather than generating a second copy.
-            BuildTargetFish(controller, root.transform, fishSprite, fishNativeWidthWorld, fishMaterial);
+            BuildTargetFish(controller, root.transform, fishSprite, fishNativeWidthWorld, fishMaterial, spriteMaterial);
+
+            // Surface foam ridge shown while something is being towed through
+            // the water. Also built after every seeded draw, same rule; it
+            // owns its own texture/sprite lifetime, so nothing is registered
+            // for cleanup here.
+            controller.SetBobberWake(KawaGlintBobberWake.Create(
+                root.transform,
+                spriteMaterial,
+                controller.Bobber,
+                waterlineWorldY,
+                waterWorldRect));
 
             // Consumes zero randomness (draws no values from `random`), so it
             // is safe to build last without disturbing any of the seeded
@@ -222,7 +249,7 @@ namespace Pono.KawaGlint.Rendering
                 // index lookup), so it can never perturb the draw
                 // order/count above regardless of whether the resource
                 // actually loads.
-                var artSprite = KawaGlintSpriteCatalog.LoadFishShadow(AmbientFishSpeciesIds[i % AmbientFishSpeciesIds.Length]);
+                var artSprite = KawaGlintSpriteCatalog.LoadFishShadow(DefaultAmbientFishSpeciesIds[i % DefaultAmbientFishSpeciesIds.Length]);
                 var spriteForThisFish = artSprite != null ? artSprite : proceduralSprite;
                 var nativeWidthForThisFish = artSprite != null ? artSprite.bounds.size.x : proceduralNativeWidth;
 
@@ -268,7 +295,10 @@ namespace Pono.KawaGlint.Rendering
                 renderer.SetPropertyBlock(mpb);
 
                 var halfWidth = length * 0.5f;
-                controller.RegisterFish(go.transform, speed, direction, baseY, bobSpeed, bobPhase, FishBobAmplitude, halfWidth);
+                // `length` is passed through so SetAmbientSpecies can rescale
+                // this fish to the same drawn length after swapping its sprite
+                // for a different species' art (whose native width differs).
+                controller.RegisterFish(go.transform, renderer, speed, direction, baseY, bobSpeed, bobPhase, FishBobAmplitude, halfWidth, length);
             }
 
             // Target-fish default: prefer the ayu shadow art so the very
@@ -348,7 +378,8 @@ namespace Pono.KawaGlint.Rendering
             Transform parent,
             Sprite fishSprite,
             float nativeWidthWorld,
-            Material material)
+            Material material,
+            Material spriteMaterial)
         {
             var go = new GameObject("TargetFishShadow");
             go.transform.SetParent(parent, false);
@@ -360,6 +391,221 @@ namespace Pono.KawaGlint.Rendering
             renderer.sortingOrder = FishSortingOrder;
 
             controller.SetTargetFish(go.transform, renderer, nativeWidthWorld);
+            BuildRareAura(controller, go.transform, spriteMaterial);
+        }
+
+        // ---------------------------------------------------------------
+        // Rare-fish aura (halo order 13, sparkles order 15) -- procedural,
+        // no art dependency. Built as a child of the target fish so it
+        // follows it for free; KawaGlintRareAura undoes the fish's own
+        // non-unit scale so everything below is authored in world units.
+        // ---------------------------------------------------------------
+
+        private const int HaloTextureWidth = 192;
+        private const int HaloTextureHeight = 96;
+        private const int SparkleTextureSize = 32;
+
+        private static void BuildRareAura(
+            KawaGlintActorsController controller,
+            Transform targetFishTransform,
+            Material spriteMaterial)
+        {
+            var root = new GameObject("RareAura");
+            root.transform.SetParent(targetFishTransform, false);
+            var aura = root.AddComponent<KawaGlintRareAura>();
+
+            // --- halo ---
+            // Baked as an ELLIPSE at 192x96. Deliberately not a circle
+            // squashed by a non-uniform localScale: distorting a texture off
+            // its authored aspect ratio is banned project-wide, and there is
+            // no reason to break it here when baking the right shape costs
+            // nothing.
+            var haloTexture = CreateSoftEllipseTexture();
+            // Runtime-generated and referenced by nothing else, so it is the
+            // one asset in this method that must be registered for cleanup.
+            // (Never register anything that came out of
+            // KawaGlintSpriteCatalog -- those wrap Resources-owned textures.)
+            controller.RegisterGeneratedAsset(haloTexture);
+            // PPU == texture width gives the halo a native size of exactly
+            // 1.0 x 0.5 world units, so KawaGlintRareAura can write
+            // "fishLength * 1.30" straight into localScale.
+            var haloSprite = CreateSprite(haloTexture, new Vector2(0.5f, 0.5f), "KawaGlint Rare Halo", HaloTextureWidth);
+            controller.RegisterGeneratedAsset(haloSprite);
+
+            var haloGo = new GameObject("RareHalo");
+            haloGo.transform.SetParent(root.transform, false);
+            var haloRenderer = haloGo.AddComponent<SpriteRenderer>();
+            haloRenderer.sprite = haloSprite;
+            // Shares the plain sprite material -- the halo is a soft glow, not
+            // a fish, so it must not inherit the tail-wag shader.
+            haloRenderer.sharedMaterial = spriteMaterial;
+            haloRenderer.sortingOrder = RareHaloSortingOrder;
+            haloRenderer.enabled = false;
+
+            // --- sparkles ---
+            var sparkleTexture = CreateSparkleTexture();
+            controller.RegisterGeneratedAsset(sparkleTexture);
+            var sparkleMaterial = CreateSharedMaterial("KawaGlint Rare Sparkle (Runtime)", sparkleTexture);
+            controller.RegisterGeneratedAsset(sparkleMaterial);
+
+            var sparkles = BuildRareSparkles(root.transform, sparkleMaterial);
+
+            aura.Bind(haloGo.transform, haloRenderer, sparkles);
+            controller.SetTargetFishAura(aura);
+        }
+
+        private static ParticleSystem BuildRareSparkles(Transform parent, Material material)
+        {
+            var go = new GameObject("RareSparkles");
+            go.transform.SetParent(parent, false);
+
+            var system = go.AddComponent<ParticleSystem>();
+            // AddComponent<ParticleSystem>() starts the system playing
+            // immediately, and several properties below refuse to be set on a
+            // playing system. Same stop-then-configure-then-play order as
+            // KawaGlintStageBuilder.BuildMotes.
+            system.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            system.useAutoRandomSeed = false;
+            system.randomSeed = (uint)GenerationSeed;
+
+            var main = system.main;
+            main.loop = true;
+            main.prewarm = false;
+            main.playOnAwake = false;
+            main.duration = 4f;
+            main.startDelay = 0f;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(
+                KawaGlintRareAura.SparkleMinLifetimeSeconds,
+                KawaGlintRareAura.SparkleMaxLifetimeSeconds);
+            main.startSpeed = 0f;
+            main.startSize = new ParticleSystem.MinMaxCurve(0.035f, 0.08f);
+            main.startColor = new ParticleSystem.MinMaxGradient(Color.white);
+            // World space, so the motes stay where they were born and the fish
+            // swims out from under them -- reads as glitter left hanging in
+            // the water rather than as decals stuck to the sprite.
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.maxParticles = 24;
+            main.gravityModifier = 0f;
+
+            var emission = system.emission;
+            // Starts silent. KawaGlintRareAura raises this only once the fish
+            // is close enough to be revealed, and only for tier >= 1.
+            emission.rateOverTime = 0f;
+
+            var shape = system.shape;
+            shape.enabled = true;
+            shape.shapeType = ParticleSystemShapeType.Box;
+            shape.position = Vector3.zero;
+            shape.rotation = Vector3.zero;
+            shape.scale = Vector3.one; // re-sized per cast from the fish's length
+
+            var velocityOverLifetime = system.velocityOverLifetime;
+            velocityOverLifetime.enabled = true;
+            velocityOverLifetime.space = ParticleSystemSimulationSpace.World;
+            // MUST zero every curve on this module with the two-constant
+            // constructor, not just x/y/z. VelocityOverLifetimeModule shares
+            // ONE curve-evaluation mode across all of its curves; setting only
+            // x/y/z to TwoConstants leaves orbital*/radial/speedModifier at
+            // Constant, and Unity re-validates the mismatch every frame,
+            // producing an endless "Particle Velocity curves must all be in
+            // the same mode" console spam. This is a re-run of a bug already
+            // paid for once in KawaGlintStageBuilder.BuildMotes -- see the
+            // long note there. Zeroing them is behaviorally a no-op.
+            velocityOverLifetime.x = new ParticleSystem.MinMaxCurve(-0.05f, 0.05f);
+            velocityOverLifetime.y = new ParticleSystem.MinMaxCurve(0.10f, 0.22f); // slow rise
+            velocityOverLifetime.z = new ParticleSystem.MinMaxCurve(0f, 0f);
+            velocityOverLifetime.orbitalX = new ParticleSystem.MinMaxCurve(0f, 0f);
+            velocityOverLifetime.orbitalY = new ParticleSystem.MinMaxCurve(0f, 0f);
+            velocityOverLifetime.orbitalZ = new ParticleSystem.MinMaxCurve(0f, 0f);
+            velocityOverLifetime.orbitalOffsetX = new ParticleSystem.MinMaxCurve(0f, 0f);
+            velocityOverLifetime.orbitalOffsetY = new ParticleSystem.MinMaxCurve(0f, 0f);
+            velocityOverLifetime.orbitalOffsetZ = new ParticleSystem.MinMaxCurve(0f, 0f);
+            velocityOverLifetime.radial = new ParticleSystem.MinMaxCurve(0f, 0f);
+            velocityOverLifetime.speedModifier = new ParticleSystem.MinMaxCurve(1f, 1f);
+
+            var colorOverLifetime = system.colorOverLifetime;
+            colorOverLifetime.enabled = true;
+            // Fade in over the first 15% of the particle's life, hold, fade
+            // out to nothing. Every particle carries its own phase, so no
+            // amount of them ever produces a screen-wide pulse.
+            colorOverLifetime.color = new ParticleSystem.MinMaxGradient(BuildFadeInOutGradient());
+
+            var renderer = go.GetComponent<ParticleSystemRenderer>();
+            renderer.sharedMaterial = material;
+            renderer.sortingOrder = RareSparkleSortingOrder;
+            renderer.renderMode = ParticleSystemRenderMode.Billboard;
+
+            return system;
+        }
+
+        private static Gradient BuildFadeInOutGradient()
+        {
+            var gradient = new Gradient();
+            gradient.SetKeys(
+                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                new[]
+                {
+                    new GradientAlphaKey(0f, 0f),
+                    new GradientAlphaKey(1f, 0.15f),
+                    new GradientAlphaKey(1f, 0.8f),
+                    new GradientAlphaKey(0f, 1f)
+                });
+            return gradient;
+        }
+
+        private static Texture2D CreateSoftEllipseTexture()
+        {
+            const int width = HaloTextureWidth;
+            const int height = HaloTextureHeight;
+            var texture = CreateTexture(width, height, "KawaGlint Rare Halo");
+            var pixels = new Color32[width * height];
+            var centerX = (width - 1) * 0.5f;
+            var centerY = (height - 1) * 0.5f;
+            var rx = width * 0.5f;
+            var ry = height * 0.5f;
+
+            for (var y = 0; y < height; y++)
+            {
+                var dy = (y - centerY) / ry;
+                for (var x = 0; x < width; x++)
+                {
+                    var dx = (x - centerX) / rx;
+                    var d = Mathf.Sqrt(dx * dx + dy * dy); // 1.0 on the ellipse boundary
+                    // Squared falloff from a solid core: no visible rim at all,
+                    // which is what keeps this reading as light in the water
+                    // instead of as a drawn outline around the fish.
+                    var alpha = Mathf.Clamp01(1f - d);
+                    alpha *= alpha;
+                    pixels[y * width + x] = new Color(1f, 1f, 1f, alpha);
+                }
+            }
+            texture.SetPixels32(pixels);
+            texture.Apply(false, false);
+            return texture;
+        }
+
+        private static Texture2D CreateSparkleTexture()
+        {
+            const int size = SparkleTextureSize;
+            var texture = CreateTexture(size, size, "KawaGlint Rare Sparkle");
+            var pixels = new Color32[size * size];
+            var center = (size - 1) * 0.5f;
+            var maxRadius = size * 0.5f;
+
+            for (var y = 0; y < size; y++)
+            {
+                var dy = y - center;
+                for (var x = 0; x < size; x++)
+                {
+                    var dx = x - center;
+                    var d = Mathf.Sqrt(dx * dx + dy * dy) / maxRadius;
+                    var alpha = 1f - SmoothStep01(0.15f, 1f, d);
+                    pixels[y * size + x] = new Color(1f, 1f, 1f, Mathf.Clamp01(alpha));
+                }
+            }
+            texture.SetPixels32(pixels);
+            texture.Apply(false, false);
+            return texture;
         }
 
         // ---------------------------------------------------------------
@@ -372,9 +618,21 @@ namespace Pono.KawaGlint.Rendering
             float waterlineWorldY,
             Material material)
         {
-            var texture = CreateBobberTexture();
+            var texture = KawaGlintBobberArt.CreateBobberTexture();
             controller.RegisterGeneratedAsset(texture);
-            var sprite = CreateSprite(texture, new Vector2(0.5f, 0.5f), "KawaGlint Bobber", PixelsPerUnit);
+
+            // Pivot at the waistline, not the sprite centre. With a waist
+            // pivot, "transform.position.y == the water surface" literally
+            // means "the waistline sits on the water", which is what the
+            // float's shape says should happen. The old centre pivot only
+            // approximated that, and the approximation is what made the float
+            // look like it was sitting on a slightly different water level
+            // than everything else.
+            var sprite = CreateSprite(
+                texture,
+                new Vector2(0.5f, KawaGlintBobberArt.WaistV),
+                "KawaGlint Bobber",
+                PixelsPerUnit);
             controller.RegisterGeneratedAsset(sprite);
 
             var go = new GameObject("Bobber");
@@ -382,80 +640,32 @@ namespace Pono.KawaGlint.Rendering
 
             var renderer = go.AddComponent<SpriteRenderer>();
             renderer.sprite = sprite;
-            renderer.sharedMaterial = material;
+            // Submerge material: tints and softly cuts the part of the float
+            // that is under the surface. Falls back to the plain sprite
+            // material (fully opaque float, no cut line) if the shader is
+            // missing or unsupported -- this builder must always succeed.
+            var submergeMaterial = KawaGlintBobber.CreateSubmergeMaterial(material);
+            if (submergeMaterial != material)
+            {
+                controller.RegisterGeneratedAsset(submergeMaterial);
+            }
+            renderer.sharedMaterial = submergeMaterial;
             renderer.sortingOrder = BobberSortingOrder;
 
-            // Single uniform scalar derived from the texture's own native
-            // height so the authored dome/taper silhouette is never
+            // Single uniform scalar derived from the sprite's own native
+            // height so the authored dome/taper/antenna silhouette is never
             // stretched off its proportions.
-            var nativeHeight = BobberTextureHeight / PixelsPerUnit;
-            var scale = BobberWorldHeight / nativeHeight;
+            var nativeHeight = sprite.bounds.size.y;
+            var scale = nativeHeight > 0.0001f ? BobberWorldHeight / nativeHeight : 1f;
             go.transform.localScale = new Vector3(scale, scale, 1f);
 
             var bobber = go.AddComponent<KawaGlintBobber>();
-            var halfHeightWorld = BobberWorldHeight * 0.5f;
-            bobber.Initialize(BobberRestX, waterlineWorldY, halfHeightWorld);
+            // Distance from the waist pivot up to the antenna bead -- where
+            // the fishing line attaches. (This argument used to be
+            // "halfHeightWorld", back when the pivot was the sprite centre.)
+            bobber.Initialize(BobberRestX, waterlineWorldY, KawaGlintBobberArt.TopOffsetWorld(BobberWorldHeight));
 
             controller.SetBobber(bobber);
-        }
-
-        private static Texture2D CreateBobberTexture()
-        {
-            const int width = BobberTextureWidth;
-            const int height = BobberTextureHeight;
-            var centerX = (width - 1) * 0.5f;
-            // Inset from the full half-width so the widest point (the
-            // "equator" at BobberSplitV) still has a soft anti-aliased edge
-            // rather than touching the texture border.
-            var maxHalfWidth = width * 0.5f * 0.82f;
-            var domeHeightV = 1f - BobberSplitV;
-
-            var texture = CreateTexture(width, height, "KawaGlint Bobber");
-            var pixels = new Color32[width * height];
-            for (var y = 0; y < height; y++)
-            {
-                var v = height > 1 ? y / (float)(height - 1) : 0f;
-
-                float halfWidthNorm;
-                if (v >= BobberSplitV)
-                {
-                    // Upper hemisphere: widest (1.0) at the equator
-                    // (v = BobberSplitV), tapering to a rounded point at the
-                    // top (v = 1) -- the "dome".
-                    var t = domeHeightV > 0.0001f ? (v - BobberSplitV) / domeHeightV : 0f;
-                    halfWidthNorm = Mathf.Sqrt(Mathf.Max(0f, 1f - t * t));
-                }
-                else
-                {
-                    // Lower taper: linear from the equator's full width down
-                    // to a point at the bottom row -- the classic bobber
-                    // teardrop silhouette.
-                    halfWidthNorm = BobberSplitV > 0.0001f ? v / BobberSplitV : 0f;
-                }
-                var halfWidthPixels = maxHalfWidth * halfWidthNorm;
-
-                Color bodyColor;
-                if (Mathf.Abs(v - BobberSplitV) < BobberWaistHalfBandV)
-                {
-                    bodyColor = BobberWaistColor;
-                }
-                else
-                {
-                    bodyColor = v >= BobberSplitV ? BobberRedColor : BobberWhiteColor;
-                }
-
-                var rowStart = y * width;
-                for (var x = 0; x < width; x++)
-                {
-                    var dx = x - centerX;
-                    var value = halfWidthPixels > 0.001f ? Mathf.Abs(dx) / halfWidthPixels : 999f;
-                    var alpha = 1f - SmoothStep01(0.85f, 1.05f, value);
-                    pixels[rowStart + x] = new Color(bodyColor.r, bodyColor.g, bodyColor.b, Mathf.Clamp01(alpha));
-                }
-            }
-            texture.SetPixels32(pixels);
-            texture.Apply(false, false);
-            return texture;
         }
 
         // ---------------------------------------------------------------
@@ -491,10 +701,14 @@ namespace Pono.KawaGlint.Rendering
                 renderer.sortingOrder = RippleRingSortingOrder;
                 renderer.color = new Color(1f, 1f, 1f, 0f);
 
-                // Two rings, offset by half the loop period so they read as
-                // a continuous outward pulse rather than pulsing in unison.
-                var phaseOffsetSeconds = i * (KawaGlintActorsController.RingLoopDurationSeconds * 0.5f);
-                controller.RegisterRing(go.transform, renderer, phaseOffsetSeconds);
+                // Phase as a FRACTION of the loop, not seconds: the rings are
+                // evenly spread so they read as a continuous outward pulse
+                // rather than pulsing in unison, and expressing that as a
+                // fraction keeps it a true even spread when the controller
+                // swaps to a shorter loop for the pull/renda ring modes. A
+                // phase in seconds would silently stop being half a period the
+                // moment the duration changed.
+                controller.RegisterRing(go.transform, renderer, i / (float)RingCount);
             }
         }
 
@@ -657,7 +871,7 @@ namespace Pono.KawaGlint.Rendering
             return sprite;
         }
 
-        private static Material CreateSharedMaterial(string name)
+        private static Material CreateSharedMaterial(string name, Texture2D mainTexture = null)
         {
             var shader = Shader.Find(SpriteUnlitShaderName);
             if (shader == null)
@@ -665,11 +879,18 @@ namespace Pono.KawaGlint.Rendering
                 Debug.LogError($"KawaGlint: shader not found, falling back: {SpriteUnlitShaderName}");
                 shader = Shader.Find("Sprites/Default");
             }
-            return new Material(shader)
+            var material = new Material(shader)
             {
                 name = name,
                 hideFlags = HideFlags.DontSave
             };
+            if (mainTexture != null)
+            {
+                // Particle renderers take their texture from the material
+                // rather than from a Sprite, unlike every SpriteRenderer here.
+                material.mainTexture = mainTexture;
+            }
+            return material;
         }
 
         private static Color HexColor(byte r, byte g, byte b, byte a = 255)

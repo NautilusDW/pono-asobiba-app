@@ -74,6 +74,10 @@ namespace Pono.KawaGlint.Rendering
             { "fish_tai", "KawaGlint/Sprites/fish_tai_shadow" },
             { "fish_ika", "KawaGlint/Sprites/fish_ika_shadow" },
             { "fish_maguro", "KawaGlint/Sprites/fish_maguro_shadow" },
+            // Species-specific silhouette required even though a shared
+            // archetype exists: なまず's whiskers are the whole reason a child
+            // recognises it, and no shared body-plan drawing can carry them.
+            { "fish_namazu", "KawaGlint/Sprites/fish_namazu_shadow" },
         };
 
         private static readonly Dictionary<string, string> CatchPaths = new Dictionary<string, string>
@@ -96,6 +100,28 @@ namespace Pono.KawaGlint.Rendering
             { "fish_tai", "KawaGlint/Sprites/fish_tai_catch" },
             { "fish_ika", "KawaGlint/Sprites/fish_ika_catch" },
             { "fish_maguro", "KawaGlint/Sprites/fish_maguro_catch" },
+            // Roster-expansion species. The PNGs are not drawn yet, so every
+            // one of these currently misses and falls through to the
+            // procedural stand-in; the rows exist so that dropping the art in
+            // later needs no code change here. Art priority is rare/super
+            // first (iwana -> namazu -> tako -> hirame), since a super showing
+            // up as a flat placeholder after a ~90-cast wait is the worst
+            // version of this.
+            { "fish_yamame", "KawaGlint/Sprites/fish_yamame_catch" },
+            { "fish_dojou", "KawaGlint/Sprites/fish_dojou_catch" },
+            { "fish_haze", "KawaGlint/Sprites/fish_haze_catch" },
+            { "sawagani", "KawaGlint/Sprites/fish_sawagani_catch" },
+            { "fish_shijimi", "KawaGlint/Sprites/fish_shijimi_catch" },
+            { "fish_iwana", "KawaGlint/Sprites/fish_iwana_catch" },
+            { "fish_namazu", "KawaGlint/Sprites/fish_namazu_catch" },
+            { "fish_kisu", "KawaGlint/Sprites/fish_kisu_catch" },
+            { "fish_asari", "KawaGlint/Sprites/fish_asari_catch" },
+            { "fish_saba", "KawaGlint/Sprites/fish_saba_catch" },
+            { "fish_sanma", "KawaGlint/Sprites/fish_sanma_catch" },
+            { "fish_kani", "KawaGlint/Sprites/fish_kani_catch" },
+            { "fish_sazae", "KawaGlint/Sprites/fish_sazae_catch" },
+            { "fish_tako", "KawaGlint/Sprites/fish_tako_catch" },
+            { "fish_hirame", "KawaGlint/Sprites/fish_hirame_catch" },
         };
 
         // Sea-expansion location background art (§D-2). Keyed by
@@ -136,26 +162,92 @@ namespace Pono.KawaGlint.Rendering
         private static readonly HashSet<string> LoggedShadowFallbackIds = new HashSet<string>();
         private static readonly HashSet<string> LoggedCatchFallbackIds = new HashSet<string>();
 
-        /// <summary>Swimming-silhouette art for the given species Id (see <c>TsuriFishData.RiverSpecies</c>/<c>NewSpecies</c>). Null if the Id is unknown entirely; falls back to a procedural silhouette (never null) for a known id whose art resource isn't generated yet.</summary>
+        /// <summary>Swimming-silhouette art for the given species Id, at rarity tier 0. See <see cref="LoadFishShadow(string,int)"/>.</summary>
         public static Sprite LoadFishShadow(string speciesId)
         {
-            if (string.IsNullOrEmpty(speciesId) || !ShadowPaths.TryGetValue(speciesId, out var path))
+            return LoadFishShadow(speciesId, 0);
+        }
+
+        /// <summary>
+        /// Swimming-silhouette art for the given species Id, resolved through
+        /// three stages in order:
+        ///
+        /// <list type="number">
+        /// <item>the species' own hand-drawn shadow PNG (<see cref="ShadowPaths"/>);</item>
+        /// <item>the shared body-plan library drawing for its archetype
+        /// (<c>Shadows/sil_&lt;key&gt;_shadow.png</c>, see
+        /// <see cref="KawaGlintFishSilhouettes"/>);</item>
+        /// <item>a procedural stand-in.</item>
+        /// </list>
+        ///
+        /// Stage 2 is what makes rare species read as rare without
+        /// commissioning per-species art: "魚影は何種類かでよい" -- a shared
+        /// drawing per body plan is enough for the outline to say "this is not
+        /// the usual fish". <paramref name="rarityTier"/> only matters for a
+        /// species with no row in the silhouette table at all (it picks how
+        /// impressive the guessed body plan should be).
+        ///
+        /// Never returns null for any id the silhouette table knows. Returns
+        /// null (and logs) only for an id unknown to both tables.
+        /// </summary>
+        public static Sprite LoadFishShadow(string speciesId, int rarityTier)
+        {
+            if (string.IsNullOrEmpty(speciesId))
+            {
+                Debug.LogError("KawaGlint: no fish-shadow art mapped for a null/empty species id");
+                return null;
+            }
+
+            var known = KawaGlintFishSilhouettes.HasExplicitEntry(speciesId);
+            var hasDedicatedPath = ShadowPaths.TryGetValue(speciesId, out var path);
+            if (!known && !hasDedicatedPath)
             {
                 Debug.LogError($"KawaGlint: no fish-shadow art mapped for species id '{speciesId}'");
                 return null;
             }
 
-            var sprite = LoadSprite(path, CenterPivot, logMissing: false);
-            if (sprite != null)
+            // 1. Species-specific drawing.
+            if (hasDedicatedPath)
             {
-                return sprite;
+                var sprite = LoadSprite(path, CenterPivot, logMissing: false);
+                if (sprite != null)
+                {
+                    return sprite;
+                }
             }
 
+            // 2. Shared body-plan library drawing.
+            var archetype = KawaGlintFishSilhouettes.ResolveArchetype(speciesId, rarityTier);
+            var archetypeSprite = LoadArchetypeShadow(archetype);
+            if (archetypeSprite != null)
+            {
+                if (LoggedShadowFallbackIds.Add(speciesId))
+                {
+                    Debug.Log($"KawaGlint: no species-specific shadow art for '{speciesId}'; using shared archetype silhouette '{archetype}'.");
+                }
+                return archetypeSprite;
+            }
+
+            // 3. Procedural stand-in.
             if (LoggedShadowFallbackIds.Add(speciesId))
             {
-                Debug.Log($"KawaGlint: no shadow art resource yet for species '{speciesId}' ({path}); using procedural fallback silhouette.");
+                Debug.Log($"KawaGlint: no shadow art resource yet for species '{speciesId}' (archetype '{archetype}'); using procedural fallback silhouette.");
             }
             return KawaGlintProceduralFishArt.GetSilhouette(speciesId);
+        }
+
+        /// <summary>
+        /// Shared body-plan silhouette drawing for a
+        /// <see cref="KawaGlintFishSilhouettes"/> archetype key. Null until
+        /// that library is drawn -- callers fall back, exactly like
+        /// <see cref="LoadDecor"/>. Dropping
+        /// <c>Shadows/sil_&lt;key&gt;_shadow.png</c> into Resources switches
+        /// every species on that body plan over with no code change.
+        /// </summary>
+        public static Sprite LoadArchetypeShadow(string archetypeKey)
+        {
+            var path = KawaGlintFishSilhouettes.ArchetypeResourcePath(archetypeKey);
+            return string.IsNullOrEmpty(path) ? null : LoadSprite(path, CenterPivot, logMissing: false);
         }
 
         /// <summary>Full-color catch illustration for the given species Id. Null if the Id is unknown entirely; falls back to a procedural silhouette (never null) for a known id whose art resource isn't generated yet.</summary>

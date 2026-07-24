@@ -105,10 +105,16 @@ namespace Pono.KawaGlint.Rendering
         private SpriteRenderer _ringRenderer;
         private SpriteRenderer[] _dropletRenderers;
 
+        // Lower bound on Play's scale argument -- a zero or negative
+        // multiplier would collapse the whole effect into an invisible dot
+        // (or mirror it), which is never what a caller means.
+        private const float MinPlayScale = 0.05f;
+
         private KawaGlintBobber _bobber;
 
         private Vector3 _origin;
         private float _elapsed;
+        private float _scale = 1f;
 
         /// <summary>True while a splash is actively animating (from <see cref="Play"/> until its total duration elapses).</summary>
         public bool IsPlaying { get; private set; }
@@ -137,20 +143,39 @@ namespace Pono.KawaGlint.Rendering
             _bobber = bobber;
             if (_bobber != null)
             {
-                _bobber.OnLanded += Play;
+                _bobber.OnLanded += HandleLanded;
             }
         }
 
         /// <summary>
         /// Starts (or restarts, from the head, if already playing) the
         /// one-shot splash at <paramref name="landingWorld"/>.
+        ///
+        /// <paramref name="scale"/> uniformly scales how far the droplets
+        /// travel, how big they are, and how wide the ring grows -- 1
+        /// (the default) is byte-for-byte the shipped landing splash, and a
+        /// smaller value gives each mid-cast "グイン" its own smaller,
+        /// clearly secondary plink without inventing a second effect.
+        ///
+        /// The multiplier is applied here, on the presentation side only:
+        /// the curves in <see cref="KawaGlintSplashMath"/> are pinned by
+        /// EditMode tests and must not move.
         /// </summary>
-        public void Play(Vector3 landingWorld)
+        public void Play(Vector3 landingWorld, float scale = 1f)
         {
             _origin = landingWorld;
+            _scale = Mathf.Max(MinPlayScale, scale);
             _elapsed = 0f;
             IsPlaying = true;
             SetRenderersEnabled(true);
+        }
+
+        // Adapter for KawaGlintBobber.OnLanded: a method group with an
+        // optional parameter is not convertible to Action<Vector3>, and a
+        // real splashdown always plays at full size anyway.
+        private void HandleLanded(Vector3 landingWorld)
+        {
+            Play(landingWorld, 1f);
         }
 
         private void Update()
@@ -186,7 +211,7 @@ namespace Pono.KawaGlint.Rendering
             }
 
             var t01 = _elapsed / KawaGlintSplashMath.RingDurationSeconds;
-            var scale = KawaGlintSplashMath.RingScale(t01);
+            var scale = KawaGlintSplashMath.RingScale(t01) * _scale;
             _ringTransform.position = _origin;
             _ringTransform.localScale = new Vector3(scale, scale, 1f);
 
@@ -211,10 +236,10 @@ namespace Pono.KawaGlint.Rendering
                     continue;
                 }
 
-                var offset = KawaGlintSplashMath.DropletPosition(i, _elapsed);
+                var offset = KawaGlintSplashMath.DropletPosition(i, _elapsed) * _scale;
                 renderer.transform.position = _origin + new Vector3(offset.x, offset.y, 0f);
 
-                var scale = DropletDiameterWorld * KawaGlintSplashMath.DropletScale01(t01);
+                var scale = DropletDiameterWorld * KawaGlintSplashMath.DropletScale01(t01) * _scale;
                 renderer.transform.localScale = new Vector3(scale, scale, 1f);
 
                 var color = renderer.color;
@@ -246,7 +271,7 @@ namespace Pono.KawaGlint.Rendering
         {
             if (_bobber != null)
             {
-                _bobber.OnLanded -= Play;
+                _bobber.OnLanded -= HandleLanded;
             }
         }
     }

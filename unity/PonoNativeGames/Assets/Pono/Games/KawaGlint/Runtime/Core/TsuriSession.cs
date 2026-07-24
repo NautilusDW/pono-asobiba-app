@@ -32,12 +32,35 @@ namespace Pono.KawaGlint.Core
         public float RendaElapsedSec = 0f;
 
         /// <summary>
-        /// 海拡張 (KawaGlint 海拡張 実装契約 v1.0 §A-4) 新設・純加算フィールド。
-        /// null = 現行挙動 (asase 等、ロケーション別 WeightMul を適用しない既存パス)。
-        /// 非 null の場合 speciesId→倍率 で ComputeSpeciesProbabilities/PickSpecies の
-        /// 抽選重みに乗算される (TsuriWorldData.BuildWeightMulMap が生成)。
+        /// batch:1470 実装契約 §A-5 新設: 現在のロケーションの Spawns 台帳
+        /// (SpeciesId → ロケーション WeightMul / Niche / MinProbability)。
+        /// 旧 <c>SpeciesWeightMulById</c> (辞書に潰した WeightMul のみ) を置き換える --
+        /// 新しい1段絶対重みモデルは MinProbability の floor も必要とするため、
+        /// エントリそのものを保持する。 null/空 = 全種 WeightMul 1.0 / floor なし。
         /// </summary>
-        public Dictionary<string, float> SpeciesWeightMulById = null;
+        public List<TsuriSpawnEntry> SpawnEntries = null;
+
+        /// <summary>
+        /// batch:1470 実装契約 §A-5 新設: 直近に**捕獲した** speciesId
+        /// (新しいものが先頭、最大 <see cref="TsuriTuning.RecentCatchMemory"/> 件)。
+        /// 抽選時に <see cref="TsuriTuning.RecentCatchWeightMul"/> を掛けるだけの
+        /// 弱いペナルティで、旧 SessionSeenIds×0.30 の「実質退場」とは別物。
+        /// </summary>
+        public List<string> RecentCatchIds = new List<string>();
+
+        /// <summary>
+        /// batch:1470 実装契約 §A-5 新設: 最後に rare 以上を**捕獲**してからの
+        /// キャスト数。 Cast() のたびに +1、rare+ の landed で 0 にリセットする
+        /// (逃した場合は伸び続ける)。 <see cref="TsuriTuning.RarityPityMul"/> の入力。
+        /// </summary>
+        public int DryCastsSinceRarity = 0;
+
+        /// <summary>
+        /// batch:1470 実装契約 §A-5 新設: 図鑑に既に載っている speciesId の集合。
+        /// **null = はじめて出会うボーナスを無効化** (既定 -- fishdex 未配線のテスト等)。
+        /// 非 null なら、ここに含まれない種に FirstEncounterWeightMul が掛かる。
+        /// </summary>
+        public HashSet<string> KnownSpeciesIds = null;
 
         /// <summary>
         /// core.js の cloneSession() と同じ深い複製。 リスト/辞書は新インスタンスを
@@ -46,15 +69,10 @@ namespace Pono.KawaGlint.Core
         /// </summary>
         public TsuriSession Clone()
         {
-            Dictionary<string, float> weightMulClone = null;
-            if (SpeciesWeightMulById != null)
-            {
-                weightMulClone = new Dictionary<string, float>();
-                foreach (var kv in SpeciesWeightMulById)
-                {
-                    weightMulClone[kv.Key] = kv.Value;
-                }
-            }
+            // Spawns エントリ自体は静的な台帳 (TsuriWorldData.Locations) の不変オブジェクト
+            // なので、リストだけ新規生成して要素参照は共有してよい (SpeciesPool と同じ扱い)。
+            var spawnsClone = SpawnEntries != null ? new List<TsuriSpawnEntry>(SpawnEntries) : null;
+            var knownClone = KnownSpeciesIds != null ? new HashSet<string>(KnownSpeciesIds) : null;
 
             var clone = new TsuriSession
             {
@@ -71,7 +89,10 @@ namespace Pono.KawaGlint.Core
                 FloorHeldSec = FloorHeldSec,
                 CaughtLog = new List<TsuriCaughtEntry>(CaughtLog),
                 RendaElapsedSec = RendaElapsedSec,
-                SpeciesWeightMulById = weightMulClone
+                SpawnEntries = spawnsClone,
+                RecentCatchIds = new List<string>(RecentCatchIds),
+                DryCastsSinceRarity = DryCastsSinceRarity,
+                KnownSpeciesIds = knownClone
             };
             return clone;
         }

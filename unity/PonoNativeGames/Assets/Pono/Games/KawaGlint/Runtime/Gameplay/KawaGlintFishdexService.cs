@@ -96,6 +96,11 @@ namespace Pono.KawaGlint.Gameplay
             return Document.TotalCountForSource(TsuriWorldData.SourceFor(zone));
         }
 
+        /// <summary>
+        /// TsuriCatchOp.rarity の語彙。 batch:1470 §A-9 で "legendary" を追加した
+        /// (段だけ先に用意する -- 在籍種は今回ゼロなので実際には出力されない)。
+        /// dex スキーマ version は 1 のまま (counters 永続化は legendary 種と同時、§X-7)。
+        /// </summary>
         private static string RarityToWeb(TsuriRarity rarity)
         {
             switch (rarity)
@@ -104,6 +109,8 @@ namespace Pono.KawaGlint.Gameplay
                     return "rare";
                 case TsuriRarity.Super:
                     return "super";
+                case TsuriRarity.Legendary:
+                    return "legendary";
                 default:
                     return "normal";
             }

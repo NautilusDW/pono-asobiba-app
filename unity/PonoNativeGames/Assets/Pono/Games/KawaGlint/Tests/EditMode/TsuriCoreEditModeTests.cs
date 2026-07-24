@@ -34,10 +34,10 @@ namespace Pono.KawaGlint.Tests.EditMode
             Assert.That(TsuriTuning.AutoHookAfterMisses, Is.EqualTo(3));
             Assert.That(TsuriTuning.HelpAfterFloorSec, Is.EqualTo(10f).Within(Tolerance));
             Assert.That(TsuriTuning.PityWindowBonusPctPerEscape, Is.EqualTo(20f).Within(Tolerance));
-            Assert.That(TsuriTuning.RarityBaseWeight(TsuriRarity.Normal), Is.EqualTo(70f).Within(Tolerance));
-            Assert.That(TsuriTuning.RarityBaseWeight(TsuriRarity.Rare), Is.EqualTo(25f).Within(Tolerance));
-            Assert.That(TsuriTuning.RarityBaseWeight(TsuriRarity.Super), Is.EqualTo(5f).Within(Tolerance));
-            Assert.That(TsuriTuning.SessionDedupeWeightMul, Is.EqualTo(0.3f).Within(Tolerance));
+            // batch:1470: レアリティ基準重みは 70/25/5 の「層シェア」から
+            // 100/13/2.0/0.55 の「1段絶対重み」へ作り直した (詳細は
+            // TsuriDrawModelEditModeTests が正本。ここは重複を避けて存在確認のみ)。
+            Assert.That(TsuriTuning.RarityBaseWeight(TsuriRarity.Normal), Is.EqualTo(100f).Within(Tolerance));
             Assert.That(TsuriTuning.TugEnabledDefault, Is.False);
         }
 
@@ -58,6 +58,10 @@ namespace Pono.KawaGlint.Tests.EditMode
             Assert.That(session.PityBySpecies, Is.Empty);
             Assert.That(session.SessionSeenIds, Is.Empty);
             Assert.That(session.CaughtLog, Is.Empty);
+            // batch:1470 新設フィールド。
+            Assert.That(session.RecentCatchIds, Is.Empty);
+            Assert.That(session.DryCastsSinceRarity, Is.EqualTo(0));
+            Assert.That(session.KnownSpeciesIds, Is.Null, "既定は null = 初遭遇ボーナス無効");
         }
 
         // ═══ 3. Cast ═════════════════════════════════════════════════════
@@ -420,35 +424,47 @@ namespace Pono.KawaGlint.Tests.EditMode
             Assert.That(castResult.RendaElapsedSec, Is.EqualTo(0f).Within(Tolerance));
         }
 
-        // ═══ 9. ComputeSpeciesProbabilities ══════════════════════════════
+        // ═══ 9. ComputeSpeciesProbabilities (batch:1470 1段絶対重みモデル) ═══
         [Test]
-        public void ComputeSpeciesProbabilities_FullPool_MatchesAnalyticRarityAndWeightShares()
+        public void ComputeSpeciesProbabilities_FullPool_MatchesSingleStageAbsoluteWeightFormula()
         {
-            var probs = TsuriCore.ComputeSpeciesProbabilities(FullPool(), new List<string>());
+            var pool = FullPool();
+            var probs = TsuriCore.ComputeSpeciesProbabilities(pool, null, TsuriDrawContext.Neutral);
 
-            double normalGroupTotal = probs["fish_ayu"] + probs["fish_nijimasu"] + probs["zarigani"] + probs["treasure_boot"];
-            double rareGroupTotal = probs["fish_salmon"];
+            // W(i) = RarityBaseWeight × SpeciesWeightMul (spawns=null なので
+            // ロケーション倍率も floor も無し)。 解析値と一致することを直接確かめる。
+            // 実装は double で積むので、期待値も double へ昇格してから掛ける
+            // (float 同士で掛けると 5e-9 ほどずれて偽の失敗になる)。
+            double total = 0;
+            foreach (var sp in pool)
+            {
+                total += (double)TsuriTuning.RarityBaseWeight(sp.Rarity) * (double)sp.SpeciesWeightMul;
+            }
+            foreach (var sp in pool)
+            {
+                double expected = (double)TsuriTuning.RarityBaseWeight(sp.Rarity) * (double)sp.SpeciesWeightMul / total;
+                Assert.That(probs[sp.Id], Is.EqualTo(expected).Within(1e-12), sp.Id);
+            }
 
-            Assert.That(normalGroupTotal, Is.EqualTo(70.0 / 95.0).Within(Tolerance));
-            Assert.That(rareGroupTotal, Is.EqualTo(25.0 / 95.0).Within(Tolerance));
-
-            // 同一レアリティ内は weight 比 (あゆ22 / (22+20+5+4)=51)。
-            double expectedAyu = (70.0 / 95.0) * (22.0 / 51.0);
-            Assert.That(probs["fish_ayu"], Is.EqualTo(expectedAyu).Within(Tolerance));
-
-            double expectedSalmon = 25.0 / 95.0; // rare群に1種のみなので群内シェアは1
-            Assert.That(probs["fish_salmon"], Is.EqualTo(expectedSalmon).Within(Tolerance));
+            double sum = 0;
+            foreach (var kv in probs) sum += kv.Value;
+            Assert.That(sum, Is.EqualTo(1.0).Within(1e-9));
         }
 
         [Test]
-        public void ComputeSpeciesProbabilities_SeenSpecies_WeightDecaysBySessionDedupeMul()
+        public void ComputeSpeciesProbabilities_RecentCatch_DecaysOnlyThatSpecies_Mildly()
         {
-            var seen = new List<string> { "fish_ayu" };
-            var probs = TsuriCore.ComputeSpeciesProbabilities(FullPool(), seen);
+            var pool = FullPool();
+            var neutral = TsuriCore.ComputeSpeciesProbabilities(pool, null, TsuriDrawContext.Neutral);
+            var afterAyu = TsuriCore.ComputeSpeciesProbabilities(
+                pool, null, new TsuriDrawContext { RecentCatchIds = new List<string> { "fish_ayu" } });
 
-            // あゆの重みは 22*0.3=6.6 に減衰、同レアリティ内合計は 6.6+20+5+4=35.6
-            double expectedAyu = (70.0 / 95.0) * (6.6 / 35.6);
-            Assert.That(probs["fish_ayu"], Is.EqualTo(expectedAyu).Within(Tolerance));
+            // 0.80 倍の弱いペナルティなので、直後でも「あゆがまた出る」余地は十分に残る。
+            Assert.That(afterAyu["fish_ayu"], Is.LessThan(neutral["fish_ayu"]));
+            Assert.That(afterAyu["fish_ayu"], Is.GreaterThan(neutral["fish_ayu"] * 0.7),
+                "旧 SessionDedupe(0.30) のような実質退場に戻してはならない");
+            Assert.That(afterAyu["fish_nijimasu"], Is.GreaterThan(neutral["fish_nijimasu"]),
+                "減った分は他種へ再配分される");
         }
 
         // ═══ 10. PickSpecies ═════════════════════════════════════════════
@@ -456,11 +472,9 @@ namespace Pono.KawaGlint.Tests.EditMode
         public void PickSpecies_SameSeed_IsDeterministic()
         {
             var pool = FullPool();
-            var pity = new Dictionary<string, float>();
-            var seen = new List<string>();
 
-            var first = TsuriCore.PickSpecies(pool, pity, seen, new Random(123));
-            var second = TsuriCore.PickSpecies(pool, pity, seen, new Random(123));
+            var first = TsuriCore.PickSpecies(pool, null, TsuriDrawContext.Neutral, new Random(123));
+            var second = TsuriCore.PickSpecies(pool, null, TsuriDrawContext.Neutral, new Random(123));
 
             Assert.That(first, Is.EqualTo(second));
             Assert.That(pool.Exists(sp => sp.Id == first), Is.True);
@@ -469,7 +483,7 @@ namespace Pono.KawaGlint.Tests.EditMode
         [Test]
         public void PickSpecies_EmptyPool_ReturnsNull()
         {
-            var result = TsuriCore.PickSpecies(new List<TsuriSpecies>(), new Dictionary<string, float>(), new List<string>(), new Random(1));
+            var result = TsuriCore.PickSpecies(new List<TsuriSpecies>(), null, TsuriDrawContext.Neutral, new Random(1));
 
             Assert.That(result, Is.Null);
         }

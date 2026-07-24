@@ -27,7 +27,7 @@ namespace Pono.KawaGlint.Rendering
     /// of these statically-cached assets would permanently break every later
     /// call for that species for the lifetime of the application.
     /// </summary>
-    internal static class KawaGlintProceduralFishArt
+    public static class KawaGlintProceduralFishArt
     {
         private const float PixelsPerUnit = 100f;
         private static readonly Vector2 CenterPivot = new Vector2(0.5f, 0.5f);
@@ -73,24 +73,79 @@ namespace Pono.KawaGlint.Rendering
             { "fish_unagi", new Recipe { Shape = ShapeKind.Teardrop, Tint = HexColor(0x4A, 0x5A, 0x3A), AspectMul = 0.35f, TailLengthMul = 1.6f } },
         };
 
+        // Shadow-art contract color (#0F2C56): every archetype stand-in below
+        // is a flat fill in exactly the shade the illustrated silhouette PNGs
+        // are painted in, so dropping the real art in later changes the shape
+        // and nothing else.
+        private static readonly Color32 ArchetypeShadowTint = HexColor(0x0F, 0x2C, 0x56);
+
+        // Body-plan stand-ins, one per KawaGlintFishSilhouettes archetype key.
+        // These are placeholders for Shadows/sil_<key>_shadow.png: the point is
+        // that a rare's outline already differs from a normal's before any art
+        // is commissioned, not that these are good drawings. Every entry keeps
+        // the same head-left / tail-right orientation the wag shader requires.
+        private static readonly Dictionary<string, Recipe> ArchetypeRecipes = new Dictionary<string, Recipe>
+        {
+            { KawaGlintFishSilhouettes.SlimSmall, new Recipe { Shape = ShapeKind.Teardrop, Tint = ArchetypeShadowTint, AspectMul = 0.62f, TailLengthMul = 1.00f } },
+            { KawaGlintFishSilhouettes.StandardMid, new Recipe { Shape = ShapeKind.Teardrop, Tint = ArchetypeShadowTint, AspectMul = 1.00f, TailLengthMul = 1.00f } },
+            { KawaGlintFishSilhouettes.FlatDisc, new Recipe { Shape = ShapeKind.Teardrop, Tint = ArchetypeShadowTint, AspectMul = 1.50f, TailLengthMul = 0.45f } },
+            { KawaGlintFishSilhouettes.Crawler, new Recipe { Shape = ShapeKind.Teardrop, Tint = ArchetypeShadowTint, AspectMul = 0.85f, TailLengthMul = 0.55f } },
+            { KawaGlintFishSilhouettes.ObjectBoot, new Recipe { Shape = ShapeKind.Teardrop, Tint = ArchetypeShadowTint, AspectMul = 1.15f, TailLengthMul = 0.35f } },
+            { KawaGlintFishSilhouettes.ObjectShell, new Recipe { Shape = ShapeKind.Fan, Tint = ArchetypeShadowTint } },
+            { KawaGlintFishSilhouettes.Star5, new Recipe { Shape = ShapeKind.Star, Tint = ArchetypeShadowTint } },
+            { KawaGlintFishSilhouettes.BroadFancy, new Recipe { Shape = ShapeKind.Teardrop, Tint = ArchetypeShadowTint, AspectMul = 1.35f, TailLengthMul = 0.95f } },
+            { KawaGlintFishSilhouettes.SalmonRare, new Recipe { Shape = ShapeKind.Teardrop, Tint = ArchetypeShadowTint, AspectMul = 0.95f, TailLengthMul = 1.05f } },
+            { KawaGlintFishSilhouettes.Tentacle, new Recipe { Shape = ShapeKind.Teardrop, Tint = ArchetypeShadowTint, AspectMul = 0.80f, TailLengthMul = 1.50f } },
+            { KawaGlintFishSilhouettes.Serpentine, new Recipe { Shape = ShapeKind.Teardrop, Tint = ArchetypeShadowTint, AspectMul = 0.32f, TailLengthMul = 1.60f } },
+            { KawaGlintFishSilhouettes.TorpedoGiant, new Recipe { Shape = ShapeKind.Teardrop, Tint = ArchetypeShadowTint, AspectMul = 1.05f, TailLengthMul = 0.85f } },
+            { KawaGlintFishSilhouettes.RegalLongfin, new Recipe { Shape = ShapeKind.Teardrop, Tint = ArchetypeShadowTint, AspectMul = 0.50f, TailLengthMul = 1.70f } }
+        };
+
         private static readonly Dictionary<string, Sprite> Cache = new Dictionary<string, Sprite>();
 
         /// <summary>
-        /// Species-distinct procedural silhouette for <paramref name="speciesId"/>,
-        /// or null if the id isn't one of the 10 sea-expansion species above
-        /// (the 5 illustrated river species never reach this class -- their
-        /// art always resolves via <see cref="KawaGlintSpriteCatalog"/>'s
-        /// Resources paths -- and any id unknown to the catalog entirely is
-        /// rejected there before it would ever call in here).
+        /// Procedural silhouette for <paramref name="speciesId"/>: the
+        /// species' own recipe when it has one, otherwise the stand-in for its
+        /// body-plan archetype (<see cref="KawaGlintFishSilhouettes"/>).
+        /// Null only for an id with neither -- which cannot happen for a
+        /// species registered in the silhouette table, so in practice this is
+        /// the last rung of the ladder that always catches.
         /// </summary>
         public static Sprite GetSilhouette(string speciesId)
         {
-            if (string.IsNullOrEmpty(speciesId) || !Recipes.TryGetValue(speciesId, out var recipe))
+            if (string.IsNullOrEmpty(speciesId))
             {
                 return null;
             }
 
-            if (Cache.TryGetValue(speciesId, out var cached) && cached != null)
+            if (Recipes.TryGetValue(speciesId, out var recipe))
+            {
+                return GetOrCreate(speciesId, recipe, $"KawaGlint Procedural Fish ({speciesId})");
+            }
+
+            // Not one of the hand-tuned per-species recipes: fall through to
+            // the shared body-plan stand-in rather than returning null, so a
+            // newly-added species never renders as an empty sprite.
+            return GetArchetypeSilhouette(KawaGlintFishSilhouettes.ResolveArchetype(speciesId, 0));
+        }
+
+        /// <summary>
+        /// Stand-in silhouette for a <see cref="KawaGlintFishSilhouettes"/>
+        /// archetype key, used until the shared <c>sil_&lt;key&gt;_shadow.png</c>
+        /// library is drawn. Null only for an unknown key.
+        /// </summary>
+        public static Sprite GetArchetypeSilhouette(string archetypeKey)
+        {
+            if (string.IsNullOrEmpty(archetypeKey) || !ArchetypeRecipes.TryGetValue(archetypeKey, out var recipe))
+            {
+                return null;
+            }
+            return GetOrCreate($"archetype:{archetypeKey}", recipe, $"KawaGlint Procedural Archetype ({archetypeKey})");
+        }
+
+        private static Sprite GetOrCreate(string cacheKey, Recipe recipe, string assetName)
+        {
+            if (Cache.TryGetValue(cacheKey, out var cached) && cached != null)
             {
                 return cached;
             }
@@ -108,7 +163,7 @@ namespace Pono.KawaGlint.Rendering
                     texture = CreateTeardropTexture(recipe.Tint, recipe.AspectMul, recipe.TailLengthMul);
                     break;
             }
-            texture.name = $"KawaGlint Procedural Fish ({speciesId})";
+            texture.name = assetName;
 
             var sprite = Sprite.Create(
                 texture,
@@ -117,8 +172,8 @@ namespace Pono.KawaGlint.Rendering
                 PixelsPerUnit,
                 0,
                 SpriteMeshType.FullRect);
-            sprite.name = texture.name;
-            Cache[speciesId] = sprite;
+            sprite.name = assetName;
+            Cache[cacheKey] = sprite;
             return sprite;
         }
 

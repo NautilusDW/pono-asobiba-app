@@ -1,9 +1,11 @@
 // ── Pono.KawaGlint.Tests.EditMode / TsuriWorldDataEditModeTests.cs ──
-// KawaGlint 海拡張 実装契約 v1.0 (A) データ層の検証。 §E-1〜E-8 に対応する
-// (E-9〜E-11 は TsuriDex/Store/コントローラ配線側の担当なので対象外)。
-// river_asase の既存挙動 (TsuriFishData.RiverSpecies / TsuriKawaTuning) との
-// ビット単位互換性を最優先で固定する。
-using System;
+// ロケーション台帳 (TsuriWorldData) の構造的な不変条件を固定する。
+// 抽選確率そのものの設計値は TsuriDrawModelEditModeTests が正本。
+//
+// batch:1470 で更新した契約:
+//   - asase のプールは「川の既存5種と一致」ではなく**明示リスト9件**で固定する
+//   - ボーナス種機構は退役 -> うなぎ/まぐろが在籍外ロケに紛れ込まないことを固定
+//   - 待ち時間レンジ (asase 6–10s) は不変 = NextWaitSecRange_Asase_... はグリーンのまま
 using System.Collections.Generic;
 using NUnit.Framework;
 using Pono.KawaGlint.Core;
@@ -12,46 +14,45 @@ namespace Pono.KawaGlint.Tests.EditMode
 {
     public sealed class TsuriWorldDataEditModeTests
     {
-        private const double Tolerance = 1e-9;
-
         private static TsuriLocationData Asase => TsuriWorldData.GetLocationById("river_asase");
         private static TsuriLocationData Kakou => TsuriWorldData.GetLocationById("river_kakou");
         private static TsuriLocationData Sunahama => TsuriWorldData.GetLocationById("sea_sunahama");
         private static TsuriLocationData Iwaba => TsuriWorldData.GetLocationById("sea_iwaba");
         private static TsuriLocationData Oki => TsuriWorldData.GetLocationById("sea_oki");
 
-        // ═══ E-1: asase パリティ ═══════════════════════════════════════════
+        // ═══ A15: asase プールは明示的な順序付きリストで固定する ══════════════
         [Test]
-        public void BuildEffectivePool_Asase_MatchesRiverSpeciesIdsInOrder()
+        public void BuildEffectivePool_Asase_MatchesExplicitOrderedIdList()
         {
+            // batch:1470 §A-4: asase のプールは「川の既存5種」ではなくなり、
+            // 新種 (やまめ/どじょう/さわがに/いわな) を含む9件になった。
+            // 「RiverSpecies と一致」という間接的な固定をやめ、**明示リスト**にする
+            // (種マスターを触ったときにこのテストが必ず落ちるようにするため)。
+            var expected = new[]
+            {
+                "fish_ayu", "fish_nijimasu", "fish_yamame", "fish_dojou",
+                "zarigani", "sawagani", "fish_salmon", "fish_iwana", "treasure_boot",
+            };
+
             var pool = TsuriWorldData.BuildEffectivePool(Asase);
 
-            Assert.That(pool.Count, Is.EqualTo(TsuriFishData.RiverSpecies.Count));
-            for (int i = 0; i < pool.Count; i++)
+            Assert.That(pool.Count, Is.EqualTo(expected.Length));
+            for (int i = 0; i < expected.Length; i++)
             {
-                Assert.That(pool[i].Id, Is.EqualTo(TsuriFishData.RiverSpecies[i].Id));
+                Assert.That(pool[i].Id, Is.EqualTo(expected[i]), $"asase pool[{i}]");
             }
         }
 
         [Test]
-        public void BuildWeightMulMap_Asase_IsNull()
+        public void BuildEffectivePool_EveryLocation_ContainsNoDuplicateIds()
         {
-            Assert.That(TsuriWorldData.BuildWeightMulMap(Asase), Is.Null);
-        }
-
-        [Test]
-        public void ComputeSpeciesProbabilities_Asase_WithNullMap_MatchesTwoArgVersionExactly()
-        {
-            var pool = new List<TsuriSpecies>(TsuriFishData.RiverSpecies);
-            var seen = new List<string> { "fish_ayu" };
-
-            var twoArg = TsuriCore.ComputeSpeciesProbabilities(pool, seen);
-            var threeArgWithNullMap = TsuriCore.ComputeSpeciesProbabilities(pool, seen, TsuriWorldData.BuildWeightMulMap(Asase));
-
-            Assert.That(threeArgWithNullMap.Count, Is.EqualTo(twoArg.Count));
-            foreach (var kv in twoArg)
+            foreach (var loc in TsuriWorldData.Locations)
             {
-                Assert.That(threeArgWithNullMap[kv.Key], Is.EqualTo(kv.Value).Within(Tolerance));
+                var seen = new HashSet<string>();
+                foreach (var sp in TsuriWorldData.BuildEffectivePool(loc))
+                {
+                    Assert.That(seen.Add(sp.Id), Is.True, $"{loc.Id} has duplicate {sp.Id}");
+                }
             }
         }
 
@@ -126,7 +127,7 @@ namespace Pono.KawaGlint.Tests.EditMode
         [Test]
         public void EachLocation_HasAtMostOneBoostedSpawnEntry_AndMatchesExpectedHomeSpecies()
         {
-            AssertSingleBoost(Kakou, "fish_salmon", 2.0f);
+            AssertSingleBoost(Kakou, "fish_salmon", 2.5f);
             AssertSingleBoost(Iwaba, "fish_ebi", 1.3f);
             AssertSingleBoost(Oki, "fish_tai", 1.5f);
             AssertNoBoost(Asase);
@@ -178,8 +179,6 @@ namespace Pono.KawaGlint.Tests.EditMode
                 WaitSecMin = 1f,
                 WaitSecMax = 2f,
                 UnlockCount = null,
-                IsBonusHome = false,
-                IncludeZoneBonus = false,
                 BackgroundKey = null,
                 Spawns = new List<TsuriSpawnEntry>
                 {
@@ -194,57 +193,43 @@ namespace Pono.KawaGlint.Tests.EditMode
             Assert.That(pool[0].Id, Is.EqualTo("fish_ayu"));
         }
 
-        // ═══ E-7: 抽選 (WeightMul反映・ボーナス種混入・確率合計) ═══════════════
+        // ═══ E-7: 抽選 (ロケーション WeightMul の反映・確率合計) ═════════════
         [Test]
-        public void Kakou_ProbabilityOfSalmon_IncreasesWithWeightMulMap()
+        public void Kakou_ProbabilityOfSalmon_IncreasesWithLocationWeightMul()
         {
             var pool = TsuriWorldData.BuildEffectivePool(Kakou);
-            var map = TsuriWorldData.BuildWeightMulMap(Kakou);
-            var seen = new List<string>();
 
-            var withoutMap = TsuriCore.ComputeSpeciesProbabilities(pool, seen);
-            var withMap = TsuriCore.ComputeSpeciesProbabilities(pool, seen, map);
+            var withoutSpawns = TsuriCore.ComputeSpeciesProbabilities(pool, null, TsuriDrawContext.Neutral);
+            var withSpawns = TsuriCore.ComputeSpeciesProbabilities(pool, Kakou.Spawns, TsuriDrawContext.Neutral);
 
-            Assert.That(withMap["fish_salmon"], Is.GreaterThan(withoutMap["fish_salmon"]));
+            // kakou の salmon は WeightMul 2.5 の「主役」。
+            Assert.That(withSpawns["fish_salmon"], Is.GreaterThan(withoutSpawns["fish_salmon"]));
 
-            double totalWithMap = 0;
-            foreach (var kv in withMap) totalWithMap += kv.Value;
-            Assert.That(totalWithMap, Is.EqualTo(1.0).Within(1e-9));
+            double totalWith = 0;
+            foreach (var kv in withSpawns) totalWith += kv.Value;
+            Assert.That(totalWith, Is.EqualTo(1.0).Within(1e-9));
 
-            double totalWithoutMap = 0;
-            foreach (var kv in withoutMap) totalWithoutMap += kv.Value;
-            Assert.That(totalWithoutMap, Is.EqualTo(1.0).Within(1e-9));
+            double totalWithout = 0;
+            foreach (var kv in withoutSpawns) totalWithout += kv.Value;
+            Assert.That(totalWithout, Is.EqualTo(1.0).Within(1e-9));
         }
 
+        /// <summary>
+        /// batch:1470 §A-4: ボーナス種機構 (どのロケにも 0.1 倍で紛れ込む仕組み) は
+        /// 退役した。 うなぎ/まぐろは**在籍ロケでしか出ない**ことを固定する
+        /// (「すなはまでまぐろが釣れる」の再発防止)。
+        /// </summary>
         [Test]
-        public void BonusSpecies_AppearsInEffectivePool_WithExpectedHomeAndNonHomeMul()
+        public void BonusSpeciesMechanism_IsRetired_UnagiAndMaguroOnlyInTheirHomeLocations()
         {
-            // kakou: unagi はホーム (mul 1.0)。
-            var kakouPool = TsuriWorldData.BuildEffectivePool(Kakou);
-            Assert.That(Contains(kakouPool, "fish_unagi"), Is.True);
-            var kakouMap = TsuriWorldData.BuildWeightMulMap(Kakou);
-            Assert.That(kakouMap["fish_unagi"], Is.EqualTo(1.0f).Within(1e-6f));
+            Assert.That(Contains(TsuriWorldData.BuildEffectivePool(Kakou), "fish_unagi"), Is.True);
+            Assert.That(Contains(TsuriWorldData.BuildEffectivePool(Oki), "fish_maguro"), Is.True);
 
-            // sunahama / iwaba: maguro は非ホーム (mul 0.1)。
-            var sunahamaPool = TsuriWorldData.BuildEffectivePool(Sunahama);
-            Assert.That(Contains(sunahamaPool, "fish_maguro"), Is.True);
-            var sunahamaMap = TsuriWorldData.BuildWeightMulMap(Sunahama);
-            Assert.That(sunahamaMap["fish_maguro"], Is.EqualTo(TsuriWorldData.BonusNonHomeWeightMul).Within(1e-6f));
-
-            var iwabaPool = TsuriWorldData.BuildEffectivePool(Iwaba);
-            Assert.That(Contains(iwabaPool, "fish_maguro"), Is.True);
-            var iwabaMap = TsuriWorldData.BuildWeightMulMap(Iwaba);
-            Assert.That(iwabaMap["fish_maguro"], Is.EqualTo(TsuriWorldData.BonusNonHomeWeightMul).Within(1e-6f));
-
-            // oki: maguro はホーム (mul 1.0)。
-            var okiPool = TsuriWorldData.BuildEffectivePool(Oki);
-            Assert.That(Contains(okiPool, "fish_maguro"), Is.True);
-            var okiMap = TsuriWorldData.BuildWeightMulMap(Oki);
-            Assert.That(okiMap["fish_maguro"], Is.EqualTo(1.0f).Within(1e-6f));
-
-            // asase: ボーナス種を一切含まない (契約§0-2の意図的逸脱)。
-            var asasePool = TsuriWorldData.BuildEffectivePool(Asase);
-            Assert.That(Contains(asasePool, "fish_unagi"), Is.False);
+            Assert.That(Contains(TsuriWorldData.BuildEffectivePool(Asase), "fish_unagi"), Is.False);
+            Assert.That(Contains(TsuriWorldData.BuildEffectivePool(Sunahama), "fish_unagi"), Is.False);
+            Assert.That(Contains(TsuriWorldData.BuildEffectivePool(Sunahama), "fish_maguro"), Is.False);
+            Assert.That(Contains(TsuriWorldData.BuildEffectivePool(Iwaba), "fish_maguro"), Is.False);
+            Assert.That(Contains(TsuriWorldData.BuildEffectivePool(Kakou), "fish_maguro"), Is.False);
         }
 
         private static bool Contains(List<TsuriSpecies> pool, string speciesId)
@@ -276,7 +261,7 @@ namespace Pono.KawaGlint.Tests.EditMode
                 Id = "test_gated",
                 Zone = TsuriWaterZone.Sea,
                 UnlockCount = 5,
-                Spawns = new List<TsuriSpawnEntry>()
+                Spawns = new List<TsuriSpawnEntry>(),
             };
 
             Assert.That(TsuriWorldData.IsUnlocked(synthetic, 4), Is.False);
@@ -304,7 +289,7 @@ namespace Pono.KawaGlint.Tests.EditMode
             // kakou の salmon は Spawns 上で Surface 指定。
             Assert.That(TsuriWorldData.NicheFor(Kakou, "fish_salmon"), Is.EqualTo(TsuriNiche.Surface));
 
-            // asase にはボーナス種(unagi)エントリが無いので、種の RepresentativeNiche にフォールバック。
+            // asase に unagi の Spawns エントリは無いので、種の RepresentativeNiche にフォールバック。
             Assert.That(TsuriWorldData.NicheFor(Asase, "fish_unagi"), Is.EqualTo(TsuriNiche.RockCover));
         }
     }

@@ -506,7 +506,9 @@ namespace Pono.KawaGlint.UI
             }
             if (_detailRarityDot != null)
             {
-                _detailRarityDot.color = species.Rarity == TsuriRarity.Rare ? KawaGlintHud.RarityRareColor : KawaGlintHud.RarityNormalColor;
+                // batch:1470 §X-6: 2分岐 (Rare か否か) を廃止し、4段の共有テーブルへ。
+                // これまで super (うなぎ/まぐろ) が normal と同じ水色で表示されていた。
+                _detailRarityDot.color = KawaGlintHud.RarityDotColor((int)species.Rarity);
             }
             if (_detailCaughtText != null)
             {

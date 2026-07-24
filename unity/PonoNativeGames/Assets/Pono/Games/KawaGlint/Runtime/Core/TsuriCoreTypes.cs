@@ -30,12 +30,46 @@ namespace Pono.KawaGlint.Core
         Expert
     }
 
-    /// <summary>レアリティ。 川の5種は Normal / Rare のみ使用 (Super は未使用)。</summary>
+    /// <summary>
+    /// レアリティ。 batch:1470 実装契約 §A-1 / §X-7 で <see cref="Legendary"/> を
+    /// **末尾に追加**した (今回は在籍種ゼロ、段だけ用意する)。
+    ///
+    /// ★永久契約★ この enum の宣言順 = Rendering 層の rarity tier index である。
+    /// (int)Normal==0 / Rare==1 / Super==2 / Legendary==3 が
+    /// KawaGlintRarityMotion / KawaGlintRarityPalette / KawaGlintHud.RarityDotColor の
+    /// 添字そのものなので、**途中への挿入は永久禁止**(追加は必ず末尾)。
+    /// EditMode テスト TsuriDrawModelEditModeTests.TsuriRarityEnumOrder_IsStable が固定する。
+    /// </summary>
     public enum TsuriRarity
     {
         Normal,
         Rare,
-        Super
+        Super,
+        Legendary
+    }
+
+    /// <summary>
+    /// batch:1470 実装契約 §A-1 / §X-8 新設。 生物の「動きの型」。
+    ///
+    /// 仕事は意図的に2つだけに限定されている:
+    /// (1) 非遊泳生物のゲート -- <see cref="Shell"/> / <see cref="Crawler"/> は
+    ///     尾を振らず、水底から出現し、浮上しない。
+    /// (2) Rendering 側 archetype (シルエット形状) の **既定フォールバック**。
+    ///     種→archetype の明示表は Rendering 層 (KawaGlintFishSilhouettes) が正本で、
+    ///     こちらは登録漏れの保険。
+    ///
+    /// 不変条件 (§3.5-7 改訂): tuning (窓・連打・待ち時間・確率) には一切接続しない。
+    /// **Rendering への接続は明示的に許可**する (archetype 解決は tuning ではない)。
+    /// </summary>
+    public enum TsuriMotionClass
+    {
+        Standard,
+        Slim,
+        Flat,
+        Crawler,
+        Shell,
+        Drifter,
+        Heavy
     }
 
     /// <summary>
@@ -57,7 +91,25 @@ namespace Pono.KawaGlint.Core
         public string Size;
         public bool Edible;
         public string InventoryKey;
-        public float Weight;
+
+        /// <summary>
+        /// batch:1470 実装契約 §A-1 **破壊的変更**: 旧 <c>Weight</c> (同レアリティ内の
+        /// 絶対重み 4〜22) を廃止し、**同レアリティ内の相対倍率** (基準 1.0、範囲
+        /// 0.20〜1.50) に置き換えた。 ★意図的な「改名」★ -- 同名のまま意味だけ変えると
+        /// 全呼び出し箇所が静かに壊れるため、コンパイルエラーで気付けるようにしている。
+        ///
+        /// 新しい抽選式 (TsuriCore.ComputeSpeciesProbabilities):
+        ///   W = RarityBaseWeight(rarity) × SpeciesWeightMul × ロケーション WeightMul
+        ///       × RecentPenalty × RarityPity × FirstEncounterBonus
+        /// </summary>
+        public float SpeciesWeightMul = 1.0f;
+
+        /// <summary>
+        /// batch:1470 実装契約 §A-1 / §X-8 新設。 非遊泳生物のゲートと Rendering 側
+        /// archetype 既定フォールバックにのみ使う (tuning には接続しない)。
+        /// </summary>
+        public TsuriMotionClass MotionClass = TsuriMotionClass.Standard;
+
         public bool HasSizeRange;
         public float SizeMinCm;
         public float SizeMaxCm;

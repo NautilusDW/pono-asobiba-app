@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using Pono.KawaGlint.Core;
 using Pono.KawaGlint.Input;
 using Pono.KawaGlint.Rendering;
@@ -89,6 +90,13 @@ namespace Pono.KawaGlint.Gameplay
         private float _waitTotalSec;
         private KawaGlintPreBitePlan _preBitePlan;
 
+        // batch:1470 §A-6: 現キャストのターゲット魚の rarity 動きプロファイル。
+        // HandleCastTap で一度だけ引き、以後のフレームで使い回す (毎フレーム
+        // TsuriFishData を引き直さない)。 既定は tier0 = 現行と完全に同じ動き。
+        private float _rarityLungeMul = 1f;
+        private float _rarityTwitchMul = 1f;
+        private float _raritySinkMul = 1f;
+
         // Multi-chance pre-bite (batch:kawaglint-multi-chance-prebite):
         // -1 == no event active; otherwise the index of the currently active
         // Shallow/Deep event from _preBitePlan (see UpdateWaitSteadyState).
@@ -170,6 +178,47 @@ namespace Pono.KawaGlint.Gameplay
         /// </summary>
         public Func<string, Vector3> RodTipResolver { get; set; }
 
+        /// <summary>
+        /// batch:1470 §A-6 / §B-4: 竿のしなり (= ポノ全身のリーン) の負荷を 0〜1 で流す。
+        /// <see cref="RodTipResolver"/> と同じ「Gameplay は Rendering を直接呼ばず、
+        /// Bootstrap から注入された関数の純粋な消費者でいる」パターン。
+        ///
+        /// **未接続 (null) でも全フェーズが今までどおり動く** -- 竿がしならないだけ。
+        /// WS-B が <c>KawaGlintAnglerRig</c> を着地させたら Bootstrap で
+        /// <c>controller.RodLoadSetter = rig.SetRodLoad;</c> の1行を足すだけで有効化される。
+        ///
+        /// 負荷スケジュール (契約 §B-4 の表):
+        ///   Idle/Cast/Wait 0 / Twitch 0.15 / BiteSink 0.75 /
+        ///   Renda ベース Lerp(0.6, 0.85, gauge01) / Escaped は 0 へ / Landed は 0 へ
+        /// </summary>
+        public Action<float> RodLoadSetter { get; set; }
+
+        /// <summary>
+        /// batch:1470 §A-6 / §B-4: renda 連打1回ぶんの竿負荷スパイク
+        /// (amount, seconds)。 未接続 (null) なら何も起きない。
+        /// </summary>
+        public Action<float, float> RodLoadPulser { get; set; }
+
+        /// <summary>
+        /// batch:1470 §X-14 (注意予算): 本あたり/連打の瞬間に背景アニメを 0.35 倍へ
+        /// ダンプし、復帰で 1.0 に戻すためのフック。 「画面全体が同時に動いていて
+        /// どこを見ればいいか分からない」を防ぐ。 未接続 (null) なら背景は常速のまま。
+        /// WS-B が <c>KawaGlintStageContent.SetAmbientMotionScale</c> を着地させたら
+        /// Bootstrap で1行接続する。
+        /// </summary>
+        public Action<float> AmbientMotionScaleSetter { get; set; }
+
+        private const float AmbientMotionScaleFocused = 0.35f;
+        private const float AmbientMotionScaleNormal = 1.0f;
+        private const float RodLoadTwitch = 0.15f;
+        private const float RodLoadBiteSink = 0.75f;
+        private const float RodLoadRendaMin = 0.6f;
+        private const float RodLoadRendaMax = 0.85f;
+        private const float RodLoadRendaTapAmount = 0.4f;
+        private const float RodLoadRendaTapSeconds = 0.25f;
+        /// <summary>「グイン」の瞬間の小さめの水しぶき (フック成功時の 1.0 とは別打点)。</summary>
+        private const float DeepEventSplashScale = 0.55f;
+
         public int ConsecutiveMisses => _session != null ? _session.ConsecutiveMisses : 0;
 
         /// <summary>
@@ -239,8 +288,12 @@ namespace Pono.KawaGlint.Gameplay
             _currentLocation = TsuriWorldData.GetLocationById(TsuriWorldData.DefaultLocationId);
             _session = TsuriCore.CreateSession(
                 TsuriWorldData.BuildEffectivePool(_currentLocation),
-                TsuriMode.Relaxed,
-                TsuriWorldData.BuildWeightMulMap(_currentLocation));
+                _currentLocation.Spawns,
+                TsuriMode.Relaxed);
+            // batch:1470 §A-6: 図鑑に既に載っている種を注入する。 ここに含まれない種には
+            // 「はじめて出会う」ボーナス (×1.6) が乗り、まだ見たことのない生き物が
+            // 出やすくなる。 fishdex 未配線 (テスト等) では null のまま = ボーナス無効。
+            _session.KnownSpeciesIds = BuildKnownSpeciesIds(_fishdex);
 
             _input.Tapped += HandleTap;
 
@@ -253,7 +306,34 @@ namespace Pono.KawaGlint.Gameplay
             _hud.SetNarration(NarrationIdle);
             _hud.SetBucketCount(0);
 
+            ApplyLocationPresentation(_currentLocation);
+            SetRodLoad(0f);
+            SetAmbientMotionScale(AmbientMotionScaleNormal);
+
             _configured = true;
+        }
+
+        /// <summary>
+        /// batch:1470 §A-6: 図鑑ドキュメントの「1匹以上釣った種」から既知集合を作る。
+        /// fishdex が無い (テスト/QA 起動) 場合は null を返し、初遭遇ボーナスを無効化する。
+        /// </summary>
+        private static HashSet<string> BuildKnownSpeciesIds(KawaGlintFishdexService fishdex)
+        {
+            var doc = fishdex?.Document;
+            if (doc?.species == null)
+            {
+                return null;
+            }
+
+            var known = new HashSet<string>();
+            foreach (var kv in doc.species)
+            {
+                if (!string.IsNullOrEmpty(kv.Key) && kv.Value != null && kv.Value.count > 0)
+                {
+                    known.Add(kv.Key);
+                }
+            }
+            return known;
         }
 
         private void OnDestroy()
@@ -294,10 +374,10 @@ namespace Pono.KawaGlint.Gameplay
                 return false;
             }
 
-            _session = TsuriCore.WithSpeciesPool(
-                _session,
-                TsuriWorldData.BuildEffectivePool(loc),
-                TsuriWorldData.BuildWeightMulMap(loc));
+            // batch:1470 §A-6: BuildWeightMulMap を廃止し、Spawns 台帳をそのまま渡す
+            // (WeightMul だけでなく MinProbability も抽選に効くようになったため)。
+            // pity / misses / RecentCatchIds / KnownSpeciesIds は WithSpeciesPool が保持する。
+            _session = TsuriCore.WithSpeciesPool(_session, TsuriWorldData.BuildEffectivePool(loc), loc.Spawns);
             _currentLocation = loc;
 
             // Idle 画面へ戻す: Wait/Bite/Renda/バナー系の演出状態を全て解除する
@@ -319,8 +399,12 @@ namespace Pono.KawaGlint.Gameplay
             _actors.Bobber.SetVisualState(KawaGlintBobberState.Hidden);
             _actors.SetRingsVisible(false);
             _actors.SetFishingLineVisible(false);
-            _actors.SetFishingLineTension(false);
+            _actors.SetLineMode(KawaGlintLineMode.Slack);
+            _actors.SetRingMode(KawaGlintRingMode.Ambient);
             _actors.HideTargetFish();
+            SetRodLoad(0f);
+            SetAmbientMotionScale(AmbientMotionScaleNormal);
+            ApplyLocationPresentation(loc);
             _hud.SetPhaseWord(PhaseWordIdle);
             _hud.SetNarration(NarrationIdle);
 
@@ -346,6 +430,101 @@ namespace Pono.KawaGlint.Gameplay
                 }
             }
             return true;
+        }
+
+        /// <summary>
+        /// batch:1470 §A-7 (B2 修正): ロケーションごとの背景を泳ぐ環境魚 4種を選ぶ。
+        ///
+        /// これまで <c>KawaGlintActorsBuilder.AmbientFishSpeciesIds</c> が全ロケ共通で
+        /// <c>ayu/nijimasu/salmon/zarigani</c> にハードコードされており、**すなはま・
+        /// いわば・おきの海の背景で「あゆ」と「ざりがに」が常時泳いでいた**。
+        /// まぐろ@砂浜 (0.71%) を生態整合性で消す基準なら、常時100%見えているこちらの
+        /// 方が優先度は高い。
+        ///
+        /// 選択規則:
+        ///   pass 1: Rarity == Normal かつ MotionClass ∈ {Standard, Slim} かつ
+        ///           treasure_ 接頭辞でない種を Spawns 宣言順に採る
+        ///   pass 2: 4件に満たなければ MotionClass ∈ {Standard, Slim, Heavy, Drifter}
+        ///           (rarity 不問) を宣言順に追加
+        ///   pass 3: それでも足りなければ先頭から繰り返して4件に埋める
+        ///
+        /// **Shell / Crawler (貝・カニ・ざりがに) が横に泳ぐ絵は構造的に発生しない。**
+        /// 検算: asase=[ayu,nijimasu,yamame,dojou] / kakou=[ayu,haze,dojou,salmon] /
+        /// sunahama=[iwashi,aji,kisu,saba] / iwaba=[aji,tai,tako,ika] / oki=[iwashi,saba,sanma,aji]
+        /// </summary>
+        public static string[] SelectAmbientSpecies(TsuriLocationData loc)
+        {
+            const int wanted = 4;
+            var picked = new List<string>(wanted);
+            if (loc?.Spawns == null)
+            {
+                return picked.ToArray();
+            }
+
+            CollectAmbient(loc, picked, wanted, normalOnly: true);
+            if (picked.Count < wanted)
+            {
+                CollectAmbient(loc, picked, wanted, normalOnly: false);
+            }
+
+            // 3〜4件しか無い痩せたロケーションでも必ず4枠を埋める (背景の穴を作らない)。
+            if (picked.Count > 0)
+            {
+                for (int i = 0; picked.Count < wanted; i++)
+                {
+                    picked.Add(picked[i % picked.Count]);
+                }
+            }
+            return picked.ToArray();
+        }
+
+        private static void CollectAmbient(TsuriLocationData loc, List<string> into, int wanted, bool normalOnly)
+        {
+            for (int i = 0; i < loc.Spawns.Count && into.Count < wanted; i++)
+            {
+                var entry = loc.Spawns[i];
+                if (entry == null || string.IsNullOrEmpty(entry.SpeciesId)
+                    || entry.SpeciesId.StartsWith("treasure_", StringComparison.Ordinal)
+                    || into.Contains(entry.SpeciesId))
+                {
+                    continue;
+                }
+
+                var sp = TsuriFishData.GetSpeciesById(entry.SpeciesId);
+                if (sp == null || (normalOnly && sp.Rarity != TsuriRarity.Normal))
+                {
+                    continue;
+                }
+
+                // 貝 (Shell) と 甲殻類 (Crawler) と 平たい魚 (Flat) は「横向きに
+                // 泳ぎ続ける」環境魚の絵に合わないので常に除外する。
+                var swims = sp.MotionClass == TsuriMotionClass.Standard
+                    || sp.MotionClass == TsuriMotionClass.Slim
+                    || (!normalOnly && (sp.MotionClass == TsuriMotionClass.Heavy
+                                        || sp.MotionClass == TsuriMotionClass.Drifter));
+                if (swims)
+                {
+                    into.Add(entry.SpeciesId);
+                }
+            }
+        }
+
+        /// <summary>ロケーション切替/初期化時に、そのロケーション固有の見た目を Rendering へ流す。</summary>
+        private void ApplyLocationPresentation(TsuriLocationData loc)
+        {
+            _actors?.SetAmbientSpecies(SelectAmbientSpecies(loc));
+        }
+
+        /// <summary>竿負荷フック (WS-B の KawaGlintAnglerRig 未接続なら no-op)。</summary>
+        private void SetRodLoad(float load01)
+        {
+            RodLoadSetter?.Invoke(Mathf.Clamp01(load01));
+        }
+
+        /// <summary>背景アニメの注意予算フック (WS-B 未接続なら no-op)。 §X-14。</summary>
+        private void SetAmbientMotionScale(float scale01)
+        {
+            AmbientMotionScaleSetter?.Invoke(scale01);
         }
 
         private void Update()
@@ -425,7 +604,12 @@ namespace Pono.KawaGlint.Gameplay
                 // activates at/after ArrivalSec. Composing them here (rather
                 // than inside the plan) keeps the "travel" and "event at the
                 // hook" concerns visibly distinct all the way out to the actor.
-                var progress = _preBitePlan.ApproachDisplayProgress(elapsed) + _preBitePlan.MotionOffset(elapsed);
+                // batch:1470 §A-6: レアほど「大きく・ゆっくり・重く」寄る。
+                // 手前の突進 (MotionOffset) だけに rarity 倍率を掛け、平坦な travel 曲線
+                // (ApproachDisplayProgress) には触らない -- 到着タイミングを rarity で
+                // 変えると前あたりプランの尺と食い違うため。 tier0 は ×1.0 = 現行と同一。
+                var progress = _preBitePlan.ApproachDisplayProgress(elapsed)
+                    + (_preBitePlan.MotionOffset(elapsed) * _rarityLungeMul);
                 _actors.SetTargetFishApproach(progress, _targetX);
             }
 
@@ -480,8 +664,9 @@ namespace Pono.KawaGlint.Gameplay
                         // here" rather than leaving stale text up from an
                         // earlier burst. Tapping during this does nothing
                         // (HandleTap's Wait branch below).
-                        _actors.Bobber.SetTwitchIntensity(_preBitePlan.EventIntensity01(idx));
+                        _actors.Bobber.SetTwitchIntensity(_preBitePlan.EventIntensity01(idx) * _rarityTwitchMul);
                         _actors.Bobber.SetVisualState(KawaGlintBobberState.Twitch);
+                        SetRodLoad(RodLoadTwitch);
                         _hud.SetPhaseWord(PhaseWordPreBite);
                         // niche 演出配線 (実装契約v1.0 §C-1): asase は全 Spawns エントリが
                         // Midwater なので KawaGlintNicheCues.PreBiteNarration(Midwater) ==
@@ -501,6 +686,12 @@ namespace Pono.KawaGlint.Gameplay
                     // affect those.
                     _hud.HideTimingRing();
                     _actors.Bobber.SetVisualState(KawaGlintBobberState.Floating);
+                    // batch:1470 §A-6: Deep 窓が閉じた/イベント間の隙間 -- 糸もリングも
+                    // 竿も背景も「まっている」状態へ戻す (演出が残留しない)。
+                    _actors.SetLineMode(KawaGlintLineMode.Slack);
+                    _actors.SetRingMode(KawaGlintRingMode.Ambient);
+                    SetRodLoad(0f);
+                    SetAmbientMotionScale(AmbientMotionScaleNormal);
                     _hud.SetPhaseWord(PhaseWordWait);
                     _hud.SetNarration(NarrationWait);
                 }
@@ -518,10 +709,51 @@ namespace Pono.KawaGlint.Gameplay
 
         private void EnterDeepEventVisual()
         {
+            ApplyPullPresentation();
             _actors.Bobber.SetVisualState(KawaGlintBobberState.BiteSink);
             _hud.ShowTimingRing();
             _hud.SetPhaseWord(PhaseWordBite);
             _hud.SetNarration(NarrationBite);
+        }
+
+        /// <summary>
+        /// batch:1470 §A-6: 「グイン」(Deep 前あたり / 本あたり) の共通演出セット。
+        /// 4つの手がかりを同時に立ち上げる -- 糸が張る / ウキが斜めに引き込まれる /
+        /// 竿がしなる / 引き波が出る。 どれか1つが読めなくても他で伝わる冗長設計。
+        ///
+        /// 糸は <see cref="KawaGlintLineMode.PullTaut"/> であって Renda ではない
+        /// (=<c>IsFishingLineTense</c> は false のまま) -- 既存 PlayMode テスト3本が
+        /// 「tense == 連打中」の意味に依存しているため。
+        /// </summary>
+        private void ApplyPullPresentation()
+        {
+            var bobber = _actors.Bobber;
+            // 牽引方向 = ウキから見た魚のいる側。 ターゲット魚は必ず画面右端
+            // (ラップ境界の外) から現れ、ウキの **+X 側** のアンカーに着く
+            // (KawaGlintActorsController.SetTargetFishApproach) ので、可視なら常に +1。
+            // 魚が非表示のときはウキが現在向いている方向を維持する
+            // (向きが毎フレーム反転してガタつくのを防ぐ)。
+            var pullDirX = _actors.IsTargetFishVisible ? 1f : bobber.PullDirectionX;
+            if (Mathf.Approximately(pullDirX, 0f))
+            {
+                pullDirX = 1f;
+            }
+
+            bobber.SetPullDirection(pullDirX);
+            bobber.SetSinkIntensity(_raritySinkMul);
+            _actors.SetPullDirection(pullDirX);
+            _actors.SetLineMode(KawaGlintLineMode.PullTaut);
+            _actors.SetRingMode(KawaGlintRingMode.Pull);
+            SetRodLoad(RodLoadBiteSink);
+            SetAmbientMotionScale(AmbientMotionScaleFocused);
+            PlaySplash(DeepEventSplashScale);
+        }
+
+        /// <summary>ウキの現在位置の水面に水しぶきを1回打つ。 splash が未構築なら no-op。</summary>
+        private void PlaySplash(float scale)
+        {
+            _actors.GetComponentInChildren<KawaGlintSplashEffect>(true)?.Play(
+                new Vector3(_actors.Bobber.CenterWorldX, _stage.WaterlineWorldY, 0f), scale);
         }
 
         /// <summary>Entry point for <see cref="KawaGlintInputSurface.Tapped"/> -- also the PlayMode test operation port.</summary>
@@ -595,11 +827,26 @@ namespace Pono.KawaGlint.Gameplay
             _debugDeepUntilElapsed = 0f;
 
             var species = TsuriFishData.GetSpeciesById(_session.SpeciesId);
-            _actors.ShowTargetFish(_session.SpeciesId, SpeciesWorldLength(species));
+
+            // batch:1470 §A-6: rarity tier を Rendering へ渡し、この1キャストぶんの
+            // 動き倍率をキャッシュする。 tier0 (normal) は全倍率 1.0 なので、
+            // あさせで通常種を釣る限り見た目は現行と**完全に同一**。
+            var tier = species != null ? (int)species.Rarity : 0;
+            var motion = KawaGlintRarityMotion.For(tier);
+            _rarityLungeMul = motion.PreBiteLungeMul;
+            _rarityTwitchMul = motion.TwitchIntensityMul;
+            _raritySinkMul = motion.BiteSinkMul;
+
+            _actors.ShowTargetFish(new KawaGlintFishPresentation(
+                _session.SpeciesId, tier, SpeciesWorldLength(species) * motion.LengthMul));
+            _actors.Bobber.SetSinkIntensity(_raritySinkMul);
             _actors.Bobber.BeginCast(_stage.RodTipWorldPosition, _targetX, CastFlightSeconds);
             _actors.SetFishingLineVisible(true);
-            _actors.SetFishingLineTension(false);
+            _actors.SetLineMode(KawaGlintLineMode.Slack);
+            _actors.SetRingMode(KawaGlintRingMode.Ambient);
             _actors.SetRingsVisible(false);
+            SetRodLoad(0f);
+            SetAmbientMotionScale(AmbientMotionScaleNormal);
 
             _hud.SetPhaseWord(PhaseWordWait);
             _hud.SetNarration(NarrationWait);
@@ -649,6 +896,16 @@ namespace Pono.KawaGlint.Gameplay
                 _hud.SetRendaCombo(_rendaCombo);
                 _hud.SetRendaGauge(_session.GaugePct);
 
+                // batch:1470 §A-6: タップ1回ごとの「綱引き」。 糸がビクッと縮み、
+                // 魚がポノ側へわずかに引き寄せられ、竿にスパイクが乗る。
+                // SetRendaProgress01 は魚の暴れ幅を疲れに応じて落とす -- 数字が読めない
+                // 3〜4歳にもゲージ以外で進捗が伝わるようにするため。
+                var gauge01 = Mathf.Clamp01(_session.GaugePct / 100f);
+                _actors.PulseLineTug();
+                _actors.SetRendaProgress01(gauge01);
+                RodLoadPulser?.Invoke(RodLoadRendaTapAmount, RodLoadRendaTapSeconds);
+                SetRodLoad(Mathf.Lerp(RodLoadRendaMin, RodLoadRendaMax, gauge01));
+
                 var big = _rendaCombo % 5 == 0;
                 if (big)
                 {
@@ -675,8 +932,9 @@ namespace Pono.KawaGlint.Gameplay
             _activeEventIndex = -1;
             _debugDeepUntilElapsed = 0f;
 
-            _actors.Bobber.SetVisualState(KawaGlintBobberState.BiteSink);
             _actors.SetTargetFishApproach(1f, _targetX);
+            ApplyPullPresentation();
+            _actors.Bobber.SetVisualState(KawaGlintBobberState.BiteSink);
             _hud.SetPhaseWord(PhaseWordBite);
             _hud.SetNarration(NarrationBite);
 
@@ -742,13 +1000,18 @@ namespace Pono.KawaGlint.Gameplay
             _hud.HideTimingRing();
             _lastRingViewport = ComputeRingViewport();
             _hud.PlayHookHitFx(_lastRingViewport);
-            _actors.GetComponentInChildren<KawaGlintSplashEffect>(true)?.Play(
-                new Vector3(_actors.Bobber.CenterWorldX, _stage.WaterlineWorldY, 0f));
+            PlaySplash(1f); // フック成功の打点は現行どおり等倍
 
             _actors.Bobber.SetVisualState(KawaGlintBobberState.Hidden);
             _actors.SetTargetFishThrash(true);
-            _actors.SetFishingLineTension(true);
+            // batch:1470 §A-6: SetFishingLineTension(true) の置換。 意味は同じ
+            // (Renda == IsFishingLineTense) なので既存 PlayMode テスト3本はグリーンのまま。
+            _actors.SetLineMode(KawaGlintLineMode.Renda);
+            _actors.SetRingMode(KawaGlintRingMode.Renda);
+            _actors.SetRendaProgress01(0f);
             _actors.SetRingsVisible(true);
+            SetRodLoad(RodLoadRendaMin);
+            SetAmbientMotionScale(AmbientMotionScaleFocused);
             _rendaCombo = 0;
             _hud.ShowRenda();
             _hud.SetRendaBigText(RendaBigTextPull);
@@ -770,7 +1033,11 @@ namespace Pono.KawaGlint.Gameplay
             _actors.FleeTargetFish();
             _actors.SetRingsVisible(false);
             _actors.SetFishingLineVisible(false);
-            _actors.SetFishingLineTension(false);
+            _actors.SetLineMode(KawaGlintLineMode.Slack);
+            _actors.SetRingMode(KawaGlintRingMode.Ambient);
+            // 竿がスッと戻るのが「にげられた」の最も分かりやすい合図 (§B-4)。
+            SetRodLoad(0f);
+            SetAmbientMotionScale(AmbientMotionScaleNormal);
             _hud.SetPhaseWord(PhaseWordEscaped);
             _hud.SetNarration(NarrationEscaped);
             _hud.ShowEscapeBanner();
@@ -785,7 +1052,10 @@ namespace Pono.KawaGlint.Gameplay
             _actors.HideTargetFish();
             _actors.SetRingsVisible(false);
             _actors.SetFishingLineVisible(false);
-            _actors.SetFishingLineTension(false);
+            _actors.SetLineMode(KawaGlintLineMode.Slack);
+            _actors.SetRingMode(KawaGlintRingMode.Ambient);
+            SetRodLoad(0f);
+            SetAmbientMotionScale(AmbientMotionScaleNormal);
 
             var species = TsuriFishData.GetSpeciesById(_session.SpeciesId);
 
@@ -800,7 +1070,9 @@ namespace Pono.KawaGlint.Gameplay
             var edible = species != null && species.Edible;
             var label = edible ? CatchLabelEdible : CatchLabelTreasure;
             var speciesName = species != null ? species.Name : SpeciesUnknownName;
-            var dotColor = species != null && species.Rarity == TsuriRarity.Rare ? KawaGlintHud.RarityRareColor : KawaGlintHud.RarityNormalColor;
+            // batch:1470 §X-6 (B1 修正): 2分岐を廃止。 これまで super (うなぎ/まぐろ) が
+            // normal (あゆ) と同じ水色のドットで祝われていた。
+            var dotColor = KawaGlintHud.RarityDotColor(species != null ? (int)species.Rarity : 0);
 
             _hud.ShowCatchBanner(label, speciesName, dotColor, KawaGlintSpriteCatalog.LoadCatchArt(_session.SpeciesId));
             _hud.SetPhaseWord(PhaseWordLanded);
@@ -841,6 +1113,39 @@ namespace Pono.KawaGlint.Gameplay
             _hud.HideEscapeBanner();
             _hud.SetPhaseWord(PhaseWordIdle);
             _hud.SetNarration(NarrationIdle);
+        }
+
+        /// <summary>
+        /// Test/QA hook (batch:1470 §A-6): overrides the species this Wait is
+        /// running, together with the rarity-driven presentation derived from
+        /// it, so a PlayMode test can deterministically exercise a rare/super
+        /// cast without fighting the (deliberately very low) draw probability.
+        ///
+        /// Only legal during Wait -- the pre-bite plan, bobber flight and the
+        /// timing ring are all already scheduled for this cast, so swapping the
+        /// species is purely a presentation/landing-record change; TsuriCore's
+        /// own accounting (pity, misses, gauge) is untouched. Returns false if
+        /// the phase is wrong or the id is unknown.
+        /// </summary>
+        public bool DebugForceSpecies(string speciesId)
+        {
+            var species = TsuriFishData.GetSpeciesById(speciesId);
+            if (species == null || _session == null || _session.Phase != TsuriPhase.Wait)
+            {
+                return false;
+            }
+
+            _session.SpeciesId = speciesId;
+
+            var tier = (int)species.Rarity;
+            var motion = KawaGlintRarityMotion.For(tier);
+            _rarityLungeMul = motion.PreBiteLungeMul;
+            _rarityTwitchMul = motion.TwitchIntensityMul;
+            _raritySinkMul = motion.BiteSinkMul;
+            _actors.ShowTargetFish(new KawaGlintFishPresentation(
+                speciesId, tier, SpeciesWorldLength(species) * motion.LengthMul));
+            _actors.Bobber.SetSinkIntensity(_raritySinkMul);
+            return true;
         }
 
         /// <summary>Test/QA hook: forces Wait to expire on the next Tick (only while Phase==Wait).</summary>
