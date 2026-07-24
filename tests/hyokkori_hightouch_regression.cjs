@@ -132,9 +132,9 @@ function mulberry32(seed) {
 
   const expectedSlots = {
     komorebi_clearing: [
-      [30.8, 54, 0.82, "far", 0], [78, 49, 0.88, "far", 0],
-      [24, 70.5, 0.93, "near", 0], [76, 70, 0.95, "near", 0],
-      [18, 91.5, 1.06, "near", 0], [82, 91.5, 1.08, "near", 0]
+      [31, 64.5, 0.8, "far", 0], [69.5, 64, 0.83, "far", 0],
+      [29.5, 79, 0.9, "near", 0], [70.5, 79, 0.92, "near", 0],
+      [35, 92, 1.02, "near", 0], [65, 92, 1.04, "near", 0]
     ],
     donguri_path: [
       [30, 58, 0.88, "far", 0], [82, 38, 0.86, "far", 0],
@@ -188,7 +188,7 @@ function mulberry32(seed) {
       near: { groundAnchorY: 75.3, foregroundTop: 64, windowBottom: 35.75, windowSafetyBottom: 24.26, charWidth: 58, charLiftPct: 19.56, foregroundMask: "../assets/images/hyokkori-hightouch/mask_hideout_world_komorebi_near_v2_20260724.png" }
     },
     donguri_path: {
-      far: { groundAnchorY: 68.2, foregroundTop: 60, windowBottom: 28.87, windowSafetyBottom: 40.33, charWidth: 48, charLiftPct: 18.34, foregroundMask: "../assets/images/hyokkori-hightouch/mask_hideout_world_donguri_far_v2_20260724.png" },
+      far: { groundAnchorY: 68.2, foregroundTop: 60, windowBottom: 28.87, windowSafetyBottom: 20, charWidth: 48, charLiftPct: 18.34, foregroundMask: "../assets/images/hyokkori-hightouch/mask_hideout_world_donguri_far_v3_20260724.png" },
       near: { groundAnchorY: 81, foregroundTop: 64, windowBottom: 42.72, windowSafetyBottom: 35.02, charWidth: 52, charLiftPct: 20.79, foregroundMask: "../assets/images/hyokkori-hightouch/mask_hideout_world_donguri_near_v2_20260724.png" }
     },
     mizube: {
@@ -243,6 +243,24 @@ function mulberry32(seed) {
     }
     assert.equal(location.bonusPartnerId, "hikari_momonga", `${location.id} の案内役はひかりモモンガ`);
   }
+
+  // こもれび面は背景の左右に高い花・シダ・岩、上側に崖のリップがある。
+  // 外装をそこへ重ねると、背景1枚絵との前後関係が逆転して見えるため、
+  // 6か所すべてを中央の開けた草地3列へ収める。
+  const clearingSlots = D.LOCATION_BY_ID.komorebi_clearing.slots;
+  assert.ok(clearingSlots.every(slot => slot.x >= 29 && slot.x <= 71), "ひろばの全外装を左右の高い植生帯から外す");
+  assert.ok(clearingSlots.every(slot => slot.x <= 42 || slot.x >= 58), "ひろば中央のコンボ表示帯を空ける");
+  assert.ok(clearingSlots.slice(0, 2).every(slot => slot.groundY >= 63 && slot.groundY <= 66), "奥列を崖縁でなく平らな草地へ置く");
+  assert.ok(clearingSlots.slice(2, 4).every(slot => slot.groundY >= 77 && slot.groundY <= 81), "中列を左右の花壇から外す");
+  assert.ok(clearingSlots.slice(4, 6).every(slot => slot.groundY >= 90 && slot.groundY <= 93), "手前列を画面内の開けた草地へ置く");
+  assert.ok(
+    Math.max(...clearingSlots.slice(0, 2).map(slot => slot.depth))
+      < Math.min(...clearingSlots.slice(2, 4).map(slot => slot.depth))
+      && Math.max(...clearingSlots.slice(2, 4).map(slot => slot.depth))
+      < Math.min(...clearingSlots.slice(4, 6).map(slot => slot.depth)),
+    "ひろばの奥・中・手前で前後パースを段階的に大きくする"
+  );
+
   const allForegroundMasks = D.LOCATIONS.flatMap(location => (
     ["far", "near"].map(variant => location.hideoutLayouts[variant].foregroundMask)
   ));
@@ -975,7 +993,7 @@ function mulberry32(seed) {
   assert.match(gameJs, /imageRect\.width\s*\*\s*0\.12[\s\S]*?bestDistance/, "動物サイズに沿う余白と最短候補で隣穴の誤反応を防ぐ");
   assert.match(gameJs, /phase\s*!==\s*['"]playing['"]\s*\|\|\s*tutorialOpen\s*\|\|\s*boardEl\.hasAttribute\(\s*['"]inert['"]\s*\)/, "説明中・非操作中は救済判定を背後へ通さない");
   for (const src of ["styles.css", "js/locations.js", "js/game.js"]) {
-    assert.match(indexHtml, new RegExp(`${src.replace(/[./]/g, "\\$&")}\\?v=20260724-1459`), `${src} は1459の専用輪郭マスク版キャッシュトークンで読む`);
+    assert.match(indexHtml, new RegExp(`${src.replace(/[./]/g, "\\$&")}\\?v=20260724-1462`), `${src} は1462の地面配置・どんぐり手前縁版キャッシュトークンで読む`);
   }
 }
 

@@ -35,7 +35,7 @@ const EXPECTED_ASSETS = [
   'hideout_world_moonlight_near_20260724.png',
   'mask_hideout_world_komorebi_far_v2_20260724.png',
   'mask_hideout_world_komorebi_near_v2_20260724.png',
-  'mask_hideout_world_donguri_far_v2_20260724.png',
+  'mask_hideout_world_donguri_far_v3_20260724.png',
   'mask_hideout_world_donguri_near_v2_20260724.png',
   'mask_hideout_world_mizube_far_v2_20260724.png',
   'mask_hideout_world_mizube_near_v2_20260724.png',
@@ -70,6 +70,7 @@ const LEGACY_WORLD_ASSETS = [
   'hideout_world_komorebi_near_20260724.png',
   'hideout_world_donguri_far_20260724.png',
   'hideout_world_donguri_near_20260724.png',
+  'mask_hideout_world_donguri_far_v2_20260724.png',
   'hideout_world_mizube_far_20260724.png',
   'hideout_world_mizube_near_20260724.png',
 ];
@@ -103,12 +104,12 @@ const LOCATIONS = [
       },
     },
     slots: [
-      { x: 30.8, groundY: 54, depth: 0.82, hideout: 'far', rotate: 0 },
-      { x: 78, groundY: 49, depth: 0.88, hideout: 'far', rotate: 0 },
-      { x: 24, groundY: 70.5, depth: 0.93, hideout: 'near', rotate: 0 },
-      { x: 76, groundY: 70, depth: 0.95, hideout: 'near', rotate: 0 },
-      { x: 18, groundY: 91.5, depth: 1.06, hideout: 'near', rotate: 0 },
-      { x: 82, groundY: 91.5, depth: 1.08, hideout: 'near', rotate: 0 },
+      { x: 31, groundY: 64.5, depth: 0.8, hideout: 'far', rotate: 0 },
+      { x: 69.5, groundY: 64, depth: 0.83, hideout: 'far', rotate: 0 },
+      { x: 29.5, groundY: 79, depth: 0.9, hideout: 'near', rotate: 0 },
+      { x: 70.5, groundY: 79, depth: 0.92, hideout: 'near', rotate: 0 },
+      { x: 35, groundY: 92, depth: 1.02, hideout: 'near', rotate: 0 },
+      { x: 65, groundY: 92, depth: 1.04, hideout: 'near', rotate: 0 },
     ],
   },
   {
@@ -124,10 +125,10 @@ const LOCATIONS = [
         groundAnchorY: 68.2,
         foregroundTop: 60,
         windowBottom: 28.87,
-        windowSafetyBottom: 40.33,
+        windowSafetyBottom: 20,
         charWidth: 48,
         charLiftPct: 18.34,
-        foregroundMask: 'mask_hideout_world_donguri_far_v2_20260724.png',
+        foregroundMask: 'mask_hideout_world_donguri_far_v3_20260724.png',
       },
       near: {
         groundAnchorY: 81,
@@ -975,6 +976,116 @@ test('5場所×4画面で地面アンカー・遠近・専用輪郭マスク・�
       expect(baseDepthRatio).toBeCloseTo(expectedDepthRatio, 1);
       expect(characterDepthRatio).toBeCloseTo(expectedCharacterRatio, 1);
     }
+  }
+});
+
+test('どんぐり遠景マスクは奥の影でなく手前の床縁に沿い、全動物の胸元まで見せる', async ({ page }) => {
+  test.setTimeout(40_000);
+  await setupApp(page);
+  await page.goto('/hyokkori-hightouch/index.html');
+  await waitForLocation(page, LOCATIONS[0]);
+
+  const donguri = LOCATIONS.find(({ id }) => id === 'donguri_path');
+  const layout = donguri.hideoutLayouts.far;
+  const friendAssets = [
+    ...['risu', 'harinezumi', 'fukurou', 'karasu', 'kitsune', 'tanuki']
+      .flatMap((id) => [`friend_${id}_awake.png`, `friend_${id}_sleeping.png`]),
+    'friend_hikari_momonga_bonus_awake.png',
+  ];
+
+  const metrics = await page.evaluate(async ({ maskUrl, friendUrls, layoutData }) => {
+    const loadPixels = async (url) => {
+      const image = new Image();
+      await new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = () => reject(new Error(`画像をデコードできません: ${url}`));
+        image.src = url;
+      });
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext('2d', { willReadFrequently: true });
+      context.drawImage(image, 0, 0);
+      return {
+        width: canvas.width,
+        height: canvas.height,
+        pixels: context.getImageData(0, 0, canvas.width, canvas.height).data,
+      };
+    };
+
+    const mask = await loadPixels(maskUrl);
+    const firstOpaqueRatio = (xRatio) => {
+      const x = Math.round((mask.width - 1) * xRatio);
+      for (let y = 0; y < mask.height; y += 1) {
+        if (mask.pixels[(y * mask.width + x) * 4 + 3] > 127) return y / mask.height;
+      }
+      return Number.NaN;
+    };
+    const centerAssetRatio = firstOpaqueRatio(0.5);
+    const leftAssetRatio = firstOpaqueRatio(0.3);
+    const rightAssetRatio = firstOpaqueRatio(0.7);
+    const assetBoundaryToCharacterRatio = (assetRatio) => (
+      (
+        assetRatio * 100
+        - layoutData.groundAnchorY
+        + layoutData.charLiftPct
+        + layoutData.charWidth / 2
+      ) / layoutData.charWidth
+    );
+    const centerCharacterRatio = assetBoundaryToCharacterRatio(centerAssetRatio);
+
+    const visibleHeightRatios = [];
+    for (const url of friendUrls) {
+      const image = await loadPixels(url);
+      let top = image.height;
+      let bottom = -1;
+      for (let y = 0; y < image.height; y += 1) {
+        let rowHasAlpha = false;
+        for (let x = 0; x < image.width; x += 1) {
+          if (image.pixels[(y * image.width + x) * 4 + 3] > 16) {
+            rowHasAlpha = true;
+            break;
+          }
+        }
+        if (rowHasAlpha) {
+          top = Math.min(top, y);
+          bottom = y + 1;
+        }
+      }
+      const topRatio = top / image.height;
+      const bottomRatio = bottom / image.height;
+      const visibleRatio = (
+        Math.min(centerCharacterRatio, bottomRatio) - topRatio
+      ) / (bottomRatio - topRatio);
+      visibleHeightRatios.push({ url, visibleRatio });
+    }
+
+    return {
+      centerAssetRatio,
+      leftAssetRatio,
+      rightAssetRatio,
+      centerCharacterRatio,
+      safetyClipRatio: 1 - layoutData.windowSafetyBottom / 100,
+      visibleHeightRatios,
+    };
+  }, {
+    maskUrl: `${ASSET_BASE}${layout.foregroundMask}`,
+    friendUrls: friendAssets.map((name) => `${ASSET_BASE}${name}`),
+    layoutData: layout,
+  });
+
+  expect(metrics.centerAssetRatio).toBeGreaterThanOrEqual(0.59);
+  expect(metrics.centerAssetRatio).toBeLessThanOrEqual(0.61);
+  expect(metrics.centerAssetRatio - metrics.leftAssetRatio).toBeGreaterThanOrEqual(0.03);
+  expect(metrics.centerAssetRatio - metrics.rightAssetRatio).toBeGreaterThanOrEqual(0.02);
+  expect(metrics.centerCharacterRatio).toBeGreaterThanOrEqual(0.68);
+  expect(metrics.centerCharacterRatio).toBeLessThanOrEqual(0.74);
+  expect(metrics.safetyClipRatio - metrics.centerCharacterRatio).toBeGreaterThanOrEqual(0.07);
+  for (const { url, visibleRatio } of metrics.visibleHeightRatios) {
+    expect(
+      visibleRatio,
+      `${url}: どんぐり遠景で胸・羽・前足まで見える縦方向の露出量`,
+    ).toBeGreaterThanOrEqual(0.7);
   }
 });
 

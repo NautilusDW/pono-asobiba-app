@@ -61,6 +61,8 @@
 
 - 2026-07-24 - by Codex - [batch:1463-machigai-visible-differences] - machigai/data/stages.js, machigai/assets/processed/{jungle,bedroom,castle}_b.webp, tests/e2e/machigai/**, tests/machigai_difficulty_regression.cjs, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - 実プレイ指摘を受け、夜のおへや・ジャングル・おしろの曖昧すぎる形状差を、約300px表示でも「見つけにくいが見つければ明白」な個数・記号・輪郭・大きさの局所差へ再調整。ゾウの耳など評価済みの良い差は維持し、GPT Image 2局所素材、当たり判定、ヒント、4 viewport、黄金経路を再検証する [overlap: batch:1460-nazonazo-town-pitatto-round7 (sw.js/play.html)]
 
+- 2026-07-24 - by Codex - [batch:1462-hyokkori-ground-layout-mask] - hyokkori-hightouch/js/locations.js, hyokkori-hightouch/index.html, assets/images/hyokkori-hightouch/mask_hideout_world_donguri_far_v3_20260724.png, tests/e2e/hyokkori/**, tests/hyokkori_hightouch_regression.cjs, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - ユーザー実画面指摘を受け、1面「こもれびの ひろば」全6穴を背景の植物・崖縁と前後関係が破綻しない開けた地面へ再配置し、2面「どんぐりの こみち」の動物が上側で過剰に切れるマスク／停止位置を素材輪郭に合わせて修正する。タップ面積を維持し、4 viewport・Chromium/WebKit・全動物状態で回帰確認する [overlap: batch:1460-nazonazo-town-pitatto-round7, batch:1463-machigai-visible-differences (sw.js/play.html)]
+
 - 2026-07-24 - by Claude - [batch:1460-nazonazo-town-pitatto-round7] - nazonazo-tunnel/js/game.js, nazonazo-tunnel/index.html, nazonazo-tunnel/styles.css, tests/nazonazo_town_dock_regression.cjs, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - batch:1453の続き(round7)。ユーザー実playtestingフィードバック反映: 各駅間レグを短い局所距離から実距離全区間に拡張、自動巡航ハンドオフ(driving=true再突入)を撤去して全区間プレイヤー手動保持制御に一本化、フロート型ゲージを廃止し実スクロール世界内のトラック上ブレーキゾーン帯+赤枠停止ボックス表示へ置換 [overlap: batch:1453-nazonazo-town-pitatto-teisha (同一機能の先行round、同ファイル群)]
 
 

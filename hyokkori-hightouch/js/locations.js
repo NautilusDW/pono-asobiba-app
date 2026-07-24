@@ -70,12 +70,12 @@ var LOCATIONS = [
       }
     },
     slots: [
-      { x: 30.8, groundY: 54, depth: 0.82, hideout: 'far', rotate: 0 },
-      { x: 78, groundY: 49, depth: 0.88, hideout: 'far', rotate: 0 },
-      { x: 24, groundY: 70.5, depth: 0.93, hideout: 'near', rotate: 0 },
-      { x: 76, groundY: 70, depth: 0.95, hideout: 'near', rotate: 0 },
-      { x: 18, groundY: 91.5, depth: 1.06, hideout: 'near', rotate: 0 },
-      { x: 82, groundY: 91.5, depth: 1.08, hideout: 'near', rotate: 0 }
+      { x: 31, groundY: 64.5, depth: 0.8, hideout: 'far', rotate: 0 },
+      { x: 69.5, groundY: 64, depth: 0.83, hideout: 'far', rotate: 0 },
+      { x: 29.5, groundY: 79, depth: 0.9, hideout: 'near', rotate: 0 },
+      { x: 70.5, groundY: 79, depth: 0.92, hideout: 'near', rotate: 0 },
+      { x: 35, groundY: 92, depth: 1.02, hideout: 'near', rotate: 0 },
+      { x: 65, groundY: 92, depth: 1.04, hideout: 'near', rotate: 0 }
     ],
     partnerIds: ['kitsune', 'usagi', 'risu', 'harinezumi', 'kojika', 'araiguma'],
     bonusPartnerId: 'hikari_momonga'
@@ -96,10 +96,10 @@ var LOCATIONS = [
         groundAnchorY: 68.2,
         foregroundTop: 60,
         windowBottom: 28.87,
-        windowSafetyBottom: 40.33,
+        windowSafetyBottom: 20,
         charWidth: 48,
         charLiftPct: 18.34,
-        foregroundMask: ASSET_BASE + 'mask_hideout_world_donguri_far_v2_20260724.png'
+        foregroundMask: ASSET_BASE + 'mask_hideout_world_donguri_far_v3_20260724.png'
       },
       near: {
         groundAnchorY: 81,
