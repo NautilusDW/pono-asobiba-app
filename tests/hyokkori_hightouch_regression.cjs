@@ -936,7 +936,7 @@ function mulberry32(seed) {
   assert.doesNotMatch(stylesCss, /\.hh-char-wrap\s*\{[^}]*scale\(var\(--depth-scale\)\)/s, "キャラだけへ遠近scaleを二重適用しない");
   assert.match(stylesCss, /\.hh-hole\.is-pressed\s+\.hh-ground-stack\s*\{[^}]*translateX\(-50%\)[^}]*scale\(var\(--depth-scale\)\)[^}]*rotate\(var\(--hideout-rotate\)\)[^}]*scale\(0\.96\)/s, "押した瞬間も接地点基準のstack全体で前後パースを保つ");
   for (const src of ["styles.css", "js/locations.js", "js/game.js"]) {
-    assert.match(indexHtml, new RegExp(`${src.replace(/[./]/g, "\\$&")}\\?v=20260724-1453`), `${src} は1453の5面版キャッシュトークンで読む`);
+    assert.match(indexHtml, new RegExp(`${src.replace(/[./]/g, "\\$&")}\\?v=20260724-1453b`), `${src} は1453bの5面版キャッシュトークンで読む`);
   }
 }
 
@@ -960,6 +960,8 @@ function mulberry32(seed) {
   assert.match(gameJs, /FX_IMAGES\s*=\s*\[[\s\S]*?story_moon_flower_bloom\.png[\s\S]*?\]/, "月の花はプレイ中に温めて最終結果へ備える");
   assert.match(indexHtml, /id=["']cd-story["']/, "連続プレイのカウントダウンに物語文の表示先がある");
   assert.match(gameJs, /cdStory\.textContent\s*=\s*currentLocation\.startStory/, "各面の開始物語を見えるカウントダウンへ反映する");
+  assert.match(gameJs, /function\s+resetStageViewportScroll\(\)[\s\S]*?stageEl\.scrollTop\s*=\s*0[\s\S]*?stageEl\.scrollLeft\s*=\s*0/, "結果ボタンのfocusで動いたstage内スクロールを次面開始前に戻す");
+  assert.match(gameJs, /retryBtn\.blur\(\)[\s\S]{0,120}resetStageViewportScroll\(\)/, "結果ボタンを隠す前にfocusを外してstageのHUDを画面内へ戻す");
 
   for (const id of ["combo-hud", "combo-count", "combo-status-sr", "result-combo", "result-best-combo", "result-combo-new"]) {
     assert.match(indexHtml, new RegExp(`id=["']${id}["']`), `${id} の表示先が存在する`);

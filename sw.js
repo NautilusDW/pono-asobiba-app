@@ -1,5 +1,10 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2371: ひょっこりハイタッチで結果ボタンを押して次面へ進む時、非表示にした
+// 結果カードへのfocus追従でstage内がスクロールしHUDが上へ隠れる経路を修正。
+// ボタンfocusを外してstage scrollを0へ戻し、ゲーム個別queryを1453bへ更新。
+// CRITICAL_ASSETSの変更はない。play.html PAGE_CACHE_VERSION/
+// window.PONO_SW_VERSIONと同期 (2371)。
 // v2370: ひょっこりハイタッチを固定5面ルートへ拡張。夕方の「きのこの おか」と
 // 夜の「つきあかりの もり」、場所別far／near外装、かえる／やまね、
 // 5面完走時の月の花を追加し、旧3面完走セーブは4面から再開する。
@@ -998,7 +1003,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2370;
+const CACHE_VERSION = 2371;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

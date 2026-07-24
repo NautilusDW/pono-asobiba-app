@@ -361,6 +361,12 @@
     }
   }
 
+  function resetStageViewportScroll() {
+    if (!stageEl) return;
+    stageEl.scrollTop = 0;
+    stageEl.scrollLeft = 0;
+  }
+
   // ═══ 隠れ場所を場所定義の正規化座標から動的生成 ═══
   var holeRefs = [];
 
@@ -1362,6 +1368,8 @@
       ensureAudio();
       var startScreen = document.getElementById('start-screen');
       if (startScreen) startScreen.style.display = 'none';
+      startBtn.blur();
+      resetStageViewportScroll();
       startMenuOnce();
       resetGameState();
       updateHud();
@@ -1378,6 +1386,8 @@
       if (locationTransitioning || phase !== 'result' || !nextLocation) return;
       locationTransitioning = true;
       phase = 'loading';
+      retryBtn.blur();
+      resetStageViewportScroll();
       retryBtn.disabled = true;
       retryBtn.textContent = 'よみこみちゅう…';
       var targetLocation = nextLocation;
@@ -1385,6 +1395,7 @@
         if (!applied) return;
         var overlay = document.getElementById('result-overlay');
         if (overlay) overlay.classList.remove('show');
+        resetStageViewportScroll();
         retryBtn.disabled = false;
         retryBtn.textContent = 'さんぽを つづける';
         locationTransitioning = false;

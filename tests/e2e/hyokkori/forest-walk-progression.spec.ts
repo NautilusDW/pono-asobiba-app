@@ -92,6 +92,10 @@ async function continueTo(page, location) {
   await expect(page.locator('#cd-text')).toHaveText(location.name);
   await expect(page.locator('#cd-story')).toBeVisible();
   await expect(page.locator('#cd-story')).toHaveText(location.startStory);
+  await expect.poll(() => page.locator('#stage').evaluate((stage) => ({
+    left: stage.scrollLeft,
+    top: stage.scrollTop,
+  }))).toEqual({ left: 0, top: 0 });
   await expectHolesDisabled(page, true);
 }
 
