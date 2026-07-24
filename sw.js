@@ -1,5 +1,12 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2369: Web版つりゲーム (tsuri-kawa/, common/tsuri/) をリポジトリから撤去し
+// Unity版 KawaGlint (unity/PonoNativeGames/Assets/Pono/Games/KawaGlint/) へ
+// ゲーム実装を完全一本化 (経緯は docs/TSURI_FISHING_GAME_PLAN_2026-07-23.md 冒頭注記)。
+// play.html GAMES/APP_TITLE_MENU_IDS から tsuri-kawa を削除、common/haptics.js の
+// fishingBite パターンも撤去。tsuri系ファイルは元々 network-first 配信で
+// CRITICAL_ASSETS 未登録のため precache リスト変更なし。play.html
+// PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2369)。
 // v2368: なぞなぞトレインの「まち」面に、5問クイズの代わりとなる専用ミニゲーム
 // 「ぴたっと停車」を追加。レバーを長押しで加速・はなすと惰性減速する単一操作で、
 // 位置の異なる3つの停車わくへ汽車をぴたりと止めて村人を乗せる。未達成/行き過ぎは
@@ -985,7 +992,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2368;
+const CACHE_VERSION = 2369;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

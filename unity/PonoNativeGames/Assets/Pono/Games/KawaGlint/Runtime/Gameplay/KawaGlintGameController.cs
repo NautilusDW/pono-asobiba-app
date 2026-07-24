@@ -371,7 +371,7 @@ namespace Pono.KawaGlint.Gameplay
             _hud.SetNarration(narration);
 
             _hud.SetBucketCount(CaughtCount);
-            ScheduleReady(LandedReadySec);
+            ScheduleReady(helped ? LandedHelpedReadySec : LandedReadySec);
         }
 
         private void ScheduleReady(float seconds)

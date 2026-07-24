@@ -1,5 +1,11 @@
 # ポノのつりゲーム — 川づり・うみづり → クッキング → お弁当 一気通貫プラン
 
+> **⚠️ 2026-07-24 追記: Web実装は廃止済み — Unity (KawaGlint) へ完全移行**
+>
+> 本書が対象としていた Web 版実装 (`tsuri-kawa/`、`common/tsuri/core.js・input.js・fish-data.js`、`tests/tsuri_core_regression.cjs`) は 2026-07-24 にリポジトリから削除された。KawaGlint (Unity URP 川面スパイク) 側で同じ状態機械 (cast → wait → bite → renda → tug-stub → landed/escaped) の C# 忠実移植が完成し (EditMode 24件 + PlayMode 4件×2回 = 計32件のテストで実証)、タップでキャスト→あたり→フッキング→連打→キャッチまで遊べるゲームプレイが成立したため、ユーザー判断でつりゲームの開発を Unity 版へ一本化した。WebGL 変換・ネイティブアプリ配信基盤 (App Store / Play Store 申請、Capacitor 組み込み等) は容量面の懸念から今回は見送り、配信手段は本当に必要になった時に別途検討する (例: 水表現だけ軽量版に差し替える等)。
+>
+> **今後の実装の正本**: `unity/PonoNativeGames/Assets/Pono/Games/KawaGlint/` (セットアップ・ビルド・QA手順は同ディレクトリの `README.md`)。なお過去のクレーム履歴が参照する `docs/unity-migration/kawa-glint/DESIGN.md` は現時点でリポジトリ未収録。本書はゲームデザインの正本 (失敗ペナルティなし・暗黙アシスト・pity救済・魚種データ・装備/図鑑/在庫連携構想) として引き続き有効なため、歴史的経緯の参考資料として削除せず残す。
+
 作成日: 2026-07-23 / 対象: 3〜7歳 / 横画面16:9 / 実装: sonnet5並列エージェントチーム前提
 
 - 正本参照: `docs/HATAKE_TO_BENTO_LOOP_PLAN_2026-07-23.md`(以下「畑プラン」)。共有在庫まわりで本書と畑プランが矛盾した場合は**畑プランが正**。

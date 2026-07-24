@@ -25,9 +25,6 @@
     // near-balance: 「あとちょっと！」rising edge の単発ワンショット。
     // 頻繁に発火しうる (毎ラウンド最大1回程度) ため他パターンより短く軽量にする。
     nearBalance: 8,
-    // ── tsuri-kawa (Phase 0) ────────────────────────────────
-    // 本あたり (bite) の瞬間、「いまだ!タップ!」に同期する短い単発通知。
-    fishingBite: 20,
   });
 
   var disabled = false;

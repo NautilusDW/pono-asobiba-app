@@ -11465,20 +11465,6 @@
         tier: 'app'
       },
       {
-        id: 'tsuri-kawa',
-        title: 'ポノの かわづり',
-        subtitle: 'まってさかなを つろう!',
-        icon: '🎣',
-        // 専用bg/thumbなし (placeholder段階)。他の新規ゲームと同じ共通背景を流用。
-        bg: 'assets/images/BG_03.webp',
-        href: 'tsuri-kawa/',
-        panel: 'assets/ui/menu_card_base_02.webp',
-        peekPos: '50% 50%',
-        comingSoon: true,
-        debugPlayable: true,
-        tier: 'app'
-      },
-      {
         id: 'machizukuri',
         title: 'ポノのまちづくり',
         subtitle: 'やさいを とどけて まちを そだてよう',
@@ -11564,7 +11550,7 @@
       // ----- 完成ゲーム (通常カード) -----
       'starparodier', 'undersea-cave', 'sea-album',
       // ----- 開発中コンテンツ (comingSoon:true, debugPlayable:true) -----
-      'bubble', 'coloring', 'stacking', 'aquarium', 'pakupaku-catch', 'donguri-wakekko', 'hyokkori-hightouch', 'hatake-nikki', 'guragura-seesaw', 'tsuri-kawa', 'machizukuri'
+      'bubble', 'coloring', 'stacking', 'aquarium', 'pakupaku-catch', 'donguri-wakekko', 'hyokkori-hightouch', 'hatake-nikki', 'guragura-seesaw', 'machizukuri'
       // monster_math は 2026-07-07 の否定的フィードバックによるリセット後
       // 再評価が未確認のため保留 (詳細は HANDOFF.md 参照)
     ];
@@ -11726,7 +11712,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2368; // sw.js CACHE_VERSION と同期 (v2368: なぞなぞトレイン町面に「ぴたっと停車」ミニゲーム追加)
+    const PAGE_CACHE_VERSION = 2369; // sw.js CACHE_VERSION と同期 (v2369: Web版つりゲーム撤去・Unity KawaGlint一本化)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -11735,7 +11721,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2368'; // PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期
+    window.PONO_SW_VERSION = 'v2369'; // PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
