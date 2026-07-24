@@ -1,7 +1,24 @@
 # ポノのつりゲーム拡張 統合企画書 — 海バージョン + こだまの森ワールドマップ + 図鑑/料理連携
 
-作成: 2026-07-24 / リードゲームデザイナー統合版 v1.0
+作成: 2026-07-24 / リードゲームデザイナー統合版 v1.1(2026-07-24 ユーザーフィードバック反映改訂)
 ステータス: 設計のみ・実装なし。§6 の意思決定事項がユーザー承認待ち
+
+## 変更履歴(2026-07-24 v1.1 改訂)
+
+v1.0 公開後のユーザーフィードバックを受け、fable再設計→レビュー→最終化のワークフローで§2.4/§3/§5/§6を全面改訂した。主な変更:
+
+- **川ロケーションを4→2に削減**。生息環境監査(どの魚がどんな環境を必要とするか)から逆算し、「ふち」と「かこう」を1ロケーション(統合かこう)に統合、「みずうみ」は wakasagi ごと将来ウェーブへ繰延。
+- **海の生息地モデルを刷新**: ユーザー指摘の「浅場/深場/岩場に隠れる/水面近くを泳ぐ」という多様性を、ロケーション(横軸=岸からの距離)× niche(縦軸=水中の層、演出専用の純加算フィールド)の2層モデルで表現。ロケーション数を増やさずに多様性を確保。
+- **イワシ・イカを v1 に正式採用**(旧v1.0では将来ウェーブ扱いだった判断をユーザーが反転)。
+- **マグロは在庫化しない**(お弁当の食材にしない)、図鑑の花形として掲載のみ。「カマ的なぶっ飛んだレア食材」は検討中の未決定アイデアとして記録。
+- **Webワールドマッププレビューを完全にスコープ外化**。v1 は Unity 内 LocationSelect パネルのみで進める(§7批評の「押せるものゼロの地図」問題が構造的に解消)。
+- **forest region は台帳定義のみ・UI露出なし**を維持。
+- **企画書§3.3の改訂条項(純加算のみ可)を正式承認**。
+- **開放条件の具体的数値は保留**。ロケーション台帳確定後に設定する。
+- **図鑑説明文(dexProfile)はサンプル2件(fish_ayu/fish_iwashi)を先行執筆**、フォーマット承認後に残り13種を執筆する運用に変更。
+- アセット見積もりは新規21〜24点→**15点**に縮小(Webマップ削除・ロケーション統合の効果)。
+
+独立レビューが実効出現比の算術矛盾(rare不在ロケでrare%を記載)と niche 粒度の不整合を検出し、最終化フェーズで解消済み。詳細は §3/§5.2/§6 を参照。
 
 ---
 
@@ -72,16 +89,18 @@ Level 0: ワールドマップ (こだまの森 全景)
 4. **未解放表示**: シルエット+「あと Nひきで いけるよ！」。錠前アイコン不使用・ネガ演出なし(伸びしろ表現)。
 5. **海zone解禁**: 初期提案は「川累計10匹で解禁」(かこう到達前後=物語導線と同期)。常時開放案との択一は §6 ゲート5。
 
-### 2.4 UIの責任分担(Web vs Unity)
+### 2.4 UIの責任分担(Web vs Unity)【2026-07-24 v1.1改訂: Web露出を完全に削除】
+
+**決定(§6.1 ゲート8): Web側にはこの釣り関連コンテンツを一切出さない。** v1 はUnity内で完結する。
 
 | 時期 | Unity側 (KawaGlint) | Web側 |
 | --- | --- | --- |
-| 現在(橋渡しなし) | **LocationSelect パネルが正**: region タブ(かわ/うみ)→ロケーションカード→「ここで つる!」。v1 はカード選択UI(新規アート0)で先行し、フルマップUIは Phase D で演出強化 | **ワールドマップ・プレビュー**(`worldmap/index.html`、zukan #screen-mapselect のコピー派生): 全景+スポット+魚シルエット+「アプリばんで つれるよ」木札バッジ。**起動ボタンは置かない(死にボタン禁止)** |
-| UaaL統合後 | 釣りプレイセッション専任(起動payloadで locationId 受領→終了payloadで通知)。LocationSelect はオフライン/フォールバック経路として残す | **マップがランチャーに昇格**(バッジ→「つりに いく!」ボタン差替)。ナビ・図鑑表示・ショップ・キッチンは Web 責務(ただし fishdex の書き込みオーナーは Unity 据え置き、§4.5) |
+| 現在(橋渡しなし) | **LocationSelect パネルが唯一の場所選択UI**: region タブ(かわ/うみ)→ロケーションカード→「ここで つる!」。新規アート0で実装可能 | **なし**。ワールドマッププレビュー・タイトルメニューカード・「アプリばんで つれるよ」バッジは**すべてスコープ外** |
+| UaaL統合後 | 釣りプレイセッション専任(起動payloadで locationId 受領→終了payloadで通知)。LocationSelect はオフライン/フォールバック経路として残す | Web側の役割(ナビ・図鑑表示・ショップ・キッチン)は UaaL 着地時に別途設計(本書スコープ外) |
 
-- タイトルメニュー: GAMES 配列に「こだまの森 マップ」カード1件追加(id:'worldmap'、**tier:'free'**)。釣りカードは現時点で置かず、告知はマップ内バッジ+既存「アプリで あそべる」ゾーン誘導モーダル経由。カード1枚のまま中身が育つ構図でメニュー改修の再発を防ぐ。
-- zukan 本体(encyclopedia.js / zukan.state.v1)は**一切改変しない**。実装パターンのコピー派生のみ。
-- 運用注意(実装時): worldmap/ 追加は sw.js CACHE_VERSION バンプ対象。地図アセットは zukan の data-src 遅延ロード方式踏襲。
+- タイトルメニュー: 現時点では新規カードを追加しない。「こだまの森 マップ」構想は UaaL 着地後、実際にプレイ可能になるタイミングで再検討する。
+- zukan 本体(encyclopedia.js / zukan.state.v1)は**一切改変しない**。
+- 副次効果: §7批評「押せるものゼロの地図は3-7歳には何もないより悪い」という指摘が構造的に解消。sw.js CACHE_VERSION バンプ対象(worldmap/追加)も消滅。
 
 ### 2.5 保存スキーマ(所有権分割・調停#6/#11)
 
@@ -117,89 +136,110 @@ Level 0: ワールドマップ (こだまの森 全景)
 
 ---
 
-## 3. ロケーション&生物コンテンツ
+## 3. ロケーション&生物コンテンツ(2026-07-24 v1.1改訂 — 生息環境監査+ユーザーフィードバック反映)
 
-### 3.1 統一ロケーション台帳(単一正本・調停#1/#2)
+> 本節は生息環境監査(川魚種の必要ニッチ逆算)とユーザーフィードバックに基づく差し替え版。海は「ロケーション=岸からの距離(横軸)× niche=水中の層(縦軸)」の2層モデルを採用する。裁定済み事項(Spawns ホワイトリスト、1ロケ1主役、待ち時間上限8秒、レシピ4本固定 等)は不変。
 
-**川 (river) — 4ロケーション:**
+### 3.1 統一ロケーション台帳(単一正本)
 
-| id | 名前 | 背景コンセプト | 解放 | 役割 |
+**川 (river) — 2ロケーション + 将来枠1:**
+
+| id | 名前 | 背景コンセプト | 解放 | 役割・内部ニッチ |
 | --- | --- | --- | --- | --- |
-| `river_asase` | せせらぎの あさせ | 現行 bg_river_crosssection 流用。木漏れ日・透明な浅瀬・魚影が見える | **常時** | 入門・既定。現行5種そのまま=**挙動不変** |
-| `river_fuchi` | もりかげの ふち | 岩と倒木の深い淵。魚影は「深みの影」で半分だけ | 川累計5匹 | rare(salmon)初遭遇。**unagi のホーム(ぬし)** |
-| `river_mizuumi` | しずかな みずうみ | 霧の湖・鏡面反射・桟橋の杭 | 川累計12匹 | **wakasagi 限定出現**。図鑑habitat「みずうみ」とゲームの両方が正直になる(わかさぎ裁定の上位互換)。**魚影ルールは川方式(shadow あり)** |
-| `river_kakou` | ゆうやけの かこう | 川と海が出会う河口・夕焼け・遠くに水平線 | 川累計20匹 | **salmon 主役(x2.0)**=yakizake 安定供給地。うみ解禁への物語導線 |
+| `river_asase` | せせらぎの あさせ | 現行 bg_river_crosssection 流用。木漏れ日・透明な浅瀬・魚影が見える | **常時**・既定 | 入門。現行5種そのまま=**挙動不変**。待ち時間・前あたり演出とも**現行実装値のまま変更禁止**(旧「2〜4秒」表記は撤回——テスト緑のまま挙動が変わるすり替えを排除) |
+| `river_kakou` | ゆうやけの かこう | **統合ブリーフ**: 夕焼けの河口・遠くに水平線、画面の片側に岩と倒木の暗い深み(旧 fuchi の要素を同一シーンに吸収)。**構図制約(発注書に明記)**: 〔ながれ〕と〔岩かげの深み〕の2ニッチが**左右等で明確に分離して見える**こと(図鑑「どこに いるかな」と現地の絵の対応維持)。リテイク×2見込み | 川累計 **N匹(未定・§6.2)** | ニッチ2層: 〔surface=ゆうやけの ながれ〕**salmon 主役 x2.0**=yakizake 供給地・rare 初遭遇 / 〔rock_cover=岩の すきま〕**unagi ホーム(川ボーナス種)**。ウナギは現実に河口の泥底・岩陰に住むため生物学的に正確。海への物語導線 |
+| `river_mizuumi` | (しずかな みずうみ) | — | — | **将来ウェーブ W-L**。wakasagi と生息地セットで出荷(ウェーブ1:1原則)。「?」placeholder・ROUTE 対象外(sea_yoru_minato と同文法) |
 
-**海 (sea) — 3ロケーション + 将来枠:**
+**海 (sea) — 3ロケーション + 将来枠1:**
 
-| id | 名前 | 背景コンセプト | 解放 | 役割 |
+| id | 名前 | 背景コンセプト | 解放 | 役割・内部ニッチ |
 | --- | --- | --- | --- | --- |
-| `sea_sunahama` | すなはまの さんばし | 木の桟橋・浅い砂地・波紋 | **常時**(zone解禁後) | 入門・既定。「かくれんぼ」テーマ(かれい・ひとで・貝殻は砂にかくれている) |
-| `sea_iwaba` | いわばの つりば | 磯・潮だまり・岩の間 | 海累計5匹 | **ebi 主役**=エビフライ主産地 |
-| `sea_oki` | おきの ふね | 小舟・水平線・大波。魚影なし、ウキと竿のしなりだけ。**視点は岸型サイドビュー維持・舟は背景モチーフ**(pono_anchor 互換のため) | 海累計12匹 | 「なにが来るかわからない」くじ引きの本場。**maguro のホーム** |
-| `sea_yoru_minato` | よるの みなと | 夜の港・常夜灯 | — | v2枠。innermap に「?」placeholder のみ。**ROUTE 対象外** |
+| `sea_sunahama` | すなはまの さんばし | 木の桟橋・浅い砂地・波紋 | **常時**(zone解禁後)・既定 | 入門。〔surface〕**iwashi の群れ**(桟橋近くに回遊)/ 〔midwater〕aji / 〔bottom_sand〕karei(砂にかくれる)・ebi・hitode・kaigara |
+| `sea_iwaba` | いわばの つりば | 磯・潮だまり・岩の間 | 海累計 **N匹(未定)** | 〔rock_cover〕**ebi 主役 x1.3**=エビフライ主産地・**ika**(岩陰にひそむ)・tai / 〔midwater〕aji / 〔bottom_sand〕hitode |
+| `sea_oki` | おきの ふね | 小舟・水平線・大波(岸型サイドビュー維持・舟は背景モチーフ・pono_anchor 互換) | 海累計 **M匹(未定)** | 〔deep_open〕**tai 主役 x1.5**・**maguro ホーム(海ボーナス種)** / 〔surface〕iwashi の群れ・salmon・ika / 〔midwater〕aji。「なにが来るかわからない」くじ引きの本場 |
+| `sea_yoru_minato` | よるの みなと | 夜の港・常夜灯 | — | v2枠据え置き。将来フック(1行メモ): ika は夜の光に集まる習性があるため、実装時は ika ブースト地の最有力候補 |
 
-### 3.2 出現テーブル(明示 Spawns ホワイトリスト・調停#4)
+- 海 zone 解禁: 川累計 **X匹(未定・§6.2)**。仕組み(fishdex sourceCounts 合算からの導出・route 自動送り既定・解放済み select 随時)は承認済みのまま不変。
+- 将来課題(§7 批評由来・継続): 「かこう」「おき」は未就学児に馴染みの薄い語。Unity 側ナレ不在問題と併せ、場所名読み上げの手当を将来課題として残す。
+
+### 3.2 出現テーブル(明示 Spawns ホワイトリスト)
 
 - 実効テーブル = `Spawns[] ∪ {zone の BonusSpeciesId}`。リスト外の種は出現0。
-- **既定ロケーション(asase/sunahama)は全 WeightMul 1.0 のフラット**とし、レシピ必須魚が基準確率で釣れることを保証。主役ブースト(1ロケ1主役の原則)は非既定ロケーションのみ。
-- ボーナス種: 川=`fish_unagi`(ホーム=fuchi)、海=`fish_maguro`(ホーム=oki)。全ロケ極低確率+ホームで BonusWeightMul。pity(逃走ごと窓+20%、fishdex.escapedCount 参照)は場所をまたいで累積。
+- 既定ロケーション(asase/sunahama)は全 WeightMul 1.0 フラット。主役ブーストは非既定ロケーションのみ(1ロケ1主役)。
+- ボーナス種: 川=`fish_unagi`(ホーム=**kakou**)、海=`fish_maguro`(ホーム=**oki**)。全ロケ極低確率+ホームブースト。pity は場所跨ぎ累積で不変。
+- 〔〕内は各 Spawns エントリの niche(**(ロケーション×種)単位**・演出専用・§3.3)。
 
-| ロケーション | Spawns (太字=WeightMul ブースト) | 待ち時間 | 実効比 n:r:s 目安 |
-| --- | --- | --- | --- |
-| river_asase | ayu, nijimasu, zarigani, salmon, boot (全て x1.0) | 2〜4秒 | 92:8:0.5 |
-| river_fuchi | **nijimasu x1.3**, ayu, salmon x0.8, zarigani (+unagi ブースト) | 3〜6秒 | 78:18:4 |
-| river_mizuumi | **wakasagi (限定・群れ)**, nijimasu, zarigani, boot | 2〜5秒 | 90:9:1 |
-| river_kakou | **salmon x2.0**, ayu, boot | 4〜7秒 | 65:32:3 |
-| sea_sunahama | aji, ebi, karei, hitode, kaigara (全て x1.0) | 3〜6秒 | 90:9:1 |
-| sea_iwaba | **ebi x1.3**, aji, tai, hitode (+将来 ika) | 4〜7秒 | 75:22:3 |
-| sea_oki | **tai x1.5**, salmon, aji (+maguro ブースト、将来 iwashi) | 5〜8秒 | 55:38:7 |
+| ロケーション | Spawns(太字=主役ブースト・〔niche〕付き) | ボーナス種 | 待ち時間 | 実効比 n:r:s 目安 |
+| --- | --- | --- | --- | --- |
+| river_asase | ayu, nijimasu, zarigani, salmon, boot(全て x1.0・**niche 全省略=現行演出のまま**) | unagi(極低) | **現行実装値のまま(変更禁止)** | 92:8:0.5 |
+| river_kakou | **salmon x2.0**〔surface〕, ayu〔midwater〕, nijimasu〔midwater〕, boot〔bottom_sand〕 | **unagi(ホームブースト)**〔rock_cover〕 | 3〜7秒 | 62:33:5 |
+| sea_sunahama | iwashi〔surface〕, aji〔midwater〕, ebi〔bottom_sand〕, karei〔bottom_sand〕, hitode〔bottom_sand〕, kaigara〔bottom_sand〕(全て x1.0) | maguro(極低)〔deep_open〕 | 3〜6秒 | 99.5:0:0.5 |
+| sea_iwaba | **ebi x1.3**〔rock_cover〕, ika〔rock_cover〕, tai〔rock_cover〕, aji〔midwater〕, hitode〔bottom_sand〕 | maguro(極低)〔deep_open〕 | 4〜7秒 | 77.5:22:0.5 |
+| sea_oki | **tai x1.5**〔deep_open〕, salmon〔surface〕, iwashi〔surface〕, ika〔surface〕, aji〔midwater〕 | **maguro(ホームブースト)**〔deep_open〕 | 5〜8秒 | 54:41:5 |
 
-- 待ち時間補正は location の WaitMulMin/Max のみで表現し、**絶対上限8秒を子供向けガードとして固定**。
-- ロケーションが変えてよいのは**出現テーブルと待ち時間レンジのみ**。窓・連打・challengeProfile の場所別補正フィールドはスキーマに意図的に存在させない(「難しいロケーションを作らない。レアに会いやすいロケーションだけを作る」)。
-- 非食用種の合計出現率は各ロケで normal 帯の10〜15%(sunahama のみ上限15%側可)。treasure セッション内デデュープは `treasure_*` prefix(boot/kaigara)が対象、hitode は生物枠で対象外。
+- **実効比の訂正(レビュー指摘反映)**: 旧版の sea_sunahama「92:7:1」は rare 不在ロケに rare 7% を記載した算術矛盾のため撤回。訂正原則: (a) rare 段は当該ロケの Spawns の rarity 構成からのみ生じる(rare 不在なら 0)。(b) ボーナス種の非ホーム極低出現は全ロケ同水準(≈0.5%)、ホームブーストは ≈5% 水準(kakou の unagi と oki の maguro は同格)。
+- zarigani は淡水種のため河口(汽水)には出さない(asase 限定)。
+- 待ち時間補正は WaitMulMin/Max のみで表現し、絶対上限8秒固定。ロケーションが変えてよいのは出現テーブルと待ち時間レンジのみ(既存規約不変)。
+- 非食用種の合計出現率は各ロケで normal 帯の10〜15%(種側ベース重みで担保、sunahama のみ15%側可)。treasure デデュープは `treasure_*` prefix 対象・hitode は対象外(不変)。
 
-### 3.3 演出上の申し合わせ
+### 3.3 演出上の申し合わせ + niche タグ仕様(純加算・演出専用)
 
-- 海=魚影なし(企画書§2.1 裁定)により海の魚は catch 1枚のみ。karei の「砂にかくれる」演出は species 別 shadow を使わず**汎用の砂けむり/泡エフェクトで表現**。
-- 湖(river_mizuumi)は川方式(shadow あり・TsuriKawaTuning 系)と明記。
-- 未解放タップは zukan imrpg-comingsoon と同文法のモーダル。文言はすべて第三者読み聞かせ視点・ひらがな。
+- **niche タグ**: Spawns エントリの省略可能フィールドとして純加算(§3.3改訂条項=純加算原則の適用)。
 
-### 3.4 v1出荷種リスト(魚種マスター単一正本表)
+  ```
+  niche: "surface" | "midwater" | "bottom_sand" | "rock_cover" | "deep_open"   // 省略時 midwater 扱い
+  ```
 
-マスター登録は**アートが出荷される種だけ**(ウェーブ1:1原則)。計 v1=14種(川7+海6+salmon両属+kaigara採択時+1)。
+- **粒度裁定(レビュー指摘反映)**: niche の**正本は (ロケーション×種) 単位**(=Spawns エントリ付与)。§3.4 の魚種表の niche 列は「**図鑑表示用の代表 niche**」であり、演出を駆動しない。同一種でも場所によって値が変わってよい。実例: ebi=sunahama では bottom_sand / iwaba では rock_cover。ika=iwaba では rock_cover / oki では surface(岩のない沖で「岩間の泡」演出を出すと絵として破綻するため)。tai=iwaba では rock_cover / oki では deep_open。
+- **用途は2つだけ**: (1) 前あたり演出の選択 — surface=波紋・きらめき / midwater=既定演出 / bottom_sand=砂けむり(karei の既裁定演出をこの仕組みに一般化)/ rock_cover=岩間の泡 / deep_open=大きな引き波。(2) dexProfile「どこに いるかな」行との整合入力(こちらは代表 niche を使う)。
+- **禁止事項(不変条件の拡張)**: niche は窓・連打・challengeProfile・待ち時間・WeightMul のいかなるチューニングにも接続しない(§3.5 静的検査対象)。
+- 海=魚影なし(企画書§2.1 裁定)により海の魚は catch 1枚のみ。unagi は川方式(shadow+catch)。
+- river_asase は niche を一切付与しない(全省略=既定)ことで、演出含め現行挙動を完全不変に保つ。
+- 未解放タップは zukan comingsoon と同文法のモーダル。文言はすべて第三者読み聞かせ視点・ひらがな。
 
-| speciesId | 名前 | rarity | 食用 | inventoryKey | zones | 主ロケーション | v1 | 備考 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| fish_ayu | あゆ | normal | ○ | fish_ayu | river | asase, fuchi, kakou | 実装済 | レシピ ayu_shioyaki(新) |
-| fish_nijimasu | にじます | normal | ○ | fish_nijimasu | river | asase, **fuchi** | 実装済 | |
-| zarigani | ざりがに | normal | × | null | river | asase, fuchi, mizuumi | 実装済 | |
-| fish_salmon | さけ | rare | ○ | fish_salmon | river+sea | asase, **kakou(x2.0)**, oki | 実装済 | zones拡張のみ。物語の橋。yakizake |
-| treasure_boot | ながぐつ | normal | × | null | river | asase, mizuumi, kakou | 実装済 | たからもの枠 |
-| fish_wakasagi | わかさぎ | normal | ○ | fish_wakasagi | river (habitat=みずうみ) | **mizuumi 限定** | Phase A | 群れ・成功体験ゾーン |
-| fish_unagi | うなぎ | super | ○ | fish_unagi | river | 川全域ボーナス (**fuchi**) | Phase A | v1 は runs 無効・連打のみ |
-| fish_aji | あじ | normal | ○ | fish_aji | sea | sunahama, iwaba | Phase B1 | レシピ aji_fry |
-| fish_ebi | えび | normal | ○ | fish_ebi | sea | sunahama, **iwaba** | Phase B1 | 既存 ebi_fry |
-| fish_karei | かれい | normal | ○ | fish_karei | sea | **sunahama**(砂にかくれる) | Phase B1 | **新規提案**(ゲート2)。白身の柱 |
-| hitode | ひとで | normal | × | null | sea | sunahama, iwaba | Phase B1 | 非食用枠 |
-| treasure_kaigara | きらきらの かいがら | normal | × | null | sea | **sunahama** | Phase B1 | **新規提案**(ゲート3)。boot の海版 |
-| fish_tai | たい | rare | ○ | fish_tai | sea | iwaba, **oki(x1.5)** | Phase B2 | 白身・お祝いの読み物枠 |
-| fish_maguro | まぐろ | super | ○ | fish_maguro(推奨・ゲート7) | sea | 海全域ボーナス (**oki**) | Phase B2 | v1 は runs 無効。レシピなし(図鑑の花形) |
-| fish_iwashi | いわし | normal | ○ | fish_iwashi | sea | (sunahama, oki 予定) | **将来ウェーブ** | v1除外はゲート4 |
-| fish_ika | いか | rare | ○ | fish_ika | sea | (iwaba, oki 予定) | **将来ウェーブ(tug実装時)** | ドラッグ練習台の機能ごと延期 |
+### 3.4 v1出荷種リスト(魚種マスター単一正本表・計15種)
 
-- レシピ接続は v1 で **salmon(yakizake)/ebi(ebi_fry)/ayu(ayu_shioyaki)/aji(aji_fry) の4本のみ**(企画書§3.6 不変)。karei/tai/wakasagi/unagi/maguro は「edible だがレシピなし」= iwashi 裁定(raw commit 無害)で被覆。
-- unagi/wakasagi は企画書 Phase 2 種の前倒しであることを明記(Phase A が企画書 Phase 2 の一部を実行する依存関係)。
+v1 = 川6 + 海8 + maguro(super)+ salmon両属。wakasagi は将来ウェーブ W-L へ移動。マスター登録はアート出荷とウェーブ1:1(不変)。
 
-### 3.5 静的テスト不変条件(flaky 化しない形に言い換え済み)
+| speciesId | 名前 | rarity | 食用 | inventoryKey | zones | 出現ロケ(太字=ブースト/ホーム) | 代表niche(図鑑表示用) | v1 | 備考 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| fish_ayu | あゆ | normal | ○ | fish_ayu | river | asase, kakou | midwater | 実装済 | レシピ ayu_shioyaki |
+| fish_nijimasu | にじます | normal | ○ | fish_nijimasu | river | asase, kakou | midwater | 実装済 | |
+| zarigani | ざりがに | normal | × | null | river | asase | bottom_sand | 実装済 | 淡水種のため河口には出さない |
+| fish_salmon | さけ | rare | ○ | fish_salmon | river+sea | asase, **kakou(x2.0)**, oki | surface | 実装済 | 物語の橋。yakizake |
+| treasure_boot | ながぐつ | normal | × | null | river | asase, kakou | bottom_sand | 実装済 | treasure デデュープ対象 |
+| fish_unagi | うなぎ | super | ○ | fish_unagi | river | 川全域ボーナス(ホーム=**kakou**) | rock_cover | Phase A | runs 無効・連打のみ |
+| fish_aji | あじ | normal | ○ | fish_aji | sea | sunahama, iwaba, oki | midwater | Phase B1 | レシピ aji_fry |
+| fish_ebi | えび | normal | ○ | fish_ebi | sea | sunahama, **iwaba(x1.3)** | rock_cover | Phase B1 | 既存 ebi_fry。niche は場所別(§3.3) |
+| fish_karei | かれい | normal | ○ | fish_karei | sea | sunahama | bottom_sand | Phase B1 | **採用決定**(§6.1) |
+| hitode | ひとで | normal | × | null | sea | sunahama, iwaba | bottom_sand | Phase B1 | 非食用・デデュープ対象外 |
+| treasure_kaigara | きらきらの かいがら | normal | × | null | sea | sunahama | bottom_sand | Phase B1 | **採用決定**(§6.1) |
+| fish_iwashi | いわし | normal | ○ | fish_iwashi | sea | sunahama, oki | surface(群れ) | Phase B1(v1採用決定) | レシピなし(iwashi 裁定で raw commit 無害)。海側の「群れ・成功体験」役 |
+| fish_tai | たい | rare | ○ | fish_tai | sea | iwaba, **oki(x1.5)** | deep_open | Phase B2 | niche は場所別(iwaba=rock_cover) |
+| fish_ika | いか | rare | ○ | fish_ika | sea | iwaba, oki | rock_cover | Phase B1(v1採用決定) | **tug 未実装のため v1 は runs 無効・連打のみ**(unagi/maguro と同裁定=「ドラッグ必須の魚は存在しない」不変条件維持)。tug 実装時に ika+maguro の runs を同時有効化し、ika が「ドラッグ練習台」役に就く。oki では niche=surface(§3.3) |
+| fish_maguro | まぐろ | super | ○ | **null(決定済み)** | sea | 海全域ボーナス(ホーム=**oki**) | deep_open | Phase B2 | **在庫化しない・図鑑の花形**。edible:true は図鑑バッジの正直表示用に維持。inventoryKey:null により既存インポータ規則 `!edible || !inventoryKey` で在庫 op は自動的に発生しない=スキーマ変更ゼロ |
+| fish_wakasagi | わかさぎ | normal | ○ | fish_wakasagi | river(habitat=みずうみ) | (mizuumi 限定・予定) | surface | **将来ウェーブ W-L** | 生息地とセットで出荷 |
 
-1. レシピ必須魚4種は各 zone の**既定ロケーションの Spawns に WeightMul 1.0 で含まれる**(静的検査)。
-2. レシピ必須魚は各 zone 内で**最低2ロケーションの Spawns に含まれる**。
-3. route 1巡分の Spawns 和集合が zone の全レシピ必須魚を含む。
-4. 全ロケーションの WaitMulMax 適用後の待ち時間上限 ≤ 8秒。
-5. location スキーマは窓・連打・challengeProfile を変更するフィールドを持たない(構造で保証)。
-6. Spawns のマスター未知 speciesId は正規化で無視される。
-7. TsuriDexRecord.Merge の可換性 Merge(a,b)==Merge(b,a)(EditMode)。
+- レシピ接続は v1 で **salmon/ebi/ayu/aji の4本のみ**(企画書§3.6 不変)。
+- **図鑑進捗分母 Y の裁定(レビュー指摘反映)**: Y=ゾーン別登録種数とし、**複数 zones を持つ種は所属する全 zone の分母に計上する**。salmon(river+sea)は川・海両方の分母に入り、**川6・海10**。
+- unagi は企画書 Phase 2 種の前倒し(wakasagi の前倒しは W-L へ繰延に変更)。
+
+### 3.5 静的テスト不変条件(flaky 化しない形)
+
+1. レシピ必須魚4種は各**供給 zone**の既定ロケーションの Spawns に WeightMul 1.0 で在籍(検算: ayu/salmon@asase、ebi/aji@sunahama)。
+2. レシピ必須魚は供給 zone 内で最低2ロケーションの Spawns に在籍(検算: ayu=asase+kakou / salmon=asase+kakou / ebi=sunahama+iwaba / aji=sunahama+iwaba+oki)。
+3. **適用範囲の明文化(レビュー指摘反映)**: 条件1・2は**レシピ供給 zone にのみ適用**する。salmon のレシピ供給 zone は river であり、海側(oki 1ロケのみ出現)は条件1・2の対象外——承認済み構成であり退行ではない。
+4. route 1巡分の Spawns 和集合が zone の全レシピ必須魚を含む。
+5. 全ロケーションの WaitMulMax 適用後の待ち時間上限 ≤8秒(river_asase は現行実装値のまま=回帰アサート無変更)。
+6. location スキーマは窓・連打・challengeProfile を変更するフィールドを持たない(構造で保証)。
+7. **niche を参照する tuning コードが存在しない**(新設。niche は演出とdex表示のみ)。
+8. 1ロケ1主役: kakou=salmon / iwaba=ebi / oki=tai のみ。ボーナスホーム(kakou=unagi / oki=maguro)は BonusSpeciesId の別系統機構であり主役枠に数えない。
+9. Spawns のマスター未知 speciesId は正規化で無視される。
+10. TsuriDexRecord.Merge の可換性 Merge(a,b)==Merge(b,a)(EditMode)。
+
+### 3.6 マグロ余談: カマ案(検討中・未決定)
+
+マグロ本体は在庫化しないが、「カマ」のような魚の部位を"ぶっ飛んだレア食材"として別アイテム化し、お弁当のびっくり食材にするアイデアをユーザーが面白がっている。採否・入手方法(捕獲時の極低確率ドロップ等)・レシピ接続・図鑑上の扱いはすべて未定。v1 では実装せず、記録として残すのみ。
 
 ---
 
@@ -309,19 +349,21 @@ Level 0: ワールドマップ (こだまの森 全景)
 
 tmp/alpha_pending/1458-kawaglint-fish-art/ の12点(QA全PASS・process_kawaglint_art.py 自動処理済み)は**全点流用・廃棄0**。bg_river_crosssection=river_asase 背景、pono_angler_side=全ロケ共通、fish_sake=salmon として海でも流用(海の追加アート0で1種確保)。ファイル名⇄speciesId の食い違い(fish_sake/fish_nagagutsu)は C#側 assetKey カタログで吸収(§4.1)。
 
-### 5.2 新規アセット(ウェーブ上限8点・フェーズ1:1発注)
+### 5.2 新規アセット(ウェーブ上限・フェーズ1:1発注)【2026-07-24 v1.1改訂】
+
+既存12点は全点流用・廃棄0で不変(§5.1)。海種は魚影なし裁定により catch 1枚のみ、unagi は川方式で shadow+catch。生成は GPT Image 2 固定・コスト事前確認。
 
 | ウェーブ | 対応Phase | 内容 | 点数 |
 | --- | --- | --- | --- |
-| W-A | A 川拡張 | 背景3(fuchi/mizuumi/kakou)+ wakasagi shadow/catch + unagi shadow/catch | **7** |
-| W-B1 | B1 海コア | 背景2(sunahama/iwaba)+ catch: aji/ebi/karei/hitode(+kaigara) | **6〜7** |
-| W-B2 | B2 おき | 背景1(oki)+ catch: tai/maguro | **3** |
-| W-D | D ワールドマップ | 全体マップ1 + worldHighlight 2〜3 + innermap 2 | **5〜6** |
-| 合計 | | (+図鑑UI枠 0〜1 別途) | **21〜24** / 生成コール目安 約32〜36(リテイク×1.5) |
+| W-A | A 川拡張 | 背景1(**統合 kakou**: 夕焼け河口+岩かげの深みを1シーンに。§3.1 の「2ニッチが左右等で明確に分離」を構図制約として発注書に明記)+ unagi shadow/catch | **3**(旧7から −4) |
+| W-B1 | B1 海コア | 背景2(sunahama/iwaba)+ catch 7点: aji, ebi, karei, hitode, kaigara, **iwashi, ika** | **9**(iwashi/ika v1採用で +2) |
+| W-B2 | B2 おき | 背景1(oki)+ catch 2点: tai, maguro | **3** |
+| ~~W-D~~ | — | **削除**(Web マップ廃止・§6.1。Unity フルマップは世界地図アート試作後に採否判断) | **0**(旧5〜6 → 0) |
+| **v1 合計** | | (+図鑑UI枠 0〜1 別途) | **15**(旧21〜24から −6〜9)/ 生成コール目安 約23(リテイク×1.5。**統合 kakou のみ2ロケ分の要素を含むためリテイク×2 を見込む**) |
 
-- 将来ウェーブ(枠外): iwashi/ika +2(tug 実装時)、装備アイコン12(Phase G まで凍結)、yoru_minato。
-- dexProfile 本文(funFacts 等)の執筆もアートと同じウェーブ1:1で発注し、全種一括執筆による死蔵を避ける。
-- 生成は GPT Image 2 固定・コスト事前確認。catch はテンプレプロンプト(既存5種と同構図・同ライティング)。
+- 将来ウェーブ(枠外): W-L=mizuumi 背景+wakasagi shadow/catch(3点)/ W-M=世界地図一式(5〜6点、**試作を見てから採否決定**。かこう⇔さんばし隣接の幾何制約メモは W-M 発注書に引き継ぐ)/ yoru_minato / 装備アイコン12(Phase G まで凍結)。
+- dexProfile 本文は全種一括発注しない: **2種サンプル(fish_ayu / fish_iwashi)先行→フォーマット承認→残り13種をアートウェーブ1:1同期執筆**(§6.1)。
+- リスク緩和効果(§7 批評対応): 精密構図制約(水面線38〜45%帯・pono_anchor 互換)付き背景は 6→4枚に減、トポロジ制約付き地図アートは v1 ゼロ——リテイク楽観・ユーザー手作業律速リスクを実質緩和。
 
 ### 5.3 背景の技術仕様(固定)
 
@@ -335,12 +377,12 @@ tmp/alpha_pending/1458-kawaglint-fish-art/ の12点(QA全PASS・process_kawaglin
 
 | Phase | 内容 | 規模 | 備考 |
 | --- | --- | --- | --- |
-| **0 スキーマ凍結** | 本書§2〜4の契約一式(ロケ台帳/魚種v1表/イベント形/fishdex/ファイル配置/payload)。UIなし | S | 全フェーズの前提 |
-| **A 川拡張+永続化基盤** | 実装順序を厳守: (1) controller を location.Spawns 起点に切替(river_asase フラットで**現行挙動不変**を回帰確認)→ (2) sizeCm ロール実装+永続化基盤(アトミックIO/opId/outbox/fishdex ストア)→ (3) wakasagi/unagi 追加+新ロケ3配線+SpriteCatalog 登録 | **M**(「ログ追記のみ」ではない。永続化層新設を含む) | CreateSession の WaitMul は純加算オーバーロード。既存 EditMode の 2〜5秒アサートは無変更で維持 |
-| **B1 海コア** | TsuriUmiTuning 新設(魚影なし・前あたり2段階)。sunahama+iwaba+海種4〜5。maguro/ika の runs は無効のまま | M | core+tuning 分離設計の真価 |
-| **B2 おき** | sea_oki+tai/maguro。海zone解禁条件の配線 | S | |
+| **0 スキーマ凍結** | 本書§2〜4の契約一式(ロケ台帳/魚種v1表/イベント形/fishdex/ファイル配置/payload)。UIなし | S | 全フェーズの前提。kakou解放閾値Nのみ本フェーズ内で決定必須(§6.2) |
+| **A 川拡張+永続化基盤**【v1.1改訂: wakasagi/river_mizuumiはW-Lへ繰延・除外】 | 実装順序を厳守: (1) controller を location.Spawns 起点に切替(river_asase フラットで**現行挙動不変**を回帰確認)→ (2) sizeCm ロール実装+永続化基盤(アトミックIO/opId/outbox/fishdex ストア)→ (3) unagi 追加+統合river_kakou 1ロケ配線(niche2層)+SpriteCatalog 登録 | **M**(「ログ追記のみ」ではない。永続化層新設を含む) | CreateSession の WaitMul は純加算オーバーロード。既存 EditMode の river_asase アサートは無変更で維持 |
+| **B1 海コア**【v1.1改訂: iwashi/ika含む】 | TsuriUmiTuning 新設(魚影なし・前あたり2段階・niche演出分岐)。sunahama+iwaba+海種7(aji/ebi/karei/hitode/kaigara/iwashi/ika)。maguro/ika の runs は無効のまま | M | core+tuning 分離設計の真価 |
+| **B2 おき** | sea_oki+tai/maguro(在庫化しない)。海zone解禁条件の配線 | S | |
 | **C Unity先行おさかなずかん** | ストアは A で敷設済み。UI(3状態グリッド+詳細)のみ | S〜M | B と並列可 |
-| **D ロケーション選択の演出強化+Webプレビュー** | Unity: カード選択UI→フルマップUI(統一台帳は7ロケ>5で D の発動条件を満たす)。Web: worldmap/index.html(zukan派生・tier:'free'・起動ボタンなし)+タイトルカード。JS正本ファイル化(§2.2) | M | sw.js CACHE_VERSION バンプ |
+| **D ロケーション選択の演出強化**【v1.1改訂: Web部分を完全削除】 | Unity内のみ: カード選択UI→フルマップUI演出強化。世界地図アート(W-M)試作を見てから採否判断 | S〜M | Webへの露出なし・sw.js CACHE_VERSIONバンプ対象外(§6.1ゲート8) |
 
 **【ユーザー判断待ち】**
 
@@ -361,27 +403,40 @@ tmp/alpha_pending/1458-kawaglint-fish-art/ の12点(QA全PASS・process_kawaglin
 
 ---
 
-## 6. オープンな意思決定事項(ユーザー判断が必要な項目)
+## 6. 意思決定事項【2026-07-24 v1.1改訂: 決定済み/保留/検討中/要判断に再整理】
 
-### 6.1 本書で裁定済み(異議があれば差し戻し)
+### 6.1 決定済み
 
-ホワイトリスト spawn / ファイル保存+アトミック書込 / fishdex=文書マージ・Unity 書き込みオーナー / イベントへの locationId・冷凍フィールド追加 / source 2値維持(lake 非追加)/ 進行モデル折衷案 / tier:'free' / `bg_tsuri_*` 命名 / gameId 'kawaglint' / バッジ文言「たべられる おさかな だよ」/ キッチン teaser 非表示 / maguro・ika の runs 無効一貫化 — 調停サマリ(§1.3)参照。
+**従来からの裁定(不変・異議があれば差し戻し)**: ホワイトリスト spawn / ファイル保存+アトミック書込 / fishdex=文書マージ・Unity 書き込みオーナー / イベントへの locationId・冷凍フィールド追加 / source 2値維持(lake 非追加)/ `bg_tsuri_*` 命名 / gameId 'kawaglint' / バッジ文言「たべられる おさかな だよ」/ キッチン teaser 非表示 / runs 無効一貫化(「ドラッグ必須の魚は存在しない」)/ 待ち時間上限8秒 / 1ロケ1主役 / レシピ4本固定 — 調停サマリ(§1.3)参照。
 
-### 6.2 要ユーザー判断(確定ゲート)
+**ユーザー決定(2026-07-24 反映)**:
 
-| # | 項目 | 選択肢 | 推奨 |
-| --- | --- | --- | --- |
-| 1 | **ロケーション台帳の確定**(川4+海3、§3.1 の ID・名前) | 本書案 / 削減案(川3 or 海2) | 本書案(不変条件充足のため海3は必須) |
-| 2 | **fish_karei 追加**(+アート1枚) | 追加 / 見送り | 追加(白身リアリティの柱。全設計・全レビューで一致) |
-| 3 | **treasure_kaigara 追加**(+アート1枚) | 追加 / hitode が非食用・たからもの兼務(0枚) | 追加(デデュープ対象と図鑑カテゴリの意味混濁を避ける) |
-| 4 | **iwashi/ika の v1 除外**(企画書「海7種」の正本改訂) | 除外し将来ウェーブ / v1 に含める(アート+2) | 除外(アートなし種の図鑑空きスロット露出を防ぐ。ika は tug と同時が機能的に自然) |
-| 5 | **解放閾値の初期値** | 川内: 5/12/20 匹、海内: 5/12 匹、海zone解禁: 川累計10匹 / 海zone常時開放 | 提示値で開始しチューニング(所有権は kodama-world.js の LOCATIONS データに一本化) |
-| 6 | **進行モデル折衷案の承認**(catchCount 解放+route 既定+select 随時) | 承認 / hyokkori 完全踏襲(全周後 select 解禁) | 折衷案 |
-| 7 | **maguro の在庫方針** | inventoryKey:'fish_maguro' で raw 搭載・レシピなし / inventoryKey:null(在庫非搭載) | raw 搭載(iwashi 裁定で被覆・特殊パターン不増) |
-| 8 | **worldmap Web プレビューの提示範囲と時期** | tier:'free' で Phase D と同時 / app 限定 / 見送り | tier:'free'・Phase D 同時(死にボタンなしの「ながめる地図」) |
-| 9 | **forest region の扱い** | v1 表示のみ / 既存ゲームハブ化 | v1 表示のみ(ハブ化は別企画) |
-| 10 | **企画書§3.3 改訂条項の正式承認**(「一字も変えない」→「削除・改名・意味変更禁止、純加算可」) | 承認 / 現状維持 | 承認(冷凍フィールド・locationId の前提) |
-| 11 | **dexProfile 本文執筆タスクの発注**(全種×funFacts4件、ナレ規約準拠・かな書き、ウェーブ1:1) | アートウェーブと同期発注 | 同期発注(一括執筆の死蔵回避) |
+| 旧ゲート# | 項目 | 決定内容 |
+| --- | --- | --- |
+| 2 | fish_karei 追加 | **採用**(§3.4 に反映済み) |
+| 3 | treasure_kaigara 追加 | **採用**(§3.4 に反映済み) |
+| 4 | iwashi/ika の v1 採用 | **採用**(旧v1.0の除外裁定をユーザー判断で反転)。ika は tug 実装まで runs 無効・連打のみ(§3.4) |
+| 6 | 進行モデル折衷案 | **承認**。解放=zone 累計釣果数(fishdex sourceCounts 合算から導出・独立カウンタなし)+ route 自動送り既定 + 解放済み select 随時 + 未解放は「あと Nひきで いけるよ!」シルエット |
+| 7 | maguro の在庫方針 | **inventoryKey:null・在庫化しない・図鑑の花形**(raw 搭載案を破棄)。edible:true は図鑑バッジの正直表示用に維持。`!edible \|\| !inventoryKey` 規則で在庫 op は自動非発生=スキーマ変更ゼロ |
+| 8 | Web ワールドマッププレビュー | **完全削除**。v1 の場所選択 UI は Unity 内 LocationSelect パネルのみ(§2.4)。副次効果: §7批評「押せるものゼロの地図」問題の構造的解消 |
+| 9 | forest region | **v1 は台帳(REGIONS データ定義)のみ・UI 露出なし・新エリア追加なし**。Unity フルマップ演出(旧 Phase D)は世界地図アートの試作を見てから採否決定に格下げ |
+| 10 | 企画書§3.3 改訂条項 | **正式承認**(「一字も変えない」→「削除・改名・意味変更は禁止、純加算のみ可」)。本書の niche 等の追加フィールドはこの原則下 |
+| 11 | dexProfile 執筆 | **2種サンプル先行方式**(fish_ayu=実装済み川種代表 / fish_iwashi=新規海種・群れ表現代表、§10 参照)→ フォーマット承認後、残り13種をアートウェーブ1:1同期執筆 |
+
+**再設計により発生した新規決定(§1 生息環境監査に基づく)**:
+
+| # | 項目 | 決定内容 |
+| --- | --- | --- |
+| 1 | ロケーション台帳(川4→2、海3のまま) | **採用**。生息環境監査により river_fuchi と river_kakou を統合、river_mizuumi は wakasagi ごと将来ウェーブ W-L へ繰延(§3.1) |
+| 5 | niche タグの採用(演出専用・純加算・(ロケ×種)単位) | **採用**(§3.3) |
+
+### 6.2 保留(仕組みは承認済み・数値は未定)
+
+- **解放閾値の具体的数値は、ロケーション台帳(川2+海3)確定後に設定する。** 対象: river_kakou 解放 N / sea_iwaba 解放 N / sea_oki 解放 M / 海 zone 解禁 X。旧提示値(5/12/20/川累計10)は破棄。LOCATIONS スキーマの unlockCount フィールドは維持し、値は未定(null)のまま凍結しない。**順序制約: Phase 0(スキーマ凍結)出荷前までに N(kakou) のみ要決定。**
+
+### 6.3 検討中(未決定・記録のみ、設計深追い禁止)
+
+- マグロ「カマ」的レア部位食材(お弁当のびっくり食材化、§3.6)。
 
 ---
 
@@ -414,3 +469,40 @@ tmp/alpha_pending/1458-kawaglint-fish-art/ の12点(QA全PASS・process_kawaglin
 - **凍結するpayloadに未設計機能の投機的フィールドが混入。** 起動payloadのgearEffect/lureTableIdは装備・ショップ(Phase G、アイコン発注すら凍結中)の前方参照。「アートなし種を図鑑の空きスロットにしない」と同じ論理を自分のスキーマに適用するなら、これらも純加算で後入れすべきで、v1凍結物から外すのが一貫している。
 
 - **細部の未定義**: 図鑑グリッドで「未遭遇=エントリなし」が画面上どう見えるか(非表示か「?」枠か)未指定——分母「X/Yしゅるい」を出す以上、mizuumi解放前の子に見えない魚の枠をどう見せるかはコンプ動機の根幹。Unity図鑑UI(スクロールグリッド+詳細+NEWバッジ)をUiFactoryコード生成で「S〜M」も楽観的。
+
+---
+
+## 8. 図鑑説明文サンプル(§6.1 ゲート11・フォーマット確認用)
+
+`common/museum-data.js` の HARDCODED_PROFILES と同一形式・同一トーン(分かち書きひらがな中心・読み聞かせ口調)のサンプル2件。category はいずれも既存語彙「さかなの なかま」を使用。**このフォーマットで良ければ、残り13種を同じ形式・アートウェーブ1:1で執筆する。**
+
+```js
+fish_ayu: {
+  readingName: 'あゆ',
+  category: 'さかなの なかま',
+  subtitle: 'すいかの かおりがする かわの さかな',
+  habitat: 'ながれの きれいな かわ',
+  sizeText: 'おとなの てのひらくらい',
+  funFacts: [
+    'からだから すいかみたいな いい においが するんだって',
+    'いしに ついた こけを ちゅるんと たべて おおきくなるよ',
+    'じぶんの なわばりに ほかの あゆが くると たいあたりで おいだすよ',
+    'あかちゃんの ときは うみで そだって、はるに かわを のぼってくるんだって'
+  ]
+},
+fish_iwashi: {
+  readingName: 'いわし',
+  category: 'さかなの なかま',
+  subtitle: 'みんなで きらめく ぎんいろの むれ',
+  habitat: 'にほんの まわりの ひろい うみ',
+  sizeText: 'こどもの てのひらくらい',
+  funFacts: [
+    'なんまんびきもの おおきな むれで いっしょに およぐよ',
+    'てきが くると むれが ぎゅっと あつまって おおきな たまみたいに なるんだって',
+    'ぎんいろの からだが みずの なかで ぴかぴか ひかるよ',
+    'おおきな さかなや とりの だいじな ごはんに なる、うみの にんきものだよ'
+  ]
+}
+```
+
+補足: sizeText は既存語彙系(「てのひらくらい」/「にぎりこぶしくらい」)に合わせ、あゆ(20-30cm)/いわし(10-20cm)の実寸差を「おとなの/こどもの てのひら」で表現。funFactsはあゆ=香魚・苔食・なわばり(友釣りの由来)・海川回遊、いわし=大群・ベイトボール・銀鱗・食物連鎖、と実際の生態に基づく。
