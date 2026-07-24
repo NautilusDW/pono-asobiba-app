@@ -1,5 +1,12 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2379: ひょっこりハイタッチ1面の6外装を、崖縁・木の根元・左右の花壇から
+// 中央の開けた草地3列へ再配置し、奥→中→手前の遠近差と中央コンボ余白を維持した。
+// 2面どんぐり遠景は、奥の暗い影を誤って前縁にした旧alpha maskを廃止し、
+// 手前の床縁へ沿う曲線maskへ差し替えて、全動物の胸・羽・前足まで見せる。
+// hyokkori-hightouch/index.html の個別queryを1462へ更新。ゲーム個別ファイルと画像は
+// network-first配信のためCRITICAL_ASSETSには追加しない。
+// play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2379)。
 // v2378: まちがいさがし15面のうち後半7面を、GPT Image 2で局所編集したB画像へ更新。
 // 単純な色違い／物の有無に偏らず、羽・耳・しっぽ・星・窓・模様などの形／向き／
 // 細部差を4〜5個ずつ配置し、前半5面(easy)・中盤3面(medium)・後半7面(hard)の
@@ -1075,7 +1082,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2378;
+const CACHE_VERSION = 2379;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
