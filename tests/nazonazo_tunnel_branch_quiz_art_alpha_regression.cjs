@@ -20,7 +20,7 @@ const sources = Object.freeze({
 });
 
 const TOKEN = "20260721-1409";
-const RUNTIME_TOKEN = "20260723-1436";
+const RUNTIME_TOKEN = "20260724-1463";
 const REGISTRY_VERSION = "20260721-1407";
 const THREE_MIB = 3 * 1024 * 1024;
 const ASSET_ROOT = "assets/images/nazonazo-tunnel/quiz-art";
@@ -411,8 +411,8 @@ const mutations = [
     return { ...c, questions };
   } },
   { name: "quiz registry token stale", expected: "token-sync", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, 'data/quiz-art.js?v=20260721-1409', 'data/quiz-art.js?v=20260721-1408') }) },
-  { name: "game token stale", expected: "token-sync", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, 'js/game.js?v=20260723-1436', 'js/game.js?v=20260723-1434') }) },
-  { name: "style token stale", expected: "token-sync", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, 'styles.css?v=20260723-1436', 'styles.css?v=20260723-1434') }) },
+  { name: "game token stale", expected: "token-sync", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, 'js/game.js?v=20260724-1463', 'js/game.js?v=20260724-1461') }) },
+  { name: "style token stale", expected: "token-sync", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, 'styles.css?v=20260724-1463', 'styles.css?v=20260724-1461') }) },
   { name: "hidden image consumes layout", expected: "css-hidden", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, '.quiz-art-image[hidden]{display:none!important}', '.quiz-art-image[hidden]{visibility:hidden}') }) },
   { name: "quiz holder gains white tile", expected: "css-holder", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, '.quiz-art{position:relative;', '.quiz-art{background:#fff;position:relative;') }) },
   { name: "renderer bypasses exact registry", expected: "runtime-helper", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, 'const src=typeof srcOverride==="string"&&srcOverride?srcOverride:resolveQuizArt(emoji,label);', 'const src="";') }) },

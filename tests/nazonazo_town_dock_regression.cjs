@@ -310,7 +310,20 @@ check(/zoneHost\.appendChild\(townDockZoneEl\)/.test(buildWorldFnV5) && /zoneHos
 check(/if\(townDockZoneEl&&townDockZoneEl\.parentNode\)townDockZoneEl\.parentNode\.removeChild\(townDockZoneEl\);/.test(buildWorldFnV5), "buildWorld must explicitly remove any previous brake-zone element before recreating it -- world.innerHTML=\"\" no longer clears these since v5 moved them off of #world");
 check(/function townDockUpdateZoneVisual\(\)\{/.test(game), "townDockUpdateZoneVisual() missing -- must position the brake-zone/stop-box/arrow from real leg/zone geometry every frame");
 const zoneVisualFn = extractFunction(game, "townDockUpdateZoneVisual");
-check(/function townDockWorldToScreenVw\(worldSpaceX\)\{return worldSpaceX-worldX;\}/.test(game), "townDockWorldToScreenVw bridge missing -- must convert a real world-space vw coordinate into a worldX-relative screen offset (worldSpaceX-worldX), mirroring the same math #world's own translate3d(-worldX,...) applies to its children");
+// v6 (round8): townDockWorldToScreenVw gained a +TOWN_DOCK_TRAIN_CENTER_VW camera-anchor term.
+// Bare `worldSpaceX-worldX` (mirroring #world's own translate3d(-worldX,...)) assumes the "camera"
+// sits at screen vw=0, but the real camera is #veh, fixed at vw=(50+TRAIN_RIGHT_SHIFT_VW)=55
+// regardless of worldX. Without this offset, the brake-zone/stop-box/arrow -- and the physics
+// bounds they must match -- structurally centered themselves on screen vw=0 at the exact instant
+// pos reached bounds.center (a tautology of worldSpaceX-worldX=0 when worldSpaceX==worldX), which
+// is nowhere near where #veh is actually drawn. Playwright confirmed the resulting bug directly:
+// stopping at pos=298.15 (2.85vw *before* bounds.start=301, i.e. a genuine undershoot) still had
+// the pre-fix stop-box visually covering ~95% of #veh's on-screen width, exactly matching the real
+// playtesting report ("stopped inside the green zone but it still says 惜しい"). The fix keeps the
+// judgment bounds (tickTownDockGame's pos comparisons) untouched and only corrects this one
+// render-time conversion, which all three visual elements (zone/box/arrow) funnel through.
+check(/function townDockWorldToScreenVw\(worldSpaceX\)\{return worldSpaceX-worldX\+TOWN_DOCK_TRAIN_CENTER_VW;\}/.test(game), "townDockWorldToScreenVw bridge missing -- must convert a real world-space vw coordinate into a worldX-relative screen offset PLUS the fixed screen anchor where #veh is actually drawn (TOWN_DOCK_TRAIN_CENTER_VW), or the brake-zone/stop-box/arrow will visually diverge from the pos-space success judgment (2026-07-24 real playtest bug: 'stopped inside the green zone but still says 惜しい')");
+check(/const TOWN_DOCK_TRAIN_CENTER_VW=50\+TRAIN_RIGHT_SHIFT_VW;/.test(game), "TOWN_DOCK_TRAIN_CENTER_VW must be defined as 50+TRAIN_RIGHT_SHIFT_VW -- this is algebraically #veh's exact fixed on-screen center (trainLeftVw()+trainWidthVw()/2, where the ±(w/vw*50) terms cancel regardless of window width or the TRAIN_WIDTH_MIN_PX/MAX_PX clamp), not an independently-tuned magic number");
 check(/townDockZoneEl\.style\.transform="translate3d\("\+cssXFromVw\(townDockWorldToScreenVw\(state\.legStartX\+warnStart\)\)\+",0,0\)";/.test(zoneVisualFn), "brake-zone position must be written via transform:translate3d(cssXFromVw(worldSpaceX-worldX),...) every frame, not a static #world-relative left (v5: no longer a child of #world)");
 check(/townDockStopBoxEl\.style\.transform="translate3d\("\+cssXFromVw\(townDockWorldToScreenVw\(state\.legStartX\+bounds\.start\)\)\+",0,0\)";/.test(zoneVisualFn), "stop-box position must be written via transform:translate3d(cssXFromVw(worldSpaceX-worldX),...) every frame, matching the exact success-judgment zone (bounds.start..bounds.end)");
 check(/townDockArrowEl\.style\.transform=/.test(zoneVisualFn) && /townDockArrowEl\.style\.opacity=/.test(zoneVisualFn), "approach-arrow position/intensity must be updated every frame from real zone geometry");

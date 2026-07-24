@@ -1,5 +1,33 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2383: なぞなぞトレイン町面「ぴたっと停車」round8。実playtestで報告された「緑ゾーンの
+// 中で止まったのに惜しい(失敗)判定になる」不具合を修正。原因は判定バグではなく、ブレーキ
+// ゾーン帯/停止ボックス/誘導矢印の画面位置を計算するtownDockWorldToScreenVw(worldSpaceX)が
+// 単に worldSpaceX-worldX を返していたこと(#worldの子要素が実際にスクロールする式と同じ、
+// 「カメラ基準=画面vw0」前提)。しかし汽車本体(#veh)はvw0ではなく常にvw=(50+
+// TRAIN_RIGHT_SHIFT_VW)=55を中心に固定描画される(#worldの兄弟要素)。この結果、pos(判定用の
+// レグローカル距離)がbounds.centerにちょうど到達した瞬間(=物理判定が成功とみなす瞬間)、
+// ブレーキゾーン/停止ボックス/矢印は数式の恒等式として必ず画面vw=0(ビューポート左端)に
+// センタリングされ、汽車本体(vw 39.5〜70.4)とは重ならない位置に描かれていた。実際には逆で、
+// ゾーン/ボックスが汽車の位置に視覚的に重なって見えるタイミングではposはまだbounds.startに
+// 届いておらず(undershoot判定)、posが実際にbounds内へ入る頃には、ゾーン/ボックスは既に
+// 画面左へスクロールして汽車の手前を通り過ぎていた(Playwright実測: pos=298.15、
+// bounds.start=301の3vw弱手前で停止した際、停止ボックスの描画範囲が汽車の表示領域の実に
+// 95%を覆っていたにもかかわらず「おしい」と判定された)。判定側(tick内のpos比較、
+// bounds.start/center/end)は一切変更せず、townDockWorldToScreenVw内の変換式のみに
+// TOWN_DOCK_TRAIN_CENTER_VW(=50+TRAIN_RIGHT_SHIFT_VW、#vehの固定描画中心と代数的に厳密一致)
+// を足し込み、3要素(ゾーン/ボックス/矢印)とも一貫して汽車本体の実際の画面位置に合わせて
+// 描画するよう修正した。あわせて3駅目(oscAmplitude=12の揺れる駅)でoscPhaseの更新順序が
+// bounds計算より後だったため、判定用boundsと見た目のsyncTownDockPresentation()が1フレーム
+// ずれたoscPhaseを参照する潜在バグも解消(更新順序を入れ替えて同一tick内で同じoscPhaseを
+// 共有するよう修正)。もう一つのユーザーフィードバック「最高速が遅い」に対し、各駅の
+// cruiseSpeedを約1.5倍(19→28.5, 23→34.5)へ引き上げ(加減速レートは据え置き)。Playwright実測:
+// 1駅目(legLen≈296vw)約10.5秒、2・3駅目(legLen≈391〜430vw)約11.5〜11.6秒(旧12〜21秒程度から
+// 短縮しつつ幼児が反応できる範囲を維持)。全3駅を視覚ゾーン中央でリリースして毎回success、
+// 15秒超の無入力でもfail-loop無し、fail→retry中の保持継続、3駅クリアでcompleteCurrentStage
+// 到達、コンソールエラー0件を確認。tests/nazonazo_town_dock_regression.cjsを更新
+// (144 checks pass)、全35本のnazonazo_*.cjsは21pass/14fail(既存不具合、本round8と無関係)を
+// 維持。play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2383)。
 // v2382: まちがいさがしのジャングル・よるのおへや・まほうのおしろを再調整。
 // 約300px表示でも、見つけにくさを保ちながら、羽の模様・しっぽの輪・ハート模様・
 // 月の向き・鼻の巻き・枕の角・ドラゴンの羽・王冠の大きさを明確に見比べられる
@@ -1113,7 +1141,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2382;
+const CACHE_VERSION = 2383;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
