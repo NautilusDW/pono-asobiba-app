@@ -1,5 +1,29 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2380: 並走セッションのCACHE_VERSION衝突解消のためリナンバー(v2377を2系統が
+// 独立に採番していたためv2380へ繰り上げ、内容の欠落は無し)。
+// なぞなぞトレイン町面「ぴたっと停車」round7。ユーザー実プレイフィードバック
+// (「駅間のほとんどを自動走行→駅手前で急停止して新しい出発ボタンが出る、が毎駅起きる。
+// 全区間を自分でホールドし続けたい」)を受け、各駅間レグを短い局所距離(旧
+// TOWN_DOCK_TRACK_LEN=100固定)から実際の駅間距離まるごと(1駅目: 入口→stops(o,0)の
+// 約296vw、2・3駅目: 駅間GAP=430vw)へ拡張。resolveTownDockSuccess/startTownDockGameに
+// あった「駅間の大半を共有巡航(driving=true)へハンドオフし、最後の短い区間だけローカル
+// 操作」という自動走行の仕組みを完全撤去し、レグ開始から終了まで一貫してローカル物理
+// (tickTownDockGame)だけがworldXを書き込む形に統一。townDockState.legStartXを新設し、
+// 1駅目はステージ入口(origin(stg))、2・3駅目は「直前のレグが実際に停止したその地点」を
+// そのまま引き継ぐことでテレポート/瞬間移動なしに次のレグへシームレスに接続。全区間を
+// 通しでホールドし続けたプレイヤーは指を離さず加速し続けられる(押しっぱなし中は
+// heldPointersが常に保持されるため)。フロート型の独立ゲージは作らず、ブレーキゾーン帯
+// (アンバー、.town-dock-brake-zone)と赤枠停止ボックス(.town-dock-stop-box)を本物の
+// #world直下の実DOM要素として.tun.stationゲートと全く同じworldX座標系(left:Nvw)で
+// 配置し、既存のworld.style.transformスクロールにそのまま乗せた(TOWN_DOCK_ZONE_WARN_LEAD
+// ぶん手前から前もって見える)。ゾーン中心(zoneCenter)はレグ実距離から都度算出する形に
+// 変更、3回失敗後の自動アシスト(taper)は専用の強い減速レート
+// (TOWN_DOCK_ASSIST_DECEL_RATE)と物理的な制動距離の逆算式へ差し替え、レグが長くなった
+// ことで収束に1分超かかっていた回帰を解消(実測10秒程度に短縮)。新規回帰チェック
+// tests/nazonazo_town_dock_regression.cjs は126チェックへ拡張、既存nazonazo_*.cjsは
+// 21pass/14fail(v2376以前から変わらない既存不具合、本round7の変更と無関係)を維持。
+// play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2380)。
 // v2379: ひょっこりハイタッチ1面の6外装を、崖縁・木の根元・左右の花壇から
 // 中央の開けた草地3列へ再配置し、奥→中→手前の遠近差と中央コンボ余白を維持した。
 // 2面どんぐり遠景は、奥の暗い影を誤って前縁にした旧alpha maskを廃止し、
@@ -1082,7 +1106,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2379;
+const CACHE_VERSION = 2380;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

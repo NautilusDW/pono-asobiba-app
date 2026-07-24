@@ -265,6 +265,25 @@ check(/@media \(prefers-reduced-motion:reduce\)\{[\s\S]*\.tun\.is-blink\{animati
 // the real .tun.station gates live inside #world itself and inherit its stacking/scroll for free.
 check(!/#townDockApproachLayer/.test(css), "no separate approach-layer stacking context should exist in v3");
 
+// ---- v4 (round7): on-track brake-zone strip + red stop-target box, replacing the old abstract
+// floating gauge concept entirely. Per user feedback these must render as real elements inside
+// #world (same left:Nvw + world.style.transform scroll technique as the .tun.station gates), not
+// a second independent fixed-position HUD layer. ----
+check(/\.town-dock-brake-zone\{/.test(css), "brake-zone strip CSS missing");
+check(/\.town-dock-stop-box\{/.test(css), "stop-target box CSS missing");
+check(!/\.town-dock-brake-zone\{[^}]*position:\s*fixed/.test(css) && !/\.town-dock-stop-box\{[^}]*position:\s*fixed/.test(css),
+  "brake-zone/stop-box must be position:absolute children of the real scrolling #world, never position:fixed (that would reintroduce the floating-HUD-bar anti-pattern the user explicitly rejected)");
+check(/let townDockZoneEl=null,townDockStopBoxEl=null;/.test(game), "module-level refs for the brake-zone/stop-box elements missing");
+const buildWorldFnV4 = extractFunction(game, "buildWorld");
+check(/townDockZoneEl=document\.createElement\("div"\)/.test(buildWorldFnV4) && /townDockZoneEl\.className="town-dock-brake-zone"/.test(buildWorldFnV4), "buildWorld must create the brake-zone element inside the isTownDockStage() branch, same as the .tun.station gates");
+check(/townDockStopBoxEl=document\.createElement\("div"\)/.test(buildWorldFnV4) && /townDockStopBoxEl\.className="town-dock-stop-box"/.test(buildWorldFnV4), "buildWorld must create the stop-box element inside the isTownDockStage() branch, same as the .tun.station gates");
+check(/world\.appendChild\(townDockZoneEl\)/.test(buildWorldFnV4) && /world\.appendChild\(townDockStopBoxEl\)/.test(buildWorldFnV4), "brake-zone/stop-box must be appended as children of the real #world element, not a separate layer");
+check(/function townDockUpdateZoneVisual\(\)\{/.test(game), "townDockUpdateZoneVisual() missing -- must position the brake-zone/stop-box from real leg/zone geometry every frame");
+const zoneVisualFn = extractFunction(game, "townDockUpdateZoneVisual");
+check(/townDockZoneEl\.style\.left=\(state\.legStartX\+warnStart\)\+"vw";/.test(zoneVisualFn), "brake-zone left must be written in real absolute worldX-space vw (legStartX+warnStart), the same coordinate system tunX(o,i) uses for the .tun.station gates");
+check(/townDockStopBoxEl\.style\.left=\(state\.legStartX\+bounds\.start\)\+"vw";/.test(zoneVisualFn), "stop-box left must be written in real absolute worldX-space vw (legStartX+bounds.start), matching the exact success-judgment zone (bounds.start..bounds.end)");
+check(/townDockUpdateZoneVisual\(\);/.test(extractFunction(game, "syncTownDockPresentation")), "syncTownDockPresentation (called every tick) must refresh the brake-zone/stop-box position every frame, so the 3rd station's oscillating zone stays in sync");
+
 // ---- regression guard: the visual redesign must be presentation-only ----
 // syncTownDockPresentation() may READ townDockState fields to decide what to draw, but it must
 // never WRITE to any of the physics/judgment fields -- that would blur the line between
@@ -272,41 +291,77 @@ check(!/#townDockApproachLayer/.test(css), "no separate approach-layer stacking 
 const presentationFn = extractFunction(game, "syncTownDockPresentation");
 check(!/state\.(pos|vel|armed|attempts|assist|phase|stationIndex|oscPhase)\s*=(?!=)/.test(presentationFn), "syncTownDockPresentation must only read townDockState, never assign to its physics/judgment fields");
 
-// ---- v3 core: townDockApproachStartX bridges the untouched local pos scale onto the real worldX
-// coordinate system, and tickTownDockGame writes worldX (NOT a bespoke marker position) ----
-check(/function townDockApproachStartX\(stationIndex\)\{/.test(game), "townDockApproachStartX bridge function missing");
-const approachStartXFn = extractFunction(game, "townDockApproachStartX");
-check(/return stops\(origin\(stg\),stationIndex\)-TOWN_DOCK_STATIONS\[stationIndex\]\.zoneCenter;/.test(approachStartXFn), "townDockApproachStartX must equal stops(origin(stg),i)-zoneCenter[i] -- the same real per-gate stop offset every other stage uses, minus the untouched zoneCenter so pos===zoneCenter lines up exactly with the real gate");
-check(/worldX=townDockApproachStartX\(state\.stationIndex\)\+state\.pos;/.test(tickFn), "tickTownDockGame must write the real worldX (position bridge) right after computing state.pos, so the existing unconditional render()'s world.style.transform picks it up for free -- no bespoke rendering code needed");
+// ---- v4 (round7) core: each leg now spans the REAL full inter-station distance (not just a
+// short final stretch), and the leg's start-X is carried on townDockState.legStartX itself
+// (set once per leg in beginTownDockStation) rather than derived from a fixed per-station
+// offset function. tickTownDockGame writes worldX=legStartX+pos (NOT a bespoke marker
+// position, and NOT the old townDockApproachStartX(stationIndex)+pos formula) ----
+check(!/function townDockApproachStartX\(/.test(game), "v4: townDockApproachStartX (the old short-final-stretch bridge) must be removed, not just renamed -- legStartX replaces it");
+check(/legStartX:0/.test(extractFunction(game, "createTownDockState")), "townDockState must carry a legStartX field (worldX corresponding to pos===0 for the current leg)");
+check(/worldX=state\.legStartX\+state\.pos;/.test(tickFn), "tickTownDockGame must write the real worldX (position bridge) as legStartX+pos right after computing state.pos, so the existing unconditional render()'s world.style.transform picks it up for free -- no bespoke rendering code needed");
 // The worldX write must sit strictly AFTER the untouched physics (state.pos=nextPos) and BEFORE
 // the untouched armed/settled/undershoot/overshoot judgment, proving it's a bridge, not a rewrite.
 const tickPosIdx = tickFn.indexOf("state.pos=nextPos;");
-const tickWorldXIdx = tickFn.indexOf("worldX=townDockApproachStartX(state.stationIndex)+state.pos;");
+const tickWorldXIdx = tickFn.indexOf("worldX=state.legStartX+state.pos;");
 const tickArmedIdx = tickFn.indexOf("if(state.pos>0)state.armed=true;");
 check(tickPosIdx >= 0 && tickWorldXIdx > tickPosIdx && tickArmedIdx > tickWorldXIdx, "worldX bridge must be written after the physics update and before the untouched armed/judgment logic, changing nothing about the judgment itself");
 check(!/driving\s*=\s*true/.test(tickFn) && !/driving\s*=\s*false/.test(tickFn), "tickTownDockGame must never touch `driving` itself -- the shared cruise (driving=true) and the local per-frame worldX write are mutually exclusive by construction (phase!=='run' gates the whole function), and must stay that way");
 
-// ---- v3: the initial cruise now stops at the approach START (not the first gate itself) ----
-check(/target=townDockApproachStartX\(0\);pending="townDock";driving=true;/.test(extractFunction(game, "startTownDockGame")), 'startTownDockGame must cruise to townDockApproachStartX(0) (where the player then takes over), not directly to the first station stop');
+// ---- v4 (round7): the user-reported regression was that MOST of the inter-station distance was
+// covered by an automatic hand-off to the shared cruise (driving=true), with only a short final
+// stretch under local hold/release control -- reading as "it drives itself, then suddenly stops
+// with a fresh depart button" at every station, not just once at the very start. That hand-off
+// mechanism must be fully gone: no code path may set pending="townDock" with driving=true. ----
+check(!/pending\s*=\s*"townDock"/.test(game), 'v4: no code may set pending="townDock" anymore -- that string was the marker for the removed automatic-cruise-for-long-haul hand-off; every leg is now driven end-to-end by the local physics only');
+const startGameFn = extractFunction(game, "startTownDockGame");
+check(/driving=false/.test(startGameFn), "startTownDockGame must explicitly keep driving=false -- the very first leg (stage entry -> station 1) is local-physics-driven from the start, not handed to the shared cruise");
+check(/showTownDockStop\(\);/.test(startGameFn), "startTownDockGame must call showTownDockStop() directly and synchronously (no async cruise-then-dispatch detour) to begin the first leg");
+const successFnBody = extractFunction(game, "resolveTownDockSuccess");
+check(!/driving\s*=\s*true/.test(successFnBody), "resolveTownDockSuccess must never set driving=true -- the next leg (if any) starts via a direct beginTownDockStation() call, continuing seamlessly from wherever the train actually stopped");
+check(/else beginTownDockStation\(state\.stationIndex\);/.test(successFnBody), "resolveTownDockSuccess must start the next leg with a direct beginTownDockStation() call (no teleport, no shared-cruise hand-off) once the non-last station's boarding pause elapses");
 
-// ---- v3: station-to-station transition bridges via the existing shared cruise, not a pos-reset
-// teleport (GAP=430vw between real gates vs. at most 100vw of local approach distance -- a direct
-// reset would visibly teleport worldX by 300+vw) ----
-check(/target=townDockApproachStartX\(state\.stationIndex\);pending="townDock";driving=true;/.test(successFn), "resolveTownDockSuccess must hand the non-last transition off to the shared cruise (driving=true) toward the next station's approach start, not jump state.pos to 0 directly under an unrelated worldX");
-check(/townDockState\.stationIndex/.test(extractFunction(game, "showTownDockStop")), "showTownDockStop must resume at townDockState.stationIndex (not a hardcoded 0), since the shared-cruise bridge reuses this same dispatch for station 2 and 3 too");
+// ---- v4 (round7): beginTownDockStation must capture legStartX from the live worldX at call
+// time. For station 0 this is the stage entry position (startTownDockGame sets worldX=origin(stg)
+// immediately before calling showTownDockStop()->beginTownDockStation(0)); for stations 1/2 this
+// is wherever the train actually settled (tickTownDockGame never writes worldX while
+// phase!=="run", so worldX is frozen at the exact settle point through the boarding pause) ----
+const beginStationFnV4 = extractFunction(game, "beginTownDockStation");
+check(/state\.legStartX=worldX;/.test(beginStationFnV4), "beginTownDockStation must snapshot the live worldX into state.legStartX -- this is what makes leg transitions seamless (zero teleport) instead of jumping to a fixed per-station offset");
 
-// ---- station config sanity (small hardcoded array; no vm pure-logic harness needed) ----
+// ---- v4 (round7): each leg's real length is derived from the real stops()/origin() geometry,
+// not a fixed shared constant -- leg 0 (stage entry -> station 1) is shorter (~296vw, INTRO minus
+// the checkpoint offset) than legs 1/2 (station -> station, a full GAP=430vw) ----
+check(/function townDockLegLen\(\)\{/.test(game), "townDockLegLen() helper missing -- must compute the current leg's real vw length from stops(origin(stg),stationIndex)-legStartX");
+const legLenFn = extractFunction(game, "townDockLegLen");
+check(/stops\(origin\(stg\),townDockState\.stationIndex\)-townDockState\.legStartX/.test(legLenFn), "townDockLegLen must be derived from the real stops()/legStartX geometry, never a fixed constant");
+check(/const trackLen=townDockLegLen\(\);/.test(tickFn) && /nextPos>=trackLen/.test(tickFn), "tickTownDockGame's hard position clamp must scale with the real per-leg length (townDockLegLen()), not a fixed shared TOWN_DOCK_TRACK_LEN");
+
+// ---- station config sanity: zoneWidth/zoneEndGap are real vw quantities now (not a 0..100
+// abstract scale), and zoneCenter is derived at runtime from the leg length so the same knobs
+// work correctly whether the current leg is ~296vw (station 1) or ~430vw (stations 2/3) ----
 const stations = extractArray(game, "TOWN_DOCK_STATIONS");
 check(stations.length === 3, "must have exactly 3 stations");
+check(stations.every(s => typeof s.zoneWidth === "number" && typeof s.zoneEndGap === "number" && !("zoneCenter" in s)),
+  "v4: station knobs must be zoneWidth/zoneEndGap (real vw), not a precomputed zoneCenter -- zoneCenter must be derived at runtime from the leg length so it works for both the ~296vw and ~430vw legs");
 check(stations[0].zoneWidth > stations[1].zoneWidth, "station 1 must have a wider (easier) stop zone than station 2, per the escalating-difficulty spec");
-stations.forEach((station, index) => {
-  const halfWidth = station.zoneWidth / 2 + (station.oscAmplitude || 0);
-  check(station.zoneCenter - halfWidth >= 0 && station.zoneCenter + halfWidth <= 100,
-    `station ${index}: zone (with oscillation) must stay within the 0..100 track bounds`);
-});
+check(stations.every(s => s.zoneWidth >= 30), "every station's stop zone must be a reasonably sized real-vw window a child can react to, not razor-thin");
 check(stations[2].oscAmplitude > 0 && stations[0].oscAmplitude === 0 && stations[1].oscAmplitude === 0,
   "only the 3rd station may oscillate, per spec");
 check(stations[2].oscAmplitude <= stations[2].zoneWidth * 0.35 && stations[2].oscAmplitude >= stations[2].zoneWidth * 0.2,
   "3rd station oscillation amplitude must be roughly 30% of the zone width, not a fast-moving target");
+const zoneCenterFn = extractFunction(game, "townDockZoneCenter");
+check(/legLen-station\.zoneEndGap-width\/2/.test(zoneCenterFn), "zoneCenter must be legLen-zoneEndGap-width/2 so the zone's end (bounds.end) always sits a fixed zoneEndGap before the real leg end, regardless of leg length or widen-on-retry");
+
+// ---- v4 (round7): the assist (3rd+ attempt auto-taper) safety net must converge to a stop in a
+// bounded amount of time regardless of how long the current leg is. A physics-inconsistent
+// ad hoc taper (constant fraction of cruise speed, decelerated at the same gentle rate used for
+// normal player releases) was caught taking 60+ real seconds to converge once legs got long --
+// effectively an unbounded stall, defeating the "guarantee a stuck child can still eventually
+// succeed" purpose. The fix: a dedicated (stronger) assist deceleration rate, and a target speed
+// computed each frame as the exact speed that stops precisely at the zone center under that rate. ----
+check(/TOWN_DOCK_ASSIST_DECEL_RATE/.test(game), "a dedicated assist deceleration rate constant must exist, separate from the normal release-coast TOWN_DOCK_DECEL_RATE");
+const tickAssistBlock = tickFn.slice(tickFn.indexOf("if(state.assist){"), tickFn.indexOf("const decelRate="));
+check(/Math\.sqrt\(2\*TOWN_DOCK_ASSIST_DECEL_RATE\*remaining\)/.test(tickAssistBlock), "assist target speed must be the physically-correct stopping speed (sqrt(2*decelRate*remaining)) so convergence time stays bounded no matter how long the leg is");
+check(/decelRate=state\.assist\?TOWN_DOCK_ASSIST_DECEL_RATE:TOWN_DOCK_DECEL_RATE/.test(tickFn), "the accel/decel clamp must switch to the stronger assist-only deceleration rate while state.assist is true, so the lower target speed computed above is actually reached quickly");
 
 console.log(`nazonazo town dock (pitatto teisha) regression: OK (${checks} checks)`);

@@ -7846,7 +7846,7 @@ function resolveTownDockSuccess(){
  townDockTimeout(()=>{
   if(!isTownDockStage()||!playing)return;
   if(isLast)finishTownDockAllClear();
-  // v4 (round7): 次の駅も共有巡航(driving=true)へは一切ハンドオフしない。乗車演出の
+  // v4 (round7): 次の駅も共有巡航(drivingフラグON)へは一切ハンドオフしない。乗車演出の
   // 一時停止中(phase="boarding")はtickTownDockGameがworldXへ一切書き込まない(早期return)
   // ため、ここでbeginTownDockStation()を直接呼べば「今まさに停まっているその地点」から
   // シームレスに次のレグが始まる(テレポートなし)。押しっぱなしのプレイヤーはheldPointers
@@ -7878,8 +7878,19 @@ function tickTownDockGame(now,dt){
   const lookahead=Math.max(1,bounds.width*1.4);
   if(state.pos>=bounds.start-lookahead){
    const remaining=Math.max(0,bounds.center-state.pos);
-   const taper=clamp(remaining/lookahead,.12,1);
-   targetSpeed=held?Math.min(targetSpeed,station.cruiseSpeed*taper):0;
+   // v4 (round7): レグが長くなった分、旧来の「taper比(remaining/lookahead)をそのまま
+   // 巡航速度に掛けるだけ」の目安ブレーキだと、taperの下限(12%)にとても長い距離
+   // (実測30〜60vw超)張り付いたまま巡航速度の1割強でじりじり進む区間ができてしまい、
+   // アシスト(3回失敗後の自動救済)の収束にとても時間がかかる回帰が発生した
+   // (実測: 収束せず1分超)。TOWN_DOCK_ASSIST_DECEL_RATE で実際に「今から減速したら
+   // ちょうどremaining進んだ所で止まる」速度を毎フレーム逆算するsafeSpeedへ置き換える。
+   // これにより legLen(=駅ごとの実距離)がどれだけ長くなっても、巡航速度からその制動距離
+   // (cruiseSpeed²/(2*ASSIST_DECEL_RATE)程度)に入るまではそのまま巡航を保ち、
+   // 入った瞬間から毎フレーム再計算される安全速度に沿って必ず一定時間内にゾーン中心へ
+   // 収束する(「ゾーンに近づいたら自動でしっかり減速する」という元のtaperの意図は
+   // そのまま、根拠を比率の目安から物理的な制動距離の逆算へ差し替えた形)。
+   const safeSpeed=Math.sqrt(2*TOWN_DOCK_ASSIST_DECEL_RATE*remaining);
+   targetSpeed=held?Math.min(targetSpeed,safeSpeed):0;
    if(remaining<=bounds.width*.18)targetSpeed=0;
   }
  }
