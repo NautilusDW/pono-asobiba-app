@@ -67,6 +67,23 @@ namespace Pono.KawaGlint.Rendering
         // 0.35 units below the straight midpoint").
         private const float LineSagWorldUnits = 0.35f;
 
+        // While the renda ("引き寄せ") tension mode is on, the line is drawn
+        // taut to the target fish's mouth instead of sagging to the bobber --
+        // a much smaller sag reads as "pulled tight" (module B contract).
+        private const float TenseLineSagWorldUnits = 0.06f;
+
+        // Tense line renders slightly thicker (looks like it's biting into
+        // the water under load) -- multiplies the cached base widthMultiplier.
+        private const float TenseLineWidthMultiplier = 1.5f;
+
+        // Fine trembling applied to the tense line's interior sample points
+        // only, so the rod tip and the fish's mouth stay pinned. Frequency is
+        // deliberately faster than the target fish's own thrash jitter
+        // (TargetFishThrashFrequency = 20f) so it reads as a distinct "taut
+        // line buzzing" cue rather than a duplicate of the fish's wiggle.
+        private const float TrembleFrequency = 46f;
+        private const float TrembleAmplitudeWorld = 0.015f;
+
         private const float TargetFishAppearY = -1.5f;
         private const float TargetFishAnchorY = 0.6f;
         private const float TargetFishTargetXOffset = 0.4f;
@@ -89,6 +106,8 @@ namespace Pono.KawaGlint.Rendering
 
         private bool _ringsVisible = true;
         private bool _lineVisible = true;
+        private bool _lineTense;
+        private float _lineBaseWidth = 1f;
 
         private Transform _targetFishTransform;
         private SpriteRenderer _targetFishRenderer;
@@ -116,6 +135,25 @@ namespace Pono.KawaGlint.Rendering
         {
             _lineVisible = visible;
         }
+
+        /// <summary>
+        /// Toggles the renda ("引き寄せ") line-tension look: while tense, the
+        /// line draws taut to the target fish's mouth (instead of the
+        /// bobber), sags almost nothing, sways with the fish's own thrash
+        /// jitter, and trembles -- reading as "the fish is pulling and trying
+        /// to get away" without the bobber needing to be visible.
+        /// </summary>
+        public void SetFishingLineTension(bool tense)
+        {
+            _lineTense = tense;
+            if (_fishingLine != null)
+            {
+                _fishingLine.widthMultiplier = tense ? _lineBaseWidth * TenseLineWidthMultiplier : _lineBaseWidth;
+            }
+        }
+
+        /// <summary>True while the renda line-tension look (see <see cref="SetFishingLineTension"/>) is active.</summary>
+        public bool IsFishingLineTense => _lineTense;
 
         /// <summary>True while the single catchable target fish is shown (Approach/Thrash/Flee, not Hidden).</summary>
         public bool IsTargetFishVisible => _targetFishTransform != null && _targetFishTransform.gameObject.activeSelf;
@@ -286,6 +324,7 @@ namespace Pono.KawaGlint.Rendering
             _fishingLine = lineRenderer;
             _rodTipWorldPosition = rodTipWorldPosition;
             _lineBuffer = new Vector3[pointCount];
+            _lineBaseWidth = lineRenderer != null ? lineRenderer.widthMultiplier : 1f;
         }
 
         private void Update()
@@ -294,7 +333,7 @@ namespace Pono.KawaGlint.Rendering
             var deltaTime = Time.deltaTime;
             AnimateFish(time, deltaTime);
             AnimateRings(time);
-            AnimateFishingLine();
+            AnimateFishingLine(time);
             AnimateTargetFish(time, deltaTime);
         }
 
@@ -353,16 +392,20 @@ namespace Pono.KawaGlint.Rendering
             }
         }
 
-        private void AnimateFishingLine()
+        private void AnimateFishingLine(float time)
         {
             if (_fishingLine == null || _bobber == null || _lineBuffer == null)
             {
                 return;
             }
 
-            // Defensive: even if a caller left SetFishingLineVisible(true),
-            // never draw the line taut to a hidden bobber.
-            var visible = _lineVisible && _bobber.VisualState != KawaGlintBobberState.Hidden;
+            // Normally the line is only drawn while the bobber is out
+            // (Floating/Twitch/etc, i.e. not Hidden). During renda the
+            // bobber itself goes Hidden, but the tense line still draws --
+            // taut to the target fish's mouth -- as long as that fish is
+            // actually on screen to draw it to.
+            var tense = _lineTense && IsTargetFishVisible;
+            var visible = _lineVisible && (_bobber.VisualState != KawaGlintBobberState.Hidden || tense);
             _fishingLine.enabled = visible;
             if (!visible)
             {
@@ -370,9 +413,39 @@ namespace Pono.KawaGlint.Rendering
             }
 
             var start = _rodTipWorldPosition;
-            var end = new Vector3(_bobber.CenterWorldX, _bobber.TopWorldY, 0f);
+            Vector3 end;
+            float sag;
+            var fishPosition = Vector3.zero;
+            if (tense)
+            {
+                // Taut to the fish's mouth (nose-side of the sprite, which
+                // faces -X while thrashing) so the endpoint rides along with
+                // the fish's own thrash jitter -- the main "fish is pulling"
+                // cue -- with no extra formula needed here.
+                fishPosition = _targetFishTransform.position;
+                end = new Vector3(fishPosition.x - _targetFishWorldLength * 0.45f, fishPosition.y, 0f);
+                sag = TenseLineSagWorldUnits;
+            }
+            else
+            {
+                end = new Vector3(_bobber.CenterWorldX, _bobber.TopWorldY, 0f);
+                sag = LineSagWorldUnits;
+            }
+
             var midpoint = (start + end) * 0.5f;
-            var control = midpoint - new Vector3(0f, LineSagWorldUnits, 0f);
+            var control = midpoint - new Vector3(0f, sag, 0f);
+            if (tense)
+            {
+                // Control point sways half as far as the fish strays from its
+                // resting anchor, so the line's belly lags the fish's own
+                // thrash jitter instead of snapping straight -- same
+                // frequency as the fish, no new constant introduced. Uses the
+                // fish's raw center-X (not `end.x`, which is already offset
+                // toward the mouth by -worldLength*0.45) so only the
+                // oscillating jitter term applies here, not a fixed bias
+                // proportional to fish size.
+                control.x += (fishPosition.x - _targetFishTargetAnchorX) * 0.5f;
+            }
 
             var segmentCount = _lineBuffer.Length - 1;
             for (var i = 0; i < _lineBuffer.Length; i++)
@@ -384,6 +457,15 @@ namespace Pono.KawaGlint.Rendering
                 _lineBuffer[i] = oneMinusT * oneMinusT * start
                     + 2f * oneMinusT * t * control
                     + t * t * end;
+
+                if (tense)
+                {
+                    // Fine tremble on interior points only -- the sin(pi*t)
+                    // window is 0 at t=0/1 so the rod tip and the fish's
+                    // mouth themselves never jitter, only the line between.
+                    var window = Mathf.Sin(t * Mathf.PI);
+                    _lineBuffer[i].x += Mathf.Sin(time * TrembleFrequency + i * 1.9f) * TrembleAmplitudeWorld * window;
+                }
             }
 
             _fishingLine.SetPositions(_lineBuffer);

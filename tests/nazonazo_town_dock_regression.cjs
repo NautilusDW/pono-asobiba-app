@@ -188,8 +188,24 @@ check(numericConstant(game, "TOWN_DOCK_ASSIST_ATTEMPT_TIER") === 3, "assist tier
 
 // ---- station reset never rewinds progress: retry only resets pos/vel, never stationIndex ----
 const failFn = extractFunction(game, "resolveTownDockFail");
-check(/state\.pos=0;state\.vel=0;state\.oscPhase=0;state\.phase=\"run\";/.test(failFn), "retry must reset only the local approach physics, not stationIndex");
+check(/state\.pos=0;state\.vel=0;state\.oscPhase=0;state\.armed=false;state\.phase=\"run\";/.test(failFn), "retry must reset only the local approach physics (incl. the armed gate), not stationIndex");
 check(!/stationIndex\s*=\s*0/.test(failFn), "a failed attempt must never rewind stationIndex back to an earlier station");
+
+// ---- regression guard: premature auto-fail before any input, and lost-hold-across-transitions ----
+// A real Playwright run caught both of these; the static checks above did not, since they only
+// pattern-match source text. Encode the fix's invariants explicitly so they can't silently regress.
+const tickFn = extractFunction(game, "tickTownDockGame");
+check(/armed:false/.test(extractFunction(game, "createTownDockState")), "state must start unarmed so a fresh/retried station never judges before any input");
+check(/if\(state\.pos>0\)state\.armed=true;/.test(tickFn), "armed must only flip true once the train has actually left position 0 (i.e. real acceleration happened)");
+check(/if\(!state\.armed\)return;/.test(tickFn), "pass/fail judging must be skipped entirely until armed -- otherwise pos=0,vel=0 at station start/retry reads as an instant settled-undershoot");
+const beginStationFn = extractFunction(game, "beginTownDockStation");
+check(/state\.armed=false/.test(beginStationFn), "beginTownDockStation must reset armed for the fresh station");
+check(!/clearTownDockPointers\(\)/.test(failFn), "resolveTownDockFail must NOT clear heldPointers -- a player holding through the retry pause fires no new pointerdown, so clearing here permanently drops their hold");
+const successFn = extractFunction(game, "resolveTownDockSuccess");
+check(!/clearTownDockPointers\(\)/.test(successFn), "resolveTownDockSuccess must NOT clear heldPointers -- a player holding through the station-to-station transition must stay recognized as held");
+check(/clearTownDockPointers\(\)/.test(extractFunction(game, "completeTownDockStage")), "completeTownDockStage (the real, final exit) should still clear pointers/capture");
+check(!/townDockThrottle\.disabled=/.test(extractFunction(game, "updateTownDockThrottlePresentation")), 'updateTownDockThrottlePresentation must never set the native "disabled" attribute: per the Pointer Events spec, disabling a pointer-captured element implicitly releases capture (fires lostpointercapture), which would silently drop a continuous hold. Use a CSS class instead.');
+check(/is-waiting/.test(css) && /is-waiting/.test(game), "a non-disabling is-waiting visual state must exist to replace the old :disabled dimming");
 
 // ---- hiragana/katakana voice lines exist and are wired into the guide/stamp feedback ----
 check(/undershoot:"もう すこし まえで とまろう"/.test(game), "undershoot hint copy missing/changed");

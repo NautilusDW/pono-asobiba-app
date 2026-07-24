@@ -259,6 +259,7 @@ namespace Pono.KawaGlint.Gameplay
             _actors.ShowTargetFish(SpeciesWorldLength(species));
             _actors.Bobber.BeginCast(_stage.RodTipWorldPosition, _targetX, CastFlightSeconds);
             _actors.SetFishingLineVisible(true);
+            _actors.SetFishingLineTension(false);
             _actors.SetRingsVisible(false);
 
             _hud.SetPhaseWord(PhaseWordWait);
@@ -314,6 +315,7 @@ namespace Pono.KawaGlint.Gameplay
         {
             _actors.Bobber.SetVisualState(KawaGlintBobberState.Hidden);
             _actors.SetTargetFishThrash(true);
+            _actors.SetFishingLineTension(true);
             _actors.SetRingsVisible(true);
             _rendaCombo = 0;
             _hud.ShowRenda();
@@ -332,6 +334,7 @@ namespace Pono.KawaGlint.Gameplay
             _actors.FleeTargetFish();
             _actors.SetRingsVisible(false);
             _actors.SetFishingLineVisible(false);
+            _actors.SetFishingLineTension(false);
             _hud.SetPhaseWord(PhaseWordEscaped);
             _hud.SetNarration(NarrationEscaped);
             _hud.ShowEscapeBanner();
@@ -345,6 +348,7 @@ namespace Pono.KawaGlint.Gameplay
             _actors.HideTargetFish();
             _actors.SetRingsVisible(false);
             _actors.SetFishingLineVisible(false);
+            _actors.SetFishingLineTension(false);
 
             var species = TsuriFishData.GetSpeciesById(_session.SpeciesId);
             var edible = species != null && species.Edible;

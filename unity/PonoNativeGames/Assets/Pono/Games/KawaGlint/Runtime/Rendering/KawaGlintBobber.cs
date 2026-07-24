@@ -102,6 +102,18 @@ namespace Pono.KawaGlint.Rendering
         public KawaGlintBobberState VisualState { get; private set; } = KawaGlintBobberState.Floating;
 
         /// <summary>
+        /// Raised exactly once per cast, at the instant the bobber lands on the
+        /// water (Flying -> Floating arrival, or the immediate-landing path of
+        /// <see cref="BeginCast"/> when flightSeconds &lt;= 0). The argument is
+        /// the landing point in world space (x = <see cref="CenterWorldX"/>,
+        /// y = the waterline Y at rest). NOT raised by arbitrary
+        /// <see cref="SetVisualState"/> calls -- only by the two landing paths
+        /// above -- so a subscriber never has to guess whether a given
+        /// Floating transition was a genuine splashdown.
+        /// </summary>
+        public event System.Action<Vector3> OnLanded;
+
+        /// <summary>
         /// World-space X of the bobber. Fixed while Floating/Twitch/BiteSink,
         /// but updated every frame while <see cref="KawaGlintBobberState.Flying"/>
         /// (a cast in flight) -- callers that read this every frame (the
@@ -168,6 +180,7 @@ namespace Pono.KawaGlint.Rendering
                 _y = _waterlineY;
                 transform.SetPositionAndRotation(new Vector3(_x, _y, 0f), Quaternion.identity);
                 SetVisualState(KawaGlintBobberState.Floating);
+                RaiseLanded();
                 return;
             }
 
@@ -223,6 +236,7 @@ namespace Pono.KawaGlint.Rendering
                 _velocity = 0f;
                 transform.SetPositionAndRotation(new Vector3(_x, _y, 0f), Quaternion.identity);
                 SetVisualState(KawaGlintBobberState.Floating);
+                RaiseLanded();
             }
         }
 
@@ -281,6 +295,15 @@ namespace Pono.KawaGlint.Rendering
             {
                 _renderer.enabled = VisualState != KawaGlintBobberState.Hidden;
             }
+        }
+
+        // Invoked from exactly the two landing paths above (never from inside
+        // SetVisualState itself), so a future gameplay-driven Floating
+        // transition unrelated to an actual splashdown can never
+        // double-trigger the splash effect.
+        private void RaiseLanded()
+        {
+            OnLanded?.Invoke(new Vector3(_x, _y, 0f));
         }
     }
 }

@@ -2,7 +2,8 @@
     "name": "Pono.KawaGlint.Tests.EditMode",
     "rootNamespace": "Pono.KawaGlint.Tests.EditMode",
     "references": [
-        "Pono.KawaGlint.Core"
+        "Pono.KawaGlint.Core",
+        "Pono.KawaGlint.Rendering"
     ],
     "includePlatforms": [
         "Editor"

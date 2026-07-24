@@ -34,6 +34,14 @@ namespace Pono.KawaGlint.Rendering
         private const int FishingLineSortingOrder = 33;
         private const int BobberSortingOrder = 34;
 
+        // Splash droplets (module A, one-shot landing effect) render above
+        // even the bobber -- water kicked into the air by the splashdown is
+        // naturally the frontmost thing on screen for its brief 0.55s life.
+        // The splash ring shares the ambient ripple rings' sorting order
+        // (they're both surface-level water rings).
+        private const int SplashRingSortingOrder = RippleRingSortingOrder;
+        private const int SplashDropletSortingOrder = 35;
+
         private const int FishTextureWidth = 128;
         private const int FishTextureHeight = 64;
         private const int FishCount = 4;
@@ -103,7 +111,7 @@ namespace Pono.KawaGlint.Rendering
 
             BuildFishShadows(controller, root.transform, waterWorldRect, random, spriteMaterial, out var fishSprite, out var fishNativeWidthWorld);
             BuildBobber(controller, root.transform, waterlineWorldY, spriteMaterial);
-            BuildRippleRings(controller, root.transform, waterlineWorldY, spriteMaterial);
+            BuildRippleRings(controller, root.transform, waterlineWorldY, spriteMaterial, out var ringSprite);
             BuildFishingLine(controller, root.transform, rodTipWorldPosition, spriteMaterial);
 
             // Built last and after every seeded random draw above, so the
@@ -111,6 +119,12 @@ namespace Pono.KawaGlint.Rendering
             // of this addition. Shares the ambient fish silhouette
             // texture/sprite rather than generating a second copy.
             BuildTargetFish(controller, root.transform, fishSprite, fishNativeWidthWorld, spriteMaterial);
+
+            // Consumes zero randomness (draws no values from `random`), so it
+            // is safe to build last without disturbing any of the seeded
+            // placements above. Reuses the ripple ring sprite rather than
+            // generating a second ring texture.
+            BuildSplash(controller, root.transform, waterlineWorldY, spriteMaterial, ringSprite);
 
             return controller;
         }
@@ -354,7 +368,8 @@ namespace Pono.KawaGlint.Rendering
             KawaGlintActorsController controller,
             Transform parent,
             float waterlineWorldY,
-            Material material)
+            Material material,
+            out Sprite ringSprite)
         {
             var texture = CreateRingTexture();
             controller.RegisterGeneratedAsset(texture);
@@ -364,6 +379,7 @@ namespace Pono.KawaGlint.Rendering
             // transform.localScale with no extra conversion factor.
             var sprite = CreateSprite(texture, new Vector2(0.5f, 0.5f), "KawaGlint Ripple Ring", RingTextureSize);
             controller.RegisterGeneratedAsset(sprite);
+            ringSprite = sprite;
 
             for (var i = 0; i < RingCount; i++)
             {
@@ -402,6 +418,85 @@ namespace Pono.KawaGlint.Rendering
                     var band = Mathf.Clamp01(1f - Mathf.Abs(d - RingNormalizedRadius) / RingNormalizedThickness);
                     var alpha = band * band * (3f - 2f * band); // smoothstep -> soft ring, no hard edge
                     pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
+                }
+            }
+            texture.SetPixels32(pixels);
+            texture.Apply(false, false);
+            return texture;
+        }
+
+        // ---------------------------------------------------------------
+        // Splash (module A, one-shot landing effect: ring order 32,
+        // droplets order 35)
+        // ---------------------------------------------------------------
+
+        private const int SplashDropletTextureSize = 32;
+        private static readonly Color SplashDropletColor = HexColor(0xE8, 0xF6, 0xFF);
+
+        private static void BuildSplash(
+            KawaGlintActorsController controller,
+            Transform parent,
+            float waterlineWorldY,
+            Material material,
+            Sprite ringSprite)
+        {
+            var go = new GameObject("SplashEffect");
+            go.transform.SetParent(parent, false);
+            go.transform.position = new Vector3(0f, waterlineWorldY, 0f);
+
+            var splash = go.AddComponent<KawaGlintSplashEffect>();
+
+            var ringGo = new GameObject("SplashRing");
+            ringGo.transform.SetParent(go.transform, false);
+            var ringRenderer = ringGo.AddComponent<SpriteRenderer>();
+            ringRenderer.sprite = ringSprite;
+            ringRenderer.sharedMaterial = material;
+            ringRenderer.sortingOrder = SplashRingSortingOrder;
+            ringRenderer.enabled = false;
+
+            var dropletTexture = CreateSplashDropletTexture();
+            controller.RegisterGeneratedAsset(dropletTexture);
+            // pixelsPerUnit == texture size gives the droplet a native
+            // diameter of exactly 1 world unit, mirroring the ripple ring's
+            // own convention so KawaGlintSplashEffect can write its 0.06wu
+            // (DESIGN.md) diameter straight into transform.localScale.
+            var dropletSprite = CreateSprite(dropletTexture, new Vector2(0.5f, 0.5f), "KawaGlint Splash Droplet", SplashDropletTextureSize);
+            controller.RegisterGeneratedAsset(dropletSprite);
+
+            var dropletRenderers = new SpriteRenderer[KawaGlintSplashMath.DropletCount];
+            for (var i = 0; i < KawaGlintSplashMath.DropletCount; i++)
+            {
+                var dropletGo = new GameObject($"SplashDroplet{i}");
+                dropletGo.transform.SetParent(go.transform, false);
+                var dropletRenderer = dropletGo.AddComponent<SpriteRenderer>();
+                dropletRenderer.sprite = dropletSprite;
+                dropletRenderer.sharedMaterial = material;
+                dropletRenderer.sortingOrder = SplashDropletSortingOrder;
+                dropletRenderer.enabled = false;
+                dropletRenderers[i] = dropletRenderer;
+            }
+
+            splash.Configure(ringGo.transform, ringRenderer, dropletRenderers);
+            splash.Initialize(controller.Bobber);
+        }
+
+        private static Texture2D CreateSplashDropletTexture()
+        {
+            const int size = SplashDropletTextureSize;
+            var texture = CreateTexture(size, size, "KawaGlint Splash Droplet");
+            var pixels = new Color32[size * size];
+            var center = (size - 1) * 0.5f;
+            var maxRadius = size * 0.5f;
+
+            for (var y = 0; y < size; y++)
+            {
+                var dy = y - center;
+                for (var x = 0; x < size; x++)
+                {
+                    var dx = x - center;
+                    var d = Mathf.Sqrt(dx * dx + dy * dy) / maxRadius; // 0 at center, 1 at texture edge
+                    var alpha = 1f - SmoothStep01(0.6f, 1.0f, d);
+                    pixels[y * size + x] = new Color(SplashDropletColor.r, SplashDropletColor.g, SplashDropletColor.b, Mathf.Clamp01(alpha));
                 }
             }
             texture.SetPixels32(pixels);

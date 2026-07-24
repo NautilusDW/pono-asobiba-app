@@ -1121,7 +1121,7 @@ const TOWN_DOCK_LINES=Object.freeze({
  intro:["ればーを おしつづけて すすもう。はなすと ゆっくり とまるよ","こんどは とまる わくが せまいよ","わくが ゆっくり うごくよ！"],
  undershoot:"もう すこし まえで とまろう",
  overshoot:"すこし はやすぎたかな",
- blink:"わくの はしを よく みてね",
+ blink:"わくが みえたら とまろう",
  widen:"わくが ひろがったよ！",
  assist:"すこし てつだうね",
  success:"ぴたっと とまれたね!",
@@ -1129,7 +1129,7 @@ const TOWN_DOCK_LINES=Object.freeze({
 });
 function createTownDockState(){
  return {
-  epoch:0,phase:"idle",stationIndex:0,attempts:0,assist:false,
+  epoch:0,phase:"idle",stationIndex:0,attempts:0,assist:false,armed:false,
   pos:0,vel:0,oscPhase:0,
   heldPointers:new Map(),keyDirection:0,
   pausedAt:0,frameAt:0,
@@ -7582,7 +7582,11 @@ function townDockInputAllowed(){
 function updateTownDockThrottlePresentation(){
  if(!townDockThrottle)return;
  townDockThrottle.classList.toggle("is-held",townDockHeld());
- townDockThrottle.disabled=!townDockInputAllowed();
+ // 実DOM disabled は絶対に立てない: Pointer Events 仕様上、キャプチャ中の要素が
+ // disabled になると実装は暗黙に pointer capture を解放する (=lostpointercapture が
+ // 勝手に発火する)。駅切り替わり/リトライの一時停止中も指を離さず押し続けている
+ // プレイヤーの保持を継続させたいので、見た目のみ is-waiting クラスで表現する。
+ townDockThrottle.classList.toggle("is-waiting",!townDockInputAllowed());
 }
 function clearTownDockPointers(){
  const state=townDockState;
@@ -7624,7 +7628,7 @@ function syncTownDockPresentation(){
   townDockZone.style.width=bounds.width.toFixed(2)+"%";
   townDockZone.classList.toggle("is-blink",state.attempts>=1&&state.phase==="run");
  }
- if(townDockKnob)townDockKnob.classList.toggle("is-settled",Math.abs(state.vel)<=TOWN_DOCK_SETTLE_VEL);
+ if(townDockKnob)townDockKnob.classList.toggle("is-settled",state.armed&&Math.abs(state.vel)<=TOWN_DOCK_SETTLE_VEL);
 }
 function focusTownDockThrottleNextFrame(){
  const epoch=townDockState.epoch;
@@ -7635,8 +7639,9 @@ function focusTownDockThrottleNextFrame(){
 }
 function beginTownDockStation(index){
  const state=townDockState;
- state.stationIndex=index;state.attempts=0;state.assist=false;state.pos=0;state.vel=0;state.oscPhase=0;
+ state.stationIndex=index;state.attempts=0;state.assist=false;state.pos=0;state.vel=0;state.oscPhase=0;state.armed=false;
  state.phase="run";
+ if(townDockLayer)townDockLayer.dataset.phase="run";
  showTownDockVillagerWaiting();
  if(townDockProgress)townDockProgress.textContent="えき "+(index+1)+" / "+TOWN_DOCK_STATION_COUNT;
  townDockSetGuide(TOWN_DOCK_LINES.intro[Math.min(index,TOWN_DOCK_LINES.intro.length-1)]);
@@ -7654,9 +7659,16 @@ function resolveTownDockFail(kind){
  const state=townDockState;
  if(state.phase!=="run")return;
  state.phase="fail-pause";
+ if(townDockLayer)townDockLayer.dataset.phase="fail-pause";
  state.attempts++;
  stageMiss++;
- clearTownDockPointers();
+ // 注意: ここで「保持中ポインタの一括解除」を呼んではいけない。指を離さず駅をまたいで
+ // 押しっぱなしのプレイヤーは新しい pointerdown イベントを一切発生させないため、
+ // heldPointers を消してしまうと二度とホールドを再登録できず「レバーが反応しない」
+ // 致命的な回帰になる (実機/Playwright実プレイで確認済み)。物理的に指が離れた時だけ
+ // endTownDockHoldPointer(pointerup/pointercancel/lostpointercapture) が呼ばれ、
+ // その時初めて heldPointers から外れるのが正しい唯一の情報源。
+ updateTownDockThrottlePresentation();
  sndNG();setDriverMood("surprised");
  if(state.attempts>=TOWN_DOCK_ASSIST_ATTEMPT_TIER)state.assist=true;
  const line=kind==="overshoot"?TOWN_DOCK_LINES.overshoot:TOWN_DOCK_LINES.undershoot;
@@ -7665,7 +7677,8 @@ function resolveTownDockFail(kind){
  showStamp(kind==="overshoot"?"すこし はやかったね":"おしい！","ng");
  townDockTimeout(()=>{
   if(!isTownDockStage()||!playing)return;
-  state.pos=0;state.vel=0;state.oscPhase=0;state.phase="run";
+  state.pos=0;state.vel=0;state.oscPhase=0;state.armed=false;state.phase="run";
+  if(townDockLayer)townDockLayer.dataset.phase="run";
   syncTownDockPresentation();
   updateTownDockThrottlePresentation();
   focusTownDockThrottleNextFrame();
@@ -7694,7 +7707,10 @@ function resolveTownDockSuccess(){
  const state=townDockState;
  if(state.phase!=="run")return;
  state.phase="boarding";
- clearTownDockPointers();
+ if(townDockLayer)townDockLayer.dataset.phase="boarding";
+ // resolveTownDockFail と同じ理由で heldPointers は消さない (押しっぱなしのまま
+ // 次の駅へ連続してホールドできるようにする)。見た目だけ is-waiting に切り替える。
+ updateTownDockThrottlePresentation();
  addScore(TOWN_DOCK_STATION_SCORE,"townDock");
  sndFan();setDriverMood("cheer");
  showTownDockVillagerBoarded();
@@ -7732,7 +7748,14 @@ function tickTownDockGame(now,dt){
  if(nextPos<=0){nextPos=0;if(state.vel<0)state.vel=0;}
  if(nextPos>=TOWN_DOCK_TRACK_LEN){nextPos=TOWN_DOCK_TRACK_LEN;if(state.vel>0)state.vel=0;}
  state.pos=nextPos;
+ // armed: 駅開始/リトライ直後は pos=0,vel=0 で「静止=settled」を満たしてしまうため、
+ // 実際に位置が動く(=一度でも加速が起きた)までは成否判定そのものを行わない。
+ // これが無いと、プレイヤーがまだ一度もレバーへ触れていない最初のフレームで
+ // pos(0)<bounds.start が常に真になり、指一本触れる前に即座に resolveTownDockFail
+ // が発火してしまう (実プレイのPlaywright検証で確認された致命的回帰)。
+ if(state.pos>0)state.armed=true;
  syncTownDockPresentation();
+ if(!state.armed)return;
  const settled=Math.abs(state.vel)<=TOWN_DOCK_SETTLE_VEL;
  if(settled){
   if(state.pos>=bounds.start&&state.pos<=bounds.end)resolveTownDockSuccess();
@@ -7778,7 +7801,7 @@ function resetTownDockGame(){
  if(old&&old.heldPointers)for(const pointerId of old.heldPointers.keys()){try{townDockThrottle&&townDockThrottle.releasePointerCapture(pointerId);}catch(_){}}
  townDockState=createTownDockState();townDockState.epoch=nextEpoch;
  if(townDockLayer){townDockLayer.hidden=true;townDockLayer.setAttribute("aria-hidden","true");townDockLayer.dataset.phase="idle";}
- if(townDockThrottle){townDockThrottle.disabled=false;townDockThrottle.classList.remove("is-held");}
+ if(townDockThrottle){townDockThrottle.disabled=false;townDockThrottle.classList.remove("is-held","is-waiting");}
  if(townDockVillager)townDockVillager.classList.remove("is-boarded");
  if(townDockZone)townDockZone.classList.remove("is-blink");
  if(townDockKnob)townDockKnob.classList.remove("is-settled");
