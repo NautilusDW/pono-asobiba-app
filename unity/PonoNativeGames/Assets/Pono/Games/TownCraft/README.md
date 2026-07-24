@@ -1,0 +1,7 @@
+# TownCraft
+
+Unity 6用の2Dトップダウン町づくりプロトタイプ。メニューは `Pono > TownCraft > Rebuild Scene`、検証は `Pono > TownCraft > Verify Assets`。
+
+実行シーンは `Scenes/92_TownCraft.unity`。地形、接続道路・河川、高低差、用途別配置、15種類の「わたしのおうち」、名前表札、保存、町のお願い報酬、テーマ差し替えを含む。
+
+素材は `Content/Resources/TownCraft`、ロジックは `Runtime/Core`、表示は `Runtime/Rendering` に分離している。既存の部屋・図鑑を接続するときは `TownCraftGameController` の `OpenRoom` / `OpenZukan` を実遷移へ置き換える。
