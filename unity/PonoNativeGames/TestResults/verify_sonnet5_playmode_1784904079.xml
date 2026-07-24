@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="30" result="Passed" total="30" passed="30" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-07-24 14:41:27Z" end-time="2026-07-24 14:41:57Z" duration="29.8800334">
+  <test-suite type="TestSuite" id="1058" name="ポノのあそびば" fullname="ポノのあそびば" runstate="Runnable" testcasecount="30" result="Passed" start-time="2026-07-24 14:41:27Z" end-time="2026-07-24 14:41:57Z" duration="29.880033" total="30" passed="30" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="PlayMode" />
+    </properties>
+    <test-suite type="Assembly" id="1005" name="Pono.ColorWaterDelivery.Tests.PlayMode.dll" fullname="/Users/ndw_mac/AppDevelopment/pono-asobiba-app/unity/PonoNativeGames/Library/ScriptAssemblies/Pono.ColorWaterDelivery.Tests.PlayMode.dll" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-07-24 14:41:27Z" end-time="2026-07-24 14:41:27Z" duration="0.124598" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="60136" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="PlayMode" />
+        <property name="EditorOnly" value="False" />
+      </properties>
+      <test-suite type="TestSuite" id="1006" name="Pono" fullname="Pono" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-07-24 14:41:27Z" end-time="2026-07-24 14:41:27Z" duration="0.124422" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1007" name="ColorWaterDelivery" fullname="Pono.ColorWaterDelivery" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-07-24 14:41:27Z" end-time="2026-07-24 14:41:27Z" duration="0.124330" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1008" name="Tests" fullname="Pono.ColorWaterDelivery.Tests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-07-24 14:41:27Z" end-time="2026-07-24 14:41:27Z" duration="0.124243" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestSuite" id="1009" name="PlayMode" fullname="Pono.ColorWaterDelivery.Tests.PlayMode" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-07-24 14:41:27Z" end-time="2026-07-24 14:41:27Z" duration="0.124146" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-suite type="TestFixture" id="1001" name="ColorWaterDeliveryRuntimeTests" fullname="Pono.ColorWaterDelivery.Tests.PlayMode.ColorWaterDeliveryRuntimeTests" classname="Pono.ColorWaterDelivery.Tests.PlayMode.ColorWaterDeliveryRuntimeTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-07-24 14:41:27Z" end-time="2026-07-24 14:41:27Z" duration="0.123785" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1002" name="BootstrapCreatesIndependentPlayableSurface" fullname="Pono.ColorWaterDelivery.Tests.PlayMode.ColorWaterDeliveryRuntimeTests.BootstrapCreatesIndependentPlayableSurface" methodname="BootstrapCreatesIndependentPlayableSurface" classname="Pono.ColorWaterDelivery.Tests.PlayMode.ColorWaterDeliveryRuntimeTests" runstate="Runnable" seed="1882426042" result="Passed" start-time="2026-07-24 14:41:27Z" end-time="2026-07-24 14:41:27Z" duration="0.090705" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[There are no audio listeners in the scene. Please ensure there is always one audio listener in the scene
+]]></output>
+                </test-case>
+                <test-case id="1003" name="CpuGoalMetricsUseNewlyAbsorbedFluidOnly" fullname="Pono.ColorWaterDelivery.Tests.PlayMode.ColorWaterDeliveryRuntimeTests.CpuGoalMetricsUseNewlyAbsorbedFluidOnly" methodname="CpuGoalMetricsUseNewlyAbsorbedFluidOnly" classname="Pono.ColorWaterDelivery.Tests.PlayMode.ColorWaterDeliveryRuntimeTests" runstate="Runnable" seed="1467572464" result="Passed" start-time="2026-07-24 14:41:27Z" end-time="2026-07-24 14:41:27Z" duration="0.027399" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1004" name="InitialGatesNeedOneTapForPrototypeSolution" fullname="Pono.ColorWaterDelivery.Tests.PlayMode.ColorWaterDeliveryRuntimeTests.InitialGatesNeedOneTapForPrototypeSolution" methodname="InitialGatesNeedOneTapForPrototypeSolution" classname="Pono.ColorWaterDelivery.Tests.PlayMode.ColorWaterDeliveryRuntimeTests" runstate="Runnable" seed="1485977093" result="Passed" start-time="2026-07-24 14:41:27Z" end-time="2026-07-24 14:41:27Z" duration="0.000695" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+    <test-suite type="Assembly" id="1017" name="Pono.HideSeek.Tests.PlayMode.dll" fullname="/Users/ndw_mac/AppDevelopment/pono-asobiba-app/unity/PonoNativeGames/Library/ScriptAssemblies/Pono.HideSeek.Tests.PlayMode.dll" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-07-24 14:41:27Z" end-time="2026-07-24 14:41:37Z" duration="9.562072" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="60136" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="PlayMode" />
+        <property name="EditorOnly" value="False" />
+      </properties>
+      <test-suite type="TestSuite" id="1018" name="Pono" fullname="Pono" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-07-24 14:41:27Z" end-time="2026-07-24 14:41:37Z" duration="9.561792" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1019" name="HideSeek" fullname="Pono.HideSeek" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-07-24 14:41:27Z" end-time="2026-07-24 14:41:37Z" duration="9.561683" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1020" name="Tests" fullname="Pono.HideSeek.Tests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-07-24 14:41:27Z" end-time="2026-07-24 14:41:37Z" duration="9.561580" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestSuite" id="1021" name="PlayMode" fullname="Pono.HideSeek.Tests.PlayMode" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-07-24 14:41:27Z" end-time="2026-07-24 14:41:37Z" duration="9.561466" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-suite type="TestFixture" id="1010" name="HideSeekRuntimePlayModeTests" fullname="Pono.HideSeek.Tests.PlayMode.HideSeekRuntimePlayModeTests" classname="Pono.HideSeek.Tests.PlayMode.HideSeekRuntimePlayModeTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-07-24 14:41:27Z" end-time="2026-07-24 14:41:37Z" duration="9.556425" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1011" name="GameScene_BootstrapsRuntime_AndChildFacingCopyIsKanaFriendly" fullname="Pono.HideSeek.Tests.PlayMode.HideSeekRuntimePlayModeTests.GameScene_BootstrapsRuntime_AndChildFacingCopyIsKanaFriendly" methodname="GameScene_BootstrapsRuntime_AndChildFacingCopyIsKanaFriendly" classname="Pono.HideSeek.Tests.PlayMode.HideSeekRuntimePlayModeTests" runstate="Runnable" seed="334369006" result="Passed" start-time="2026-07-24 14:41:27Z" end-time="2026-07-24 14:41:29Z" duration="1.658965" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[There are no audio listeners in the scene. Please ensure there is always one audio listener in the scene
+]]></output>
+                </test-case>
+                <test-case id="1013" name="RestartGame_WhileFoundRevealIsRunning_ResetsTheWholeSession" fullname="Pono.HideSeek.Tests.PlayMode.HideSeekRuntimePlayModeTests.RestartGame_WhileFoundRevealIsRunning_ResetsTheWholeSession" methodname="RestartGame_WhileFoundRevealIsRunning_ResetsTheWholeSession" classname="Pono.HideSeek.Tests.PlayMode.HideSeekRuntimePlayModeTests" runstate="Runnable" seed="1137784" result="Passed" start-time="2026-07-24 14:41:29Z" end-time="2026-07-24 14:41:29Z" duration="0.549648" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[There are no audio listeners in the scene. Please ensure there is always one audio listener in the scene
+]]></output>
+                </test-case>
+                <test-case id="1012" name="ThreeCreatures_CanCompleteInNonCatalogOrder_AndFoundIsTerminal" fullname="Pono.HideSeek.Tests.PlayMode.HideSeekRuntimePlayModeTests.ThreeCreatures_CanCompleteInNonCatalogOrder_AndFoundIsTerminal" methodname="ThreeCreatures_CanCompleteInNonCatalogOrder_AndFoundIsTerminal" classname="Pono.HideSeek.Tests.PlayMode.HideSeekRuntimePlayModeTests" runstate="Runnable" seed="1422772822" result="Passed" start-time="2026-07-24 14:41:29Z" end-time="2026-07-24 14:41:37Z" duration="7.346886" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[There are no audio listeners in the scene. Please ensure there is always one audio listener in the scene
+]]></output>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1014" name="HideSeekRuntimeSmokeTests" fullname="Pono.HideSeek.Tests.PlayMode.HideSeekRuntimeSmokeTests" classname="Pono.HideSeek.Tests.PlayMode.HideSeekRuntimeSmokeTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-07-24 14:41:37Z" end-time="2026-07-24 14:41:37Z" duration="0.004867" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1015" name="CpuFallback_InjectsResets_AndPresenterCanForceIt" fullname="Pono.HideSeek.Tests.PlayMode.HideSeekRuntimeSmokeTests.CpuFallback_InjectsResets_AndPresenterCanForceIt" methodname="CpuFallback_InjectsResets_AndPresenterCanForceIt" classname="Pono.HideSeek.Tests.PlayMode.HideSeekRuntimeSmokeTests" runstate="Runnable" seed="692938690" result="Passed" start-time="2026-07-24 14:41:37Z" end-time="2026-07-24 14:41:37Z" duration="0.002554" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1016" name="InputSurface_AcceptsTwoPointers_AndReusesAReleasedSlot" fullname="Pono.HideSeek.Tests.PlayMode.HideSeekRuntimeSmokeTests.InputSurface_AcceptsTwoPointers_AndReusesAReleasedSlot" methodname="InputSurface_AcceptsTwoPointers_AndReusesAReleasedSlot" classname="Pono.HideSeek.Tests.PlayMode.HideSeekRuntimeSmokeTests" runstate="Runnable" seed="750383464" result="Passed" start-time="2026-07-24 14:41:37Z" end-time="2026-07-24 14:41:37Z" duration="0.001911" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+    <test-suite type="Assembly" id="1050" name="Pono.KawaGlint.Tests.PlayMode.dll" fullname="/Users/ndw_mac/AppDevelopment/pono-asobiba-app/unity/PonoNativeGames/Library/ScriptAssemblies/Pono.KawaGlint.Tests.PlayMode.dll" runstate="Runnable" testcasecount="22" result="Passed" start-time="2026-07-24 14:41:37Z" end-time="2026-07-24 14:41:57Z" duration="20.189916" total="22" passed="22" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="60136" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="PlayMode" />
+        <property name="EditorOnly" value="False" />
+      </properties>
+      <test-suite type="TestSuite" id="1051" name="Pono" fullname="Pono" runstate="Runnable" testcasecount="22" result="Passed" start-time="2026-07-24 14:41:37Z" end-time="2026-07-24 14:41:57Z" duration="20.189749" total="22" passed="22" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1052" name="KawaGlint" fullname="Pono.KawaGlint" runstate="Runnable" testcasecount="22" result="Passed" start-time="2026-07-24 14:41:37Z" end-time="2026-07-24 14:41:57Z" duration="20.189594" total="22" passed="22" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1053" name="Tests" fullname="Pono.KawaGlint.Tests" runstate="Runnable" testcasecount="22" result="Passed" start-time="2026-07-24 14:41:37Z" end-time="2026-07-24 14:41:57Z" duration="20.189444" total="22" passed="22" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestSuite" id="1054" name="PlayMode" fullname="Pono.KawaGlint.Tests.PlayMode" runstate="Runnable" testcasecount="22" result="Passed" start-time="2026-07-24 14:41:37Z" end-time="2026-07-24 14:41:57Z" duration="20.189248" total="22" passed="22" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-suite type="TestFixture" id="1022" name="KawaGlintCausticsPlayModeTests" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintCausticsPlayModeTests" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintCausticsPlayModeTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-07-24 14:41:37Z" end-time="2026-07-24 14:41:37Z" duration="0.176537" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1023" name="CausticsSurface_ExistencePresenceMatchesIsEffectAvailable" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintCausticsPlayModeTests.CausticsSurface_ExistencePresenceMatchesIsEffectAvailable" methodname="CausticsSurface_ExistencePresenceMatchesIsEffectAvailable" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintCausticsPlayModeTests" runstate="Runnable" seed="971211743" result="Passed" start-time="2026-07-24 14:41:37Z" end-time="2026-07-24 14:41:37Z" duration="0.154692" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1026" name="CausticsSurface_QuadTopEdge_AlignsWithWaterline" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintCausticsPlayModeTests.CausticsSurface_QuadTopEdge_AlignsWithWaterline" methodname="CausticsSurface_QuadTopEdge_AlignsWithWaterline" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintCausticsPlayModeTests" runstate="Runnable" seed="1106796225" result="Passed" start-time="2026-07-24 14:41:37Z" end-time="2026-07-24 14:41:37Z" duration="0.007423" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1024" name="CausticsSurface_UsesExpectedSortingOrderAndShader" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintCausticsPlayModeTests.CausticsSurface_UsesExpectedSortingOrderAndShader" methodname="CausticsSurface_UsesExpectedSortingOrderAndShader" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintCausticsPlayModeTests" runstate="Runnable" seed="1331191293" result="Passed" start-time="2026-07-24 14:41:37Z" end-time="2026-07-24 14:41:37Z" duration="0.006964" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1025" name="SetEffectEnabled_Caustics_TogglesGameObjectActive" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintCausticsPlayModeTests.SetEffectEnabled_Caustics_TogglesGameObjectActive" methodname="SetEffectEnabled_Caustics_TogglesGameObjectActive" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintCausticsPlayModeTests" runstate="Runnable" seed="444924119" result="Passed" start-time="2026-07-24 14:41:37Z" end-time="2026-07-24 14:41:37Z" duration="0.006856" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1027" name="KawaGlintGameplayPlayModeTests" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintGameplayPlayModeTests" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintGameplayPlayModeTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-07-24 14:41:37Z" end-time="2026-07-24 14:41:40Z" duration="3.474367" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1029" name="EscapeFlow_MissedBiteWindow_ThenRecast" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintGameplayPlayModeTests.EscapeFlow_MissedBiteWindow_ThenRecast" methodname="EscapeFlow_MissedBiteWindow_ThenRecast" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintGameplayPlayModeTests" runstate="Runnable" seed="1356276395" result="Passed" start-time="2026-07-24 14:41:37Z" end-time="2026-07-24 14:41:37Z" duration="0.578537" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1028" name="FullCatchFlow_CastToLanded" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintGameplayPlayModeTests.FullCatchFlow_CastToLanded" methodname="FullCatchFlow_CastToLanded" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintGameplayPlayModeTests" runstate="Runnable" seed="1821799539" result="Passed" start-time="2026-07-24 14:41:37Z" end-time="2026-07-24 14:41:40Z" duration="2.860739" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1030" name="InputSurface_PointerDown_DrivesCast" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintGameplayPlayModeTests.InputSurface_PointerDown_DrivesCast" methodname="InputSurface_PointerDown_DrivesCast" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintGameplayPlayModeTests" runstate="Runnable" seed="621453899" result="Passed" start-time="2026-07-24 14:41:40Z" end-time="2026-07-24 14:41:40Z" duration="0.018873" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1032" name="PhaseWordAndBucketCount_HaveOutlineAndShadowVertexColors" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintGameplayPlayModeTests.PhaseWordAndBucketCount_HaveOutlineAndShadowVertexColors" methodname="PhaseWordAndBucketCount_HaveOutlineAndShadowVertexColors" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintGameplayPlayModeTests" runstate="Runnable" seed="999773754" result="Passed" start-time="2026-07-24 14:41:40Z" end-time="2026-07-24 14:41:40Z" duration="0.008504" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1031" name="WaitTap_IsNoOp" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintGameplayPlayModeTests.WaitTap_IsNoOp" methodname="WaitTap_IsNoOp" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintGameplayPlayModeTests" runstate="Runnable" seed="1985751383" result="Passed" start-time="2026-07-24 14:41:40Z" end-time="2026-07-24 14:41:40Z" duration="0.006888" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1033" name="KawaGlintLineTensionPlayModeTests" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintLineTensionPlayModeTests" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintLineTensionPlayModeTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-07-24 14:41:40Z" end-time="2026-07-24 14:41:40Z" duration="0.018034" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1034" name="FishingLine_TenseAndVisibleDuringRenda" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintLineTensionPlayModeTests.FishingLine_TenseAndVisibleDuringRenda" methodname="FishingLine_TenseAndVisibleDuringRenda" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintLineTensionPlayModeTests" runstate="Runnable" seed="765956871" result="Passed" start-time="2026-07-24 14:41:40Z" end-time="2026-07-24 14:41:40Z" duration="0.008346" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1035" name="FishingLine_TensionClearsOnLanded" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintLineTensionPlayModeTests.FishingLine_TensionClearsOnLanded" methodname="FishingLine_TensionClearsOnLanded" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintLineTensionPlayModeTests" runstate="Runnable" seed="1239406801" result="Passed" start-time="2026-07-24 14:41:40Z" end-time="2026-07-24 14:41:40Z" duration="0.009229" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1036" name="KawaGlintPreBitePlayModeTests" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintPreBitePlayModeTests" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintPreBitePlayModeTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-07-24 14:41:40Z" end-time="2026-07-24 14:41:53Z" duration="12.958960" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1040" name="DeepWindow_BobberSinksVisiblyAndTimingRingShows" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintPreBitePlayModeTests.DeepWindow_BobberSinksVisiblyAndTimingRingShows" methodname="DeepWindow_BobberSinksVisiblyAndTimingRingShows" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintPreBitePlayModeTests" runstate="Runnable" seed="1108876997" result="Passed" start-time="2026-07-24 14:41:40Z" end-time="2026-07-24 14:41:41Z" duration="1.058362" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1039" name="DeepWindowMissed_NoPenalty_WaitContinues" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintPreBitePlayModeTests.DeepWindowMissed_NoPenalty_WaitContinues" methodname="DeepWindowMissed_NoPenalty_WaitContinues" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintPreBitePlayModeTests" runstate="Runnable" seed="1852191387" result="Passed" start-time="2026-07-24 14:41:41Z" end-time="2026-07-24 14:41:43Z" duration="1.458083" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1038" name="DeepWindowTap_DuringWait_EntersRendaImmediately" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintPreBitePlayModeTests.DeepWindowTap_DuringWait_EntersRendaImmediately" methodname="DeepWindowTap_DuringWait_EntersRendaImmediately" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintPreBitePlayModeTests" runstate="Runnable" seed="2039659099" result="Passed" start-time="2026-07-24 14:41:43Z" end-time="2026-07-24 14:41:43Z" duration="0.458511" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1037" name="NaturalWait_BobberTwitchesFromNibblePlan_ThenSettlesOrReachesBite" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintPreBitePlayModeTests.NaturalWait_BobberTwitchesFromNibblePlan_ThenSettlesOrReachesBite" methodname="NaturalWait_BobberTwitchesFromNibblePlan_ThenSettlesOrReachesBite" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintPreBitePlayModeTests" runstate="Runnable" seed="1660194443" result="Passed" start-time="2026-07-24 14:41:43Z" end-time="2026-07-24 14:41:51Z" duration="7.314624" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1041" name="ShallowTwitchTap_IsNoOp" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintPreBitePlayModeTests.ShallowTwitchTap_IsNoOp" methodname="ShallowTwitchTap_IsNoOp" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintPreBitePlayModeTests" runstate="Runnable" seed="2038040222" result="Passed" start-time="2026-07-24 14:41:51Z" end-time="2026-07-24 14:41:53Z" duration="2.668422" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1042" name="KawaGlintSplashPlayModeTests" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintSplashPlayModeTests" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintSplashPlayModeTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-07-24 14:41:53Z" end-time="2026-07-24 14:41:54Z" duration="1.019677" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1043" name="Splash_FiresOnceOnLanding" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintSplashPlayModeTests.Splash_FiresOnceOnLanding" methodname="Splash_FiresOnceOnLanding" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintSplashPlayModeTests" runstate="Runnable" seed="1697922389" result="Passed" start-time="2026-07-24 14:41:53Z" end-time="2026-07-24 14:41:54Z" duration="1.007943" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1044" name="Splash_ImmediateLandingPath_AlsoFires" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintSplashPlayModeTests.Splash_ImmediateLandingPath_AlsoFires" methodname="Splash_ImmediateLandingPath_AlsoFires" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintSplashPlayModeTests" runstate="Runnable" seed="3199750" result="Passed" start-time="2026-07-24 14:41:54Z" end-time="2026-07-24 14:41:54Z" duration="0.011209" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1045" name="KawaGlintTimingRingPlayModeTests" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintTimingRingPlayModeTests" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintTimingRingPlayModeTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-07-24 14:41:54Z" end-time="2026-07-24 14:41:57Z" duration="2.541158" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1049" name="AutoHookAfterThreeMisses_HookHitFxUsesCurrentBobberPositionNotStaleCast" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintTimingRingPlayModeTests.AutoHookAfterThreeMisses_HookHitFxUsesCurrentBobberPositionNotStaleCast" methodname="AutoHookAfterThreeMisses_HookHitFxUsesCurrentBobberPositionNotStaleCast" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintTimingRingPlayModeTests" runstate="Runnable" seed="296285580" result="Passed" start-time="2026-07-24 14:41:54Z" end-time="2026-07-24 14:41:56Z" duration="1.813929" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1046" name="BitePhase_TimingRingShrinksTowardZero" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintTimingRingPlayModeTests.BitePhase_TimingRingShrinksTowardZero" methodname="BitePhase_TimingRingShrinksTowardZero" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintTimingRingPlayModeTests" runstate="Runnable" seed="677617123" result="Passed" start-time="2026-07-24 14:41:56Z" end-time="2026-07-24 14:41:56Z" duration="0.009359" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1047" name="BiteTap_HidesRingAndPlaysHookHitFx" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintTimingRingPlayModeTests.BiteTap_HidesRingAndPlaysHookHitFx" methodname="BiteTap_HidesRingAndPlaysHookHitFx" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintTimingRingPlayModeTests" runstate="Runnable" seed="1446454961" result="Passed" start-time="2026-07-24 14:41:56Z" end-time="2026-07-24 14:41:57Z" duration="0.707841" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1048" name="BiteWindowExpires_TimingRingHides" fullname="Pono.KawaGlint.Tests.PlayMode.KawaGlintTimingRingPlayModeTests.BiteWindowExpires_TimingRingHides" methodname="BiteWindowExpires_TimingRingHides" classname="Pono.KawaGlint.Tests.PlayMode.KawaGlintTimingRingPlayModeTests" runstate="Runnable" seed="9102575" result="Passed" start-time="2026-07-24 14:41:57Z" end-time="2026-07-24 14:41:57Z" duration="0.009257" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[Saving results to: /Users/ndw_mac/Library/Application Support/Kodama no Mori/ポノのあそびば/TestResults.xml
+]]></output>
+                </test-case>
+              </test-suite>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

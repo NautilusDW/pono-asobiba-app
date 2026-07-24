@@ -1,0 +1,1268 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="181" result="Failed(Child)" total="181" passed="179" failed="1" inconclusive="0" skipped="1" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.918495">
+  <test-suite type="TestSuite" id="1000" name="ポノのあそびば" fullname="ポノのあそびば" runstate="Runnable" testcasecount="181" result="Failed" site="Child" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.918495" total="181" passed="179" failed="1" inconclusive="0" skipped="1" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="Assembly" id="1028" name="Pono.ColorWaterDelivery.Tests.EditMode.dll" fullname="/Users/ndw_mac/AppDevelopment/pono-asobiba-app/unity/PonoNativeGames/Library/ScriptAssemblies/Pono.ColorWaterDelivery.Tests.EditMode.dll" runstate="Runnable" testcasecount="25" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.038659" total="25" passed="25" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="60030" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1029" name="Pono" fullname="Pono" runstate="Runnable" testcasecount="25" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.038058" total="25" passed="25" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1030" name="ColorWaterDelivery" fullname="Pono.ColorWaterDelivery" runstate="Runnable" testcasecount="25" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.037684" total="25" passed="25" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1031" name="Tests" fullname="Pono.ColorWaterDelivery.Tests" runstate="Runnable" testcasecount="25" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.036985" total="25" passed="25" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestSuite" id="1032" name="EditMode" fullname="Pono.ColorWaterDelivery.Tests.EditMode" runstate="Runnable" testcasecount="25" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.036179" total="25" passed="25" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-suite type="TestFixture" id="1001" name="ColorWaterDeliveryModelTests" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests" runstate="Runnable" testcasecount="18" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.031260" total="18" passed="18" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1004" name="BalancedBlueAndYellow_AccumulatesGreenProgress" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests.BalancedBlueAndYellow_AccumulatesGreenProgress" methodname="BalancedBlueAndYellow_AccumulatesGreenProgress" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests" runstate="Runnable" seed="753412771" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.010544" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1006" name="BlueDominantDelivery_RequestsYellowWithoutFailure" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests.BlueDominantDelivery_RequestsYellowWithoutFailure" methodname="BlueDominantDelivery_RequestsYellowWithoutFailure" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests" runstate="Runnable" seed="1033328917" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000588" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1011" name="CompletedStage_IsTerminalUntilReset" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests.CompletedStage_IsTerminalUntilReset" methodname="CompletedStage_IsTerminalUntilReset" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests" runstate="Runnable" seed="1470164609" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000625" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1010" name="CompletionEvent_RaisesOnceAfterProcessedEventWithCompleteSnapshot" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests.CompletionEvent_RaisesOnceAfterProcessedEventWithCompleteSnapshot" methodname="CompletionEvent_RaisesOnceAfterProcessedEventWithCompleteSnapshot" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests" runstate="Runnable" seed="832130739" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000657" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1002" name="Constructor_AcceptsTwoOrThreeUniqueGatesOnly" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests.Constructor_AcceptsTwoOrThreeUniqueGatesOnly" methodname="Constructor_AcceptsTwoOrThreeUniqueGatesOnly" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests" runstate="Runnable" seed="934531817" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.002204" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1008" name="EmptyAndTooLittleDeliveries_DoNotCountAsWrongColours" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests.EmptyAndTooLittleDeliveries_DoNotCountAsWrongColours" methodname="EmptyAndTooLittleDeliveries_DoNotCountAsWrongColours" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests" runstate="Runnable" seed="213469601" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000158" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1014" name="FourWayGate_CyclesInDeclaredOrderAndWraps" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests.FourWayGate_CyclesInDeclaredOrderAndWraps" methodname="FourWayGate_CyclesInDeclaredOrderAndWraps" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests" runstate="Runnable" seed="494537764" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000527" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1017" name="GateChangedEvent_ReportsPreviousCurrentAndWholeSnapshot" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests.GateChangedEvent_ReportsPreviousCurrentAndWholeSnapshot" methodname="GateChangedEvent_ReportsPreviousCurrentAndWholeSnapshot" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests" runstate="Runnable" seed="755093833" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.001122" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1005" name="GreenToleranceBoundary_IsAccepted" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests.GreenToleranceBoundary_IsAccepted" methodname="GreenToleranceBoundary_IsAccepted" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests" runstate="Runnable" seed="1336773944" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000318" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1003" name="InitialSnapshot_IsRunningAndContainsGateState" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests.InitialSnapshot_IsRunningAndContainsGateState" methodname="InitialSnapshot_IsRunningAndContainsGateState" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests" runstate="Runnable" seed="189013505" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000455" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1009" name="MultipleGreenBatches_CompleteCumulativelyAndClampOverDelivery" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests.MultipleGreenBatches_CompleteCumulativelyAndClampOverDelivery" methodname="MultipleGreenBatches_CompleteCumulativelyAndClampOverDelivery" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests" runstate="Runnable" seed="838626855" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000249" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1012" name="Pause_BlocksDeliveryAndGateInputUntilResumed" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests.Pause_BlocksDeliveryAndGateInputUntilResumed" methodname="Pause_BlocksDeliveryAndGateInputUntilResumed" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests" runstate="Runnable" seed="1204065347" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000393" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1013" name="PauseChangedEvent_CarriesCoherentSnapshot" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests.PauseChangedEvent_CarriesCoherentSnapshot" methodname="PauseChangedEvent_CarriesCoherentSnapshot" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests" runstate="Runnable" seed="689335474" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000349" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1019" name="Reset_ReopensACompletedStage" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests.Reset_ReopensACompletedStage" methodname="Reset_ReopensACompletedStage" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests" runstate="Runnable" seed="1420768622" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000228" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1018" name="Reset_RestoresProgressPauseCountersAndInitialGates" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests.Reset_RestoresProgressPauseCountersAndInitialGates" methodname="Reset_RestoresProgressPauseCountersAndInitialGates" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests" runstate="Runnable" seed="1677587014" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000500" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1015" name="TwoWayGate_OnlyAcceptsItsDeclaredDirections" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests.TwoWayGate_OnlyAcceptsItsDeclaredDirections" methodname="TwoWayGate_OnlyAcceptsItsDeclaredDirections" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests" runstate="Runnable" seed="352914818" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000326" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1016" name="UnknownGateInput_IsRejectedWithoutMutation" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests.UnknownGateInput_IsRejectedWithoutMutation" methodname="UnknownGateInput_IsRejectedWithoutMutation" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests" runstate="Runnable" seed="241811894" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000445" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1007" name="YellowDominantDelivery_RequestsBlueAndPlayContinues" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests.YellowDominantDelivery_RequestsBlueAndPlayContinues" methodname="YellowDominantDelivery_RequestsBlueAndPlayContinues" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryModelTests" runstate="Runnable" seed="22378262" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000219" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1020" name="ColorWaterDeliveryValueTests" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryValueTests" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryValueTests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.003393" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1022" name="EmptyWaterMixture_HasSafeZeroRatios" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryValueTests.EmptyWaterMixture_HasSafeZeroRatios" methodname="EmptyWaterMixture_HasSafeZeroRatios" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryValueTests" runstate="Runnable" seed="1269055856" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000185" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1027" name="LeafGateDefinition_CopiesDirectionInput" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryValueTests.LeafGateDefinition_CopiesDirectionInput" methodname="LeafGateDefinition_CopiesDirectionInput" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryValueTests" runstate="Runnable" seed="1634824469" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000469" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1025" name="LeafGateDefinition_RequiresExactlyTwoOrFourUniqueDirections" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryValueTests.LeafGateDefinition_RequiresExactlyTwoOrFourUniqueDirections" methodname="LeafGateDefinition_RequiresExactlyTwoOrFourUniqueDirections" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryValueTests" runstate="Runnable" seed="1685064095" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000181" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1026" name="LeafGateDefinition_RequiresValidIdAndInitialDirection" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryValueTests.LeafGateDefinition_RequiresValidIdAndInitialDirection" methodname="LeafGateDefinition_RequiresValidIdAndInitialDirection" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryValueTests" runstate="Runnable" seed="1899254305" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000161" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1024" name="Rules_RejectInvalidTargetsToleranceAndMinimumBatch" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryValueTests.Rules_RejectInvalidTargetsToleranceAndMinimumBatch" methodname="Rules_RejectInvalidTargetsToleranceAndMinimumBatch" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryValueTests" runstate="Runnable" seed="1891501393" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000200" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1023" name="WaterMixture_RejectsNegativeAndNonFiniteAmounts" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryValueTests.WaterMixture_RejectsNegativeAndNonFiniteAmounts" methodname="WaterMixture_RejectsNegativeAndNonFiniteAmounts" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryValueTests" runstate="Runnable" seed="1729621173" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000165" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1021" name="WaterMixture_ReportsFractionsAndImbalance" fullname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryValueTests.WaterMixture_ReportsFractionsAndImbalance" methodname="WaterMixture_ReportsFractionsAndImbalance" classname="Pono.ColorWaterDelivery.Tests.EditMode.ColorWaterDeliveryValueTests" runstate="Runnable" seed="2102297483" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000092" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+    <test-suite type="Assembly" id="1088" name="Pono.HideSeek.Tests.EditMode.dll" fullname="/Users/ndw_mac/AppDevelopment/pono-asobiba-app/unity/PonoNativeGames/Library/ScriptAssemblies/Pono.HideSeek.Tests.EditMode.dll" runstate="Runnable" testcasecount="48" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.153079" total="48" passed="48" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="60030" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1089" name="Pono" fullname="Pono" runstate="Runnable" testcasecount="48" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.152726" total="48" passed="48" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1090" name="HideSeek" fullname="Pono.HideSeek" runstate="Runnable" testcasecount="48" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.152449" total="48" passed="48" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1091" name="Tests" fullname="Pono.HideSeek.Tests" runstate="Runnable" testcasecount="48" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.152198" total="48" passed="48" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestSuite" id="1092" name="EditMode" fullname="Pono.HideSeek.Tests.EditMode" runstate="Runnable" testcasecount="48" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.151914" total="48" passed="48" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-suite type="TestFixture" id="1033" name="ChildFacingTextValidatorTests" fullname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests" classname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests" runstate="Runnable" testcasecount="17" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.011386" total="17" passed="17" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1051" name="EmptyText_RequiresExplicitAllowance" fullname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests.EmptyText_RequiresExplicitAllowance" methodname="EmptyText_RequiresExplicitAllowance" classname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests" runstate="Runnable" seed="355075" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000323" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1053" name="KanaAndKanjiCodePointHelpers_CoverJapaneseSpecialCases" fullname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests.KanaAndKanjiCodePointHelpers_CoverJapaneseSpecialCases" methodname="KanaAndKanjiCodePointHelpers_CoverJapaneseSpecialCases" classname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests" runstate="Runnable" seed="532979381" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000119" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-suite type="ParameterizedMethod" id="1040" name="KanaFriendlyCopy_IsAccepted" fullname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests.KanaFriendlyCopy_IsAccepted" classname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.002242" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+                  <properties />
+                  <test-case id="1034" name="KanaFriendlyCopy_IsAccepted(&quot;いきものを みつけよう！&quot;)" fullname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests.KanaFriendlyCopy_IsAccepted(&quot;いきものを みつけよう！&quot;)" methodname="KanaFriendlyCopy_IsAccepted" classname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests" runstate="Runnable" seed="1403502306" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000163" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                  <test-case id="1035" name="KanaFriendlyCopy_IsAccepted(&quot;ポノと あそぼう&quot;)" fullname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests.KanaFriendlyCopy_IsAccepted(&quot;ポノと あそぼう&quot;)" methodname="KanaFriendlyCopy_IsAccepted" classname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests" runstate="Runnable" seed="1984609844" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000023" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                  <test-case id="1036" name="KanaFriendlyCopy_IsAccepted(&quot;あと 3びき&quot;)" fullname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests.KanaFriendlyCopy_IsAccepted(&quot;あと 3びき&quot;)" methodname="KanaFriendlyCopy_IsAccepted" classname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests" runstate="Runnable" seed="1986887342" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000022" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                  <test-case id="1037" name="KanaFriendlyCopy_IsAccepted(&quot;キラキラ〜☆&quot;)" fullname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests.KanaFriendlyCopy_IsAccepted(&quot;キラキラ〜☆&quot;)" methodname="KanaFriendlyCopy_IsAccepted" classname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests" runstate="Runnable" seed="1137382773" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000016" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                  <test-case id="1038" name="KanaFriendlyCopy_IsAccepted(&quot;ﾎﾟﾉ と いっしょ&quot;)" fullname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests.KanaFriendlyCopy_IsAccepted(&quot;ﾎﾟﾉ と いっしょ&quot;)" methodname="KanaFriendlyCopy_IsAccepted" classname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests" runstate="Runnable" seed="794885959" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000267" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                  <test-case id="1039" name="KanaFriendlyCopy_IsAccepted(&quot;みつけた！ 🎉&quot;)" fullname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests.KanaFriendlyCopy_IsAccepted(&quot;みつけた！ 🎉&quot;)" methodname="KanaFriendlyCopy_IsAccepted" classname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests" runstate="Runnable" seed="414118804" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000255" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                </test-suite>
+                <test-suite type="ParameterizedMethod" id="1045" name="KanjiCopy_IsRejected" fullname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests.KanjiCopy_IsRejected" classname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.003835" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+                  <properties />
+                  <test-case id="1041" name="KanjiCopy_IsRejected(&quot;森で あそぼう&quot;)" fullname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests.KanjiCopy_IsRejected(&quot;森で あそぼう&quot;)" methodname="KanjiCopy_IsRejected" classname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests" runstate="Runnable" seed="1397221033" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000583" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                  <test-case id="1042" name="KanjiCopy_IsRejected(&quot;動物を みつけよう&quot;)" fullname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests.KanjiCopy_IsRejected(&quot;動物を みつけよう&quot;)" methodname="KanjiCopy_IsRejected" classname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests" runstate="Runnable" seed="1928244818" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000224" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                  <test-case id="1043" name="KanjiCopy_IsRejected(&quot;あと 三びき&quot;)" fullname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests.KanjiCopy_IsRejected(&quot;あと 三びき&quot;)" methodname="KanjiCopy_IsRejected" classname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests" runstate="Runnable" seed="1218932739" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000160" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                  <test-case id="1044" name="KanjiCopy_IsRejected(&quot;くり返す&quot;)" fullname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests.KanjiCopy_IsRejected(&quot;くり返す&quot;)" methodname="KanjiCopy_IsRejected" classname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests" runstate="Runnable" seed="1871441658" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000274" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                </test-suite>
+                <test-suite type="ParameterizedMethod" id="1050" name="NonKanaLetters_AreRejected" fullname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests.NonKanaLetters_AreRejected" classname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.001614" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                  <properties />
+                  <test-case id="1047" name="NonKanaLetters_AreRejected(&quot;PONO&quot;)" fullname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests.NonKanaLetters_AreRejected(&quot;PONO&quot;)" methodname="NonKanaLetters_AreRejected" classname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests" runstate="Runnable" seed="425084278" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000175" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                  <test-case id="1048" name="NonKanaLetters_AreRejected(&quot;hello ポノ&quot;)" fullname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests.NonKanaLetters_AreRejected(&quot;hello ポノ&quot;)" methodname="NonKanaLetters_AreRejected" classname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests" runstate="Runnable" seed="1968603360" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000048" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                  <test-case id="1049" name="NonKanaLetters_AreRejected(&quot;안녕&quot;)" fullname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests.NonKanaLetters_AreRejected(&quot;안녕&quot;)" methodname="NonKanaLetters_AreRejected" classname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests" runstate="Runnable" seed="727914520" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000158" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                </test-suite>
+                <test-case id="1046" name="SupplementaryPlaneKanji_IsDetectedWithCorrectUtf16Index" fullname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests.SupplementaryPlaneKanji_IsDetectedWithCorrectUtf16Index" methodname="SupplementaryPlaneKanji_IsDetectedWithCorrectUtf16Index" classname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests" runstate="Runnable" seed="213168572" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000247" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1052" name="UnpairedSurrogate_IsReportedAsInvalidUnicode" fullname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests.UnpairedSurrogate_IsReportedAsInvalidUnicode" methodname="UnpairedSurrogate_IsReportedAsInvalidUnicode" classname="Pono.HideSeek.Tests.EditMode.ChildFacingTextValidatorTests" runstate="Runnable" seed="580222093" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000234" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1054" name="CreatureDiscoveryModelTests" fullname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests" classname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests" runstate="Runnable" testcasecount="13" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.020241" total="13" passed="13" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1067" name="Advance_RejectsNegativeAndNonFiniteTime" fullname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests.Advance_RejectsNegativeAndNonFiniteTime" methodname="Advance_RejectsNegativeAndNonFiniteTime" classname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests" runstate="Runnable" seed="347688762" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.003881" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1060" name="AllFoundEvent_IsRaisedExactlyOnce" fullname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests.AllFoundEvent_IsRaisedExactlyOnce" methodname="AllFoundEvent_IsRaisedExactlyOnce" classname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests" runstate="Runnable" seed="387737643" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.001500" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1055" name="Constructor_RequiresExactlyThreeUniqueCreatures" fullname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests.Constructor_RequiresExactlyThreeUniqueCreatures" methodname="Constructor_RequiresExactlyThreeUniqueCreatures" classname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests" runstate="Runnable" seed="312734685" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000491" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1058" name="CreaturesCanBeFoundInAnyOrder" fullname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests.CreaturesCanBeFoundInAnyOrder" methodname="CreaturesCanBeFoundInAnyOrder" classname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests" runstate="Runnable" seed="1982584923" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000685" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1065" name="Definition_RejectsInvalidRegionsAndRules" fullname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests.Definition_RejectsInvalidRegionsAndRules" methodname="Definition_RejectsInvalidRegionsAndRules" classname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests" runstate="Runnable" seed="269380766" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000660" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1064" name="Dispose_UnsubscribesFromRevealMask_AndAdvanceBecomesInvalid" fullname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests.Dispose_UnsubscribesFromRevealMask_AndAdvanceBecomesInvalid" methodname="Dispose_UnsubscribesFromRevealMask_AndAdvanceBecomesInvalid" classname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests" runstate="Runnable" seed="773329742" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000690" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1061" name="ExistingMaskReveal_IsObservedWhenModelIsCreated" fullname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests.ExistingMaskReveal_IsObservedWhenModelIsCreated" methodname="ExistingMaskReveal_IsObservedWhenModelIsCreated" classname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests" runstate="Runnable" seed="1309222356" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000259" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1059" name="FoundState_IsTerminal_AndEventsDoNotRepeat" fullname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests.FoundState_IsTerminal_AndEventsDoNotRepeat" methodname="FoundState_IsTerminal_AndEventsDoNotRepeat" classname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests" runstate="Runnable" seed="1042508817" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000380" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1057" name="HoldingTime_IsRequiredBeforeFound" fullname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests.HoldingTime_IsRequiredBeforeFound" methodname="HoldingTime_IsRequiredBeforeFound" classname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests" runstate="Runnable" seed="1995854918" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000575" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1062" name="HoldTimer_DoesNotAccumulateBeforeEligibility" fullname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests.HoldTimer_DoesNotAccumulateBeforeEligibility" methodname="HoldTimer_DoesNotAccumulateBeforeEligibility" classname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests" runstate="Runnable" seed="246614264" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.001015" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1056" name="RequiredCoverageWithoutEnoughAnchors_RemainsSearching" fullname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests.RequiredCoverageWithoutEnoughAnchors_RemainsSearching" methodname="RequiredCoverageWithoutEnoughAnchors_RemainsSearching" classname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests" runstate="Runnable" seed="994633674" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000811" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1066" name="Rules_RejectInvalidRatiosHoldAndAnchorCounts" fullname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests.Rules_RejectInvalidRatiosHoldAndAnchorCounts" methodname="Rules_RejectInvalidRatiosHoldAndAnchorCounts" classname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests" runstate="Runnable" seed="450034299" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000527" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1063" name="ZeroHoldDuration_FindsOnAdvanceZero" fullname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests.ZeroHoldDuration_FindsOnAdvanceZero" methodname="ZeroHoldDuration_FindsOnAdvanceZero" classname="Pono.HideSeek.Tests.EditMode.CreatureDiscoveryModelTests" runstate="Runnable" seed="2102645043" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000595" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1068" name="HintSchedulerTests" fullname="Pono.HideSeek.Tests.EditMode.HintSchedulerTests" classname="Pono.HideSeek.Tests.EditMode.HintSchedulerTests" runstate="Runnable" testcasecount="8" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.112752" total="8" passed="8" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1069" name="Advance_EmitsOnlyAfterConfiguredIdleDelay" fullname="Pono.HideSeek.Tests.EditMode.HintSchedulerTests.Advance_EmitsOnlyAfterConfiguredIdleDelay" methodname="Advance_EmitsOnlyAfterConfiguredIdleDelay" classname="Pono.HideSeek.Tests.EditMode.HintSchedulerTests" runstate="Runnable" seed="256276517" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.001170" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1075" name="Complete_IsTerminalUntilExplicitReset" fullname="Pono.HideSeek.Tests.EditMode.HintSchedulerTests.Complete_IsTerminalUntilExplicitReset" methodname="Complete_IsTerminalUntilExplicitReset" classname="Pono.HideSeek.Tests.EditMode.HintSchedulerTests" runstate="Runnable" seed="1430046672" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000270" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1076" name="InvalidSchedulesAndTimes_AreRejected" fullname="Pono.HideSeek.Tests.EditMode.HintSchedulerTests.InvalidSchedulesAndTimes_AreRejected" methodname="InvalidSchedulesAndTimes_AreRejected" classname="Pono.HideSeek.Tests.EditMode.HintSchedulerTests" runstate="Runnable" seed="2009717898" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000524" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1071" name="LargeFrameDelta_EmitsAtMostOneHint" fullname="Pono.HideSeek.Tests.EditMode.HintSchedulerTests.LargeFrameDelta_EmitsAtMostOneHint" methodname="LargeFrameDelta_EmitsAtMostOneHint" classname="Pono.HideSeek.Tests.EditMode.HintSchedulerTests" runstate="Runnable" seed="416271733" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.001097" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1074" name="NonRepeatingSchedule_CompletesAfterLastHint" fullname="Pono.HideSeek.Tests.EditMode.HintSchedulerTests.NonRepeatingSchedule_CompletesAfterLastHint" methodname="NonRepeatingSchedule_CompletesAfterLastHint" classname="Pono.HideSeek.Tests.EditMode.HintSchedulerTests" runstate="Runnable" seed="163123251" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000173" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1072" name="NotifyActivity_ResetsIdleAndEscalation" fullname="Pono.HideSeek.Tests.EditMode.HintSchedulerTests.NotifyActivity_ResetsIdleAndEscalation" methodname="NotifyActivity_ResetsIdleAndEscalation" classname="Pono.HideSeek.Tests.EditMode.HintSchedulerTests" runstate="Runnable" seed="404530506" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000156" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1073" name="Pause_FreezesIdleUntilResumed" fullname="Pono.HideSeek.Tests.EditMode.HintSchedulerTests.Pause_FreezesIdleUntilResumed" methodname="Pause_FreezesIdleUntilResumed" classname="Pono.HideSeek.Tests.EditMode.HintSchedulerTests" runstate="Runnable" seed="806509587" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000142" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1070" name="Schedule_EscalatesThenRepeatsLastHint" fullname="Pono.HideSeek.Tests.EditMode.HintSchedulerTests.Schedule_EscalatesThenRepeatsLastHint" methodname="Schedule_EscalatesThenRepeatsLastHint" classname="Pono.HideSeek.Tests.EditMode.HintSchedulerTests" runstate="Runnable" seed="559382486" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000237" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1077" name="RevealMaskModelTests" fullname="Pono.HideSeek.Tests.EditMode.RevealMaskModelTests" classname="Pono.HideSeek.Tests.EditMode.RevealMaskModelTests" runstate="Runnable" testcasecount="10" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.005116" total="10" passed="10" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1079" name="ApplyStamp_OnlyIncreasesCells_AndVersionsOnlyRealChanges" fullname="Pono.HideSeek.Tests.EditMode.RevealMaskModelTests.ApplyStamp_OnlyIncreasesCells_AndVersionsOnlyRealChanges" methodname="ApplyStamp_OnlyIncreasesCells_AndVersionsOnlyRealChanges" classname="Pono.HideSeek.Tests.EditMode.RevealMaskModelTests" runstate="Runnable" seed="1568552571" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000328" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1080" name="ApplyStroke_FastHorizontalMove_HasNoCellGaps" fullname="Pono.HideSeek.Tests.EditMode.RevealMaskModelTests.ApplyStroke_FastHorizontalMove_HasNoCellGaps" methodname="ApplyStroke_FastHorizontalMove_HasNoCellGaps" classname="Pono.HideSeek.Tests.EditMode.RevealMaskModelTests" runstate="Runnable" seed="1030179715" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000795" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1081" name="ApplyStroke_UsesRadiusAwareSamplingWithoutGaps" fullname="Pono.HideSeek.Tests.EditMode.RevealMaskModelTests.ApplyStroke_UsesRadiusAwareSamplingWithoutGaps" methodname="ApplyStroke_UsesRadiusAwareSamplingWithoutGaps" classname="Pono.HideSeek.Tests.EditMode.RevealMaskModelTests" runstate="Runnable" seed="755135354" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.001007" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1085" name="CopyValuesTo_CopiesStateWithoutExposingBackingArray" fullname="Pono.HideSeek.Tests.EditMode.RevealMaskModelTests.CopyValuesTo_CopiesStateWithoutExposingBackingArray" methodname="CopyValuesTo_CopiesStateWithoutExposingBackingArray" classname="Pono.HideSeek.Tests.EditMode.RevealMaskModelTests" runstate="Runnable" seed="397554442" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000213" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1078" name="Dimensions_AreFixedAt256By144" fullname="Pono.HideSeek.Tests.EditMode.RevealMaskModelTests.Dimensions_AreFixedAt256By144" methodname="Dimensions_AreFixedAt256By144" classname="Pono.HideSeek.Tests.EditMode.RevealMaskModelTests" runstate="Runnable" seed="1034836567" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000148" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1084" name="DirtyBounds_AccumulateUntilMarkClean" fullname="Pono.HideSeek.Tests.EditMode.RevealMaskModelTests.DirtyBounds_AccumulateUntilMarkClean" methodname="DirtyBounds_AccumulateUntilMarkClean" classname="Pono.HideSeek.Tests.EditMode.RevealMaskModelTests" runstate="Runnable" seed="53226244" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000489" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1087" name="InvalidThresholdBrushAndCoordinates_AreRejected" fullname="Pono.HideSeek.Tests.EditMode.RevealMaskModelTests.InvalidThresholdBrushAndCoordinates_AreRejected" methodname="InvalidThresholdBrushAndCoordinates_AreRejected" classname="Pono.HideSeek.Tests.EditMode.RevealMaskModelTests" runstate="Runnable" seed="32890508" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000233" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1086" name="NormalizedPoint_ClampsFiniteCoordinates_AndRejectsNonFinite" fullname="Pono.HideSeek.Tests.EditMode.RevealMaskModelTests.NormalizedPoint_ClampsFiniteCoordinates_AndRejectsNonFinite" methodname="NormalizedPoint_ClampsFiniteCoordinates_AndRejectsNonFinite" classname="Pono.HideSeek.Tests.EditMode.RevealMaskModelTests" runstate="Runnable" seed="672594962" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000141" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1082" name="StampAtCorner_IsClippedToMask" fullname="Pono.HideSeek.Tests.EditMode.RevealMaskModelTests.StampAtCorner_IsClippedToMask" methodname="StampAtCorner_IsClippedToMask" classname="Pono.HideSeek.Tests.EditMode.RevealMaskModelTests" runstate="Runnable" seed="1845769819" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000140" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1083" name="ThresholdEvent_FiresOnlyWhenCellsCrossForFirstTime" fullname="Pono.HideSeek.Tests.EditMode.RevealMaskModelTests.ThresholdEvent_FiresOnlyWhenCellsCrossForFirstTime" methodname="ThresholdEvent_FiresOnlyWhenCellsCrossForFirstTime" classname="Pono.HideSeek.Tests.EditMode.RevealMaskModelTests" runstate="Runnable" seed="405739160" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000398" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+    <test-suite type="Assembly" id="1114" name="Pono.HideSeek.Tests.EditModeRendering.dll" fullname="/Users/ndw_mac/AppDevelopment/pono-asobiba-app/unity/PonoNativeGames/Library/ScriptAssemblies/Pono.HideSeek.Tests.EditModeRendering.dll" runstate="Runnable" testcasecount="16" result="Failed" site="Child" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.082353" total="16" passed="14" failed="1" inconclusive="0" skipped="1" asserts="0">
+      <properties>
+        <property name="_PID" value="60030" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestSuite" id="1115" name="Pono" fullname="Pono" runstate="Runnable" testcasecount="16" result="Failed" site="Child" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.081811" total="16" passed="14" failed="1" inconclusive="0" skipped="1" asserts="0">
+        <properties />
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-suite type="TestSuite" id="1116" name="HideSeek" fullname="Pono.HideSeek" runstate="Runnable" testcasecount="16" result="Failed" site="Child" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.081207" total="16" passed="14" failed="1" inconclusive="0" skipped="1" asserts="0">
+          <properties />
+          <failure>
+            <message><![CDATA[One or more child tests had errors]]></message>
+          </failure>
+          <test-suite type="TestSuite" id="1117" name="Tests" fullname="Pono.HideSeek.Tests" runstate="Runnable" testcasecount="16" result="Failed" site="Child" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.080955" total="16" passed="14" failed="1" inconclusive="0" skipped="1" asserts="0">
+            <properties />
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-suite type="TestSuite" id="1118" name="EditModeRendering" fullname="Pono.HideSeek.Tests.EditModeRendering" runstate="Runnable" testcasecount="16" result="Failed" site="Child" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.080147" total="16" passed="14" failed="1" inconclusive="0" skipped="1" asserts="0">
+              <properties />
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-suite type="TestFixture" id="1093" name="ComputeFluidInkBackendTests" fullname="Pono.HideSeek.Tests.EditModeRendering.ComputeFluidInkBackendTests" classname="Pono.HideSeek.Tests.EditModeRendering.ComputeFluidInkBackendTests" runstate="Runnable" testcasecount="1" result="Skipped" label="Ignored" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.003207" total="1" passed="0" failed="0" inconclusive="0" skipped="1" asserts="0">
+                <properties />
+                <reason>
+                  <message><![CDATA[One or more child tests were ignored]]></message>
+                </reason>
+                <test-case id="1094" name="Inject_WhenComputeIsSupported_ProducesVisiblePigment" fullname="Pono.HideSeek.Tests.EditModeRendering.ComputeFluidInkBackendTests.Inject_WhenComputeIsSupported_ProducesVisiblePigment" methodname="Inject_WhenComputeIsSupported_ProducesVisiblePigment" classname="Pono.HideSeek.Tests.EditModeRendering.ComputeFluidInkBackendTests" runstate="Runnable" seed="2119719562" result="Skipped" label="Ignored" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.002717" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <reason>
+                    <message><![CDATA[Compute FluidInk is not supported by this graphics device.]]></message>
+                  </reason>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1095" name="CpuInkVisualBackendTests" fullname="Pono.HideSeek.Tests.EditModeRendering.CpuInkVisualBackendTests" classname="Pono.HideSeek.Tests.EditModeRendering.CpuInkVisualBackendTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.016879" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1099" name="ColorAlpha_ControlsVisualPigmentStrength" fullname="Pono.HideSeek.Tests.EditModeRendering.CpuInkVisualBackendTests.ColorAlpha_ControlsVisualPigmentStrength" methodname="ColorAlpha_ControlsVisualPigmentStrength" classname="Pono.HideSeek.Tests.EditModeRendering.CpuInkVisualBackendTests" runstate="Runnable" seed="83913113" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.003089" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1096" name="Constructor_InitializesReadableFallbackTexture" fullname="Pono.HideSeek.Tests.EditModeRendering.CpuInkVisualBackendTests.Constructor_InitializesReadableFallbackTexture" methodname="Constructor_InitializesReadableFallbackTexture" classname="Pono.HideSeek.Tests.EditModeRendering.CpuInkVisualBackendTests" runstate="Runnable" seed="139868952" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.001747" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1101" name="Dispose_ReleasesOwnedTextureAndIsIdempotent" fullname="Pono.HideSeek.Tests.EditModeRendering.CpuInkVisualBackendTests.Dispose_ReleasesOwnedTextureAndIsIdempotent" methodname="Dispose_ReleasesOwnedTextureAndIsIdempotent" classname="Pono.HideSeek.Tests.EditModeRendering.CpuInkVisualBackendTests" runstate="Runnable" seed="1344713001" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000391" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1097" name="InjectAndTick_UploadVisiblePigmentIntoTexture" fullname="Pono.HideSeek.Tests.EditModeRendering.CpuInkVisualBackendTests.InjectAndTick_UploadVisiblePigmentIntoTexture" methodname="InjectAndTick_UploadVisiblePigmentIntoTexture" classname="Pono.HideSeek.Tests.EditModeRendering.CpuInkVisualBackendTests" runstate="Runnable" seed="1347816149" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000495" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1100" name="PigmentFade_EventuallyClearsAlphaAndRgbCompletely" fullname="Pono.HideSeek.Tests.EditModeRendering.CpuInkVisualBackendTests.PigmentFade_EventuallyClearsAlphaAndRgbCompletely" methodname="PigmentFade_EventuallyClearsAlphaAndRgbCompletely" classname="Pono.HideSeek.Tests.EditModeRendering.CpuInkVisualBackendTests" runstate="Runnable" seed="238930924" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.008252" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1098" name="Reset_ClearsUploadedAndPendingPigment" fullname="Pono.HideSeek.Tests.EditModeRendering.CpuInkVisualBackendTests.Reset_ClearsUploadedAndPendingPigment" methodname="Reset_ClearsUploadedAndPendingPigment" classname="Pono.HideSeek.Tests.EditModeRendering.CpuInkVisualBackendTests" runstate="Runnable" seed="2005236872" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000339" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1102" name="FluidInkPresenterTests" fullname="Pono.HideSeek.Tests.EditModeRendering.FluidInkPresenterTests" classname="Pono.HideSeek.Tests.EditModeRendering.FluidInkPresenterTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.020802" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1104" name="CpuFallback_InjectResetAndReduceMotionRemainSafe" fullname="Pono.HideSeek.Tests.EditModeRendering.FluidInkPresenterTests.CpuFallback_InjectResetAndReduceMotionRemainSafe" methodname="CpuFallback_InjectResetAndReduceMotionRemainSafe" classname="Pono.HideSeek.Tests.EditModeRendering.FluidInkPresenterTests" runstate="Runnable" seed="918583067" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.018918" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1105" name="Destroy_ReleasesCpuTextureAndRuntimeMaterial" fullname="Pono.HideSeek.Tests.EditModeRendering.FluidInkPresenterTests.Destroy_ReleasesCpuTextureAndRuntimeMaterial" methodname="Destroy_ReleasesCpuTextureAndRuntimeMaterial" classname="Pono.HideSeek.Tests.EditModeRendering.FluidInkPresenterTests" runstate="Runnable" seed="1214702280" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000408" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1103" name="Initialize_WithComputeDisabledPolicy_UsesSafeCpuFallback" fullname="Pono.HideSeek.Tests.EditModeRendering.FluidInkPresenterTests.Initialize_WithComputeDisabledPolicy_UsesSafeCpuFallback" methodname="Initialize_WithComputeDisabledPolicy_UsesSafeCpuFallback" classname="Pono.HideSeek.Tests.EditModeRendering.FluidInkPresenterTests" runstate="Runnable" seed="1547601944" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000526" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1106" name="HideSeekStageCatalogTests" fullname="Pono.HideSeek.Tests.EditModeRendering.HideSeekStageCatalogTests" classname="Pono.HideSeek.Tests.EditModeRendering.HideSeekStageCatalogTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.033536" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1109" name="Catalog_ChildFacingNamesContainKanaAndNoKanji" fullname="Pono.HideSeek.Tests.EditModeRendering.HideSeekStageCatalogTests.Catalog_ChildFacingNamesContainKanaAndNoKanji" methodname="Catalog_ChildFacingNamesContainKanaAndNoKanji" classname="Pono.HideSeek.Tests.EditModeRendering.HideSeekStageCatalogTests" runstate="Runnable" seed="1327012259" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000451" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1108" name="Catalog_CreatureGeometryStaysInsideNormalizedStage" fullname="Pono.HideSeek.Tests.EditModeRendering.HideSeekStageCatalogTests.Catalog_CreatureGeometryStaysInsideNormalizedStage" methodname="Catalog_CreatureGeometryStaysInsideNormalizedStage" classname="Pono.HideSeek.Tests.EditModeRendering.HideSeekStageCatalogTests" runstate="Runnable" seed="612929335" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000741" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1107" name="Catalog_DefinesExactlyThreeUniqueCreatures" fullname="Pono.HideSeek.Tests.EditModeRendering.HideSeekStageCatalogTests.Catalog_DefinesExactlyThreeUniqueCreatures" methodname="Catalog_DefinesExactlyThreeUniqueCreatures" classname="Pono.HideSeek.Tests.EditModeRendering.HideSeekStageCatalogTests" runstate="Runnable" seed="1365581072" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000444" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1110" name="StageDiscoveryFactory_BuildsThreeValidCoreDefinitions" fullname="Pono.HideSeek.Tests.EditModeRendering.HideSeekStageCatalogTests.StageDiscoveryFactory_BuildsThreeValidCoreDefinitions" methodname="StageDiscoveryFactory_BuildsThreeValidCoreDefinitions" classname="Pono.HideSeek.Tests.EditModeRendering.HideSeekStageCatalogTests" runstate="Runnable" seed="2085309577" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.029994" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1111" name="RenderingResourcesTests" fullname="Pono.HideSeek.Tests.EditModeRendering.RenderingResourcesTests" classname="Pono.HideSeek.Tests.EditModeRendering.RenderingResourcesTests" runstate="Runnable" testcasecount="2" result="Failed" site="Child" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.004017" total="2" passed="1" failed="1" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <failure>
+                  <message><![CDATA[One or more child tests had errors]]></message>
+                </failure>
+                <test-case id="1113" name="FluidInkCompute_IsLoadableAndContainsEveryRuntimeKernel" fullname="Pono.HideSeek.Tests.EditModeRendering.RenderingResourcesTests.FluidInkCompute_IsLoadableAndContainsEveryRuntimeKernel" methodname="FluidInkCompute_IsLoadableAndContainsEveryRuntimeKernel" classname="Pono.HideSeek.Tests.EditModeRendering.RenderingResourcesTests" runstate="Runnable" seed="1938621911" result="Failed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.001661" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <failure>
+                    <message><![CDATA[  Missing compute kernel: Clear
+  Expected: True
+  But was:  False
+]]></message>
+                    <stack-trace><![CDATA[at Pono.HideSeek.Tests.EditModeRendering.RenderingResourcesTests.FluidInkCompute_IsLoadableAndContainsEveryRuntimeKernel () [0x00070] in /Users/ndw_mac/AppDevelopment/pono-asobiba-app/unity/PonoNativeGames/Assets/Pono/Games/HideSeekCreatures/Tests/EditModeRendering/RenderingResourcesTests.cs:43
+]]></stack-trace>
+                  </failure>
+                </test-case>
+                <test-case id="1112" name="InkCompositeShader_IsLoadableFromRuntimeResourcesPath" fullname="Pono.HideSeek.Tests.EditModeRendering.RenderingResourcesTests.InkCompositeShader_IsLoadableFromRuntimeResourcesPath" methodname="InkCompositeShader_IsLoadableFromRuntimeResourcesPath" classname="Pono.HideSeek.Tests.EditModeRendering.RenderingResourcesTests" runstate="Runnable" seed="1682312913" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000847" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+    <test-suite type="Assembly" id="1216" name="Pono.KawaGlint.Tests.EditMode.dll" fullname="/Users/ndw_mac/AppDevelopment/pono-asobiba-app/unity/PonoNativeGames/Library/ScriptAssemblies/Pono.KawaGlint.Tests.EditMode.dll" runstate="Runnable" testcasecount="92" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.638546" total="92" passed="92" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="60030" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1217" name="Pono" fullname="Pono" runstate="Runnable" testcasecount="92" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.637610" total="92" passed="92" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1218" name="KawaGlint" fullname="Pono.KawaGlint" runstate="Runnable" testcasecount="92" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.636836" total="92" passed="92" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1219" name="Tests" fullname="Pono.KawaGlint.Tests" runstate="Runnable" testcasecount="92" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.635984" total="92" passed="92" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestSuite" id="1220" name="EditMode" fullname="Pono.KawaGlint.Tests.EditMode" runstate="Runnable" testcasecount="92" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.635396" total="92" passed="92" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-suite type="TestFixture" id="1119" name="KawaGlintPreBitePlanEditModeTests" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" testcasecount="26" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.592667" total="26" passed="26" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1133" name="ApproachAndOffset_BeforeArrival_ProgressIsMonotonicNonDecreasingAndOffsetIsZero" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.ApproachAndOffset_BeforeArrival_ProgressIsMonotonicNonDecreasingAndOffsetIsZero" methodname="ApproachAndOffset_BeforeArrival_ProgressIsMonotonicNonDecreasingAndOffsetIsZero" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="2146784576" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.366040" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1130" name="ApproachDisplayProgress_AcrossManySeeds_StaysWithinZeroToOne" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.ApproachDisplayProgress_AcrossManySeeds_StaysWithinZeroToOne" methodname="ApproachDisplayProgress_AcrossManySeeds_StaysWithinZeroToOne" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="1787036486" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.007483" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1131" name="ApproachDisplayProgress_AtWaitTotal_IsExactlyOne" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.ApproachDisplayProgress_AtWaitTotal_IsExactlyOne" methodname="ApproachDisplayProgress_AtWaitTotal_IsExactlyOne" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="215704420" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000308" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1132" name="ApproachDisplayProgress_ReachesExactlyOneAtArrivalSec" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.ApproachDisplayProgress_ReachesExactlyOneAtArrivalSec" methodname="ApproachDisplayProgress_ReachesExactlyOneAtArrivalSec" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="980665446" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000192" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1135" name="ComposedProgress_AfterArrival_StaysNearOneNoLongDistanceRedo" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.ComposedProgress_AfterArrival_StaysNearOneNoLongDistanceRedo" methodname="ComposedProgress_AfterArrival_StaysNearOneNoLongDistanceRedo" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="1974548352" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.174906" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1121" name="Create_AcrossManySeeds_DeepCountWithinZeroToTwo_AndFitsUsableWindow" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.Create_AcrossManySeeds_DeepCountWithinZeroToTwo_AndFitsUsableWindow" methodname="Create_AcrossManySeeds_DeepCountWithinZeroToTwo_AndFitsUsableWindow" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="1320523246" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.003891" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1124" name="Create_AcrossManySeeds_DeepDurationIsExactlyDeepWindowSec" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.Create_AcrossManySeeds_DeepDurationIsExactlyDeepWindowSec" methodname="Create_AcrossManySeeds_DeepDurationIsExactlyDeepWindowSec" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="200297200" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000737" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1122" name="Create_AcrossManySeeds_EventsDoNotOverlapAndHaveKindAppropriateMinimumGap" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.Create_AcrossManySeeds_EventsDoNotOverlapAndHaveKindAppropriateMinimumGap" methodname="Create_AcrossManySeeds_EventsDoNotOverlapAndHaveKindAppropriateMinimumGap" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="1150424265" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.001867" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1120" name="Create_AcrossManySeeds_ShallowCountIsWithinBounds" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.Create_AcrossManySeeds_ShallowCountIsWithinBounds" methodname="Create_AcrossManySeeds_ShallowCountIsWithinBounds" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="1944172600" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000910" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1123" name="Create_AcrossManySeeds_ShallowDurationsAreWithinRange" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.Create_AcrossManySeeds_ShallowDurationsAreWithinRange" methodname="Create_AcrossManySeeds_ShallowDurationsAreWithinRange" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="650559764" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.001667" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1125" name="Create_AcrossManySeeds_ShallowIntensityIsWithinRange_DeepIntensityIsOne" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.Create_AcrossManySeeds_ShallowIntensityIsWithinRange_DeepIntensityIsOne" methodname="Create_AcrossManySeeds_ShallowIntensityIsWithinRange_DeepIntensityIsOne" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="918239017" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.001872" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1134" name="Create_AcrossManySeedsAndWaits_EventStartsNeverBeforeArrival" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.Create_AcrossManySeedsAndWaits_EventStartsNeverBeforeArrival" methodname="Create_AcrossManySeedsAndWaits_EventStartsNeverBeforeArrival" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="574838981" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.002726" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1126" name="Create_SameSeed_IsFullyReproducible" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.Create_SameSeed_IsFullyReproducible" methodname="Create_SameSeed_IsFullyReproducible" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="1080785559" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.006242" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1128" name="Create_ShallowAlwaysPrecedesDeep" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.Create_ShallowAlwaysPrecedesDeep" methodname="Create_ShallowAlwaysPrecedesDeep" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="1331701956" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000884" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1129" name="Create_ShortAfterMissWait_DegradesDeepFirstThenShallow_NeverThrows" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.Create_ShortAfterMissWait_DegradesDeepFirstThenShallow_NeverThrows" methodname="Create_ShortAfterMissWait_DegradesDeepFirstThenShallow_NeverThrows" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="50645930" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000858" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1127" name="Create_VeryShortWait_FallsBackToZeroEvents" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.Create_VeryShortWait_FallsBackToZeroEvents" methodname="Create_VeryShortWait_FallsBackToZeroEvents" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="944013825" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000053" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1143" name="CurrentEventIndex_InsideAnEvent_ReturnsThatIndex" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.CurrentEventIndex_InsideAnEvent_ReturnsThatIndex" methodname="CurrentEventIndex_InsideAnEvent_ReturnsThatIndex" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="1144234724" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.001543" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1142" name="CurrentEventIndex_OutsideAnyEvent_ReturnsNegativeOne" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.CurrentEventIndex_OutsideAnyEvent_ReturnsNegativeOne" methodname="CurrentEventIndex_OutsideAnyEvent_ReturnsNegativeOne" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="1599469449" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000043" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1145" name="DeepWindowRemaining01_IsOneAtStart_ZeroAtEnd_MonotonicWithin" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.DeepWindowRemaining01_IsOneAtStart_ZeroAtEnd_MonotonicWithin" methodname="DeepWindowRemaining01_IsOneAtStart_ZeroAtEnd_MonotonicWithin" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="1350407203" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.004793" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1144" name="IsDeepWindowOpen_TrueDuringWindowAndGrace_FalseOutside" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.IsDeepWindowOpen_TrueDuringWindowAndGrace_FalseOutside" methodname="IsDeepWindowOpen_TrueDuringWindowAndGrace_FalseOutside" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="996012047" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.001129" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1139" name="MotionOffset_AcrossShallowBurstEndBoundary_HasNoVisibleJump" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.MotionOffset_AcrossShallowBurstEndBoundary_HasNoVisibleJump" methodname="MotionOffset_AcrossShallowBurstEndBoundary_HasNoVisibleJump" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="715787542" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.003835" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1141" name="MotionOffset_AtWaitTotal_IsExactlyZero" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.MotionOffset_AtWaitTotal_IsExactlyZero" methodname="MotionOffset_AtWaitTotal_IsExactlyZero" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="623461228" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.001040" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1140" name="MotionOffset_ContinuousAcrossDeepBoundaries" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.MotionOffset_ContinuousAcrossDeepBoundaries" methodname="MotionOffset_ContinuousAcrossDeepBoundaries" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="795867825" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.001111" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1137" name="MotionOffset_DuringDeepPull_IsPositiveAndReachesFullAmplitudeAtHold" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.MotionOffset_DuringDeepPull_IsPositiveAndReachesFullAmplitudeAtHold" methodname="MotionOffset_DuringDeepPull_IsPositiveAndReachesFullAmplitudeAtHold" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="1274902363" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000606" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1136" name="MotionOffset_DuringShallowBurst_IsPositive" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.MotionOffset_DuringShallowBurst_IsPositive" methodname="MotionOffset_DuringShallowBurst_IsPositive" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="1183240977" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.001411" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1138" name="MotionOffset_JustAfterShallowBurst_IsNegative" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests.MotionOffset_JustAfterShallowBurst_IsNegative" methodname="MotionOffset_JustAfterShallowBurst_IsNegative" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintPreBitePlanEditModeTests" runstate="Runnable" seed="631630839" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.001495" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1146" name="KawaGlintSplashMathEditModeTests" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintSplashMathEditModeTests" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintSplashMathEditModeTests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.002152" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1150" name="DropletAlpha01_AtBirth_IsNotFullyOpaque" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintSplashMathEditModeTests.DropletAlpha01_AtBirth_IsNotFullyOpaque" methodname="DropletAlpha01_AtBirth_IsNotFullyOpaque" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintSplashMathEditModeTests" runstate="Runnable" seed="55731995" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000133" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1149" name="DropletAlpha01_AtLifeEnd_IsFullyTransparent" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintSplashMathEditModeTests.DropletAlpha01_AtLifeEnd_IsFullyTransparent" methodname="DropletAlpha01_AtLifeEnd_IsFullyTransparent" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintSplashMathEditModeTests" runstate="Runnable" seed="2080000036" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000044" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1148" name="DropletPosition_AtLifeEnd_HasFallenBelowItsPeak" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintSplashMathEditModeTests.DropletPosition_AtLifeEnd_HasFallenBelowItsPeak" methodname="DropletPosition_AtLifeEnd_HasFallenBelowItsPeak" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintSplashMathEditModeTests" runstate="Runnable" seed="130312579" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000219" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1147" name="DropletPosition_AtZeroElapsed_IsOriginRelativeZero" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintSplashMathEditModeTests.DropletPosition_AtZeroElapsed_IsOriginRelativeZero" methodname="DropletPosition_AtZeroElapsed_IsOriginRelativeZero" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintSplashMathEditModeTests" runstate="Runnable" seed="793250325" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000208" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1151" name="DropletScale01_ShrinksFromFullToPartial" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintSplashMathEditModeTests.DropletScale01_ShrinksFromFullToPartial" methodname="DropletScale01_ShrinksFromFullToPartial" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintSplashMathEditModeTests" runstate="Runnable" seed="1604088167" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000072" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1153" name="RingAlpha_FadesToZero" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintSplashMathEditModeTests.RingAlpha_FadesToZero" methodname="RingAlpha_FadesToZero" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintSplashMathEditModeTests" runstate="Runnable" seed="245173100" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000064" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1152" name="RingScale_ExpandsFromQuarterToOneAndAHalf" fullname="Pono.KawaGlint.Tests.EditMode.KawaGlintSplashMathEditModeTests.RingScale_ExpandsFromQuarterToOneAndAHalf" methodname="RingScale_ExpandsFromQuarterToOneAndAHalf" classname="Pono.KawaGlint.Tests.EditMode.KawaGlintSplashMathEditModeTests" runstate="Runnable" seed="174133751" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000082" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1154" name="TsuriCoreEditModeTests" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" testcasecount="27" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.008999" total="27" passed="27" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1158" name="Cast_DuringWait_IsNoOp" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.Cast_DuringWait_IsNoOp" methodname="Cast_DuringWait_IsNoOp" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="1875768793" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.002948" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1157" name="Cast_FromIdle_TransitionsToWaitWithinRange" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.Cast_FromIdle_TransitionsToWaitWithinRange" methodname="Cast_FromIdle_TransitionsToWaitWithinRange" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="1215230964" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000114" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1159" name="Cast_SwapsMinMaxWhenMaxLessThanMin" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.Cast_SwapsMinMaxWhenMaxLessThanMin" methodname="Cast_SwapsMinMaxWhenMaxLessThanMin" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="1010464502" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000055" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1175" name="ComputeSpeciesProbabilities_FullPool_MatchesAnalyticRarityAndWeightShares" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.ComputeSpeciesProbabilities_FullPool_MatchesAnalyticRarityAndWeightShares" methodname="ComputeSpeciesProbabilities_FullPool_MatchesAnalyticRarityAndWeightShares" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="2272849" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000294" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1176" name="ComputeSpeciesProbabilities_SeenSpecies_WeightDecaysBySessionDedupeMul" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.ComputeSpeciesProbabilities_SeenSpecies_WeightDecaysBySessionDedupeMul" methodname="ComputeSpeciesProbabilities_SeenSpecies_WeightDecaysBySessionDedupeMul" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="1020979078" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000092" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1156" name="CreateSession_InitialShape_IsIdleAndEmpty" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.CreateSession_InitialShape_IsIdleAndEmpty" methodname="CreateSession_InitialShape_IsIdleAndEmpty" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="1108389919" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000350" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1181" name="IsTugEnabled_Neutral_IsFalse" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.IsTugEnabled_Neutral_IsFalse" methodname="IsTugEnabled_Neutral_IsFalse" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="2116757893" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000066" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1179" name="NextWaitSecRange_NoMisses_UsesBaseRange" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.NextWaitSecRange_NoMisses_UsesBaseRange" methodname="NextWaitSecRange_NoMisses_UsesBaseRange" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="1904014390" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000101" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1180" name="NextWaitSecRange_WithMisses_UsesShortenedRange" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.NextWaitSecRange_WithMisses_UsesShortenedRange" methodname="NextWaitSecRange_WithMisses_UsesShortenedRange" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="443803241" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000050" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1178" name="PickSpecies_EmptyPool_ReturnsNull" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.PickSpecies_EmptyPool_ReturnsNull" methodname="PickSpecies_EmptyPool_ReturnsNull" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="1285401303" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000063" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1177" name="PickSpecies_SameSeed_IsDeterministic" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.PickSpecies_SameSeed_IsDeterministic" methodname="PickSpecies_SameSeed_IsDeterministic" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="1154591232" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000138" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1174" name="TapHook_And_AutoHook_ResetRendaElapsedSec" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.TapHook_And_AutoHook_ResetRendaElapsedSec" methodname="TapHook_And_AutoHook_ResetRendaElapsedSec" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="1682479749" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000353" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1165" name="TapHook_OnlyTransitionsFromBite" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.TapHook_OnlyTransitionsFromBite" methodname="TapHook_OnlyTransitionsFromBite" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="375015524" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000119" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1166" name="TapRenda_Ayu_TwelveTaps_LandsWithGauge100AndMisses0" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.TapRenda_Ayu_TwelveTaps_LandsWithGauge100AndMisses0" methodname="TapRenda_Ayu_TwelveTaps_LandsWithGauge100AndMisses0" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="211982057" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000878" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1167" name="TapRenda_GainAppliesRendaGainMul" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.TapRenda_GainAppliesRendaGainMul" methodname="TapRenda_GainAppliesRendaGainMul" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="1175276983" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000107" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1168" name="TapRenda_OnlyValidDuringRenda" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.TapRenda_OnlyValidDuringRenda" methodname="TapRenda_OnlyValidDuringRenda" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="356524829" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000070" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1172" name="TapRenda_ResetsFloorHeldSec" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.TapRenda_ResetsFloorHeldSec" methodname="TapRenda_ResetsFloorHeldSec" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="1178959103" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000048" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1164" name="Tick_Bite_Timeout_TransitionsEscaped_WithMissesAndPity" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.Tick_Bite_Timeout_TransitionsEscaped_WithMissesAndPity" methodname="Tick_Bite_Timeout_TransitionsEscaped_WithMissesAndPity" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="1582510077" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000539" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1171" name="Tick_Renda_Expert_NeverAutoLandsFromFloorHelp" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.Tick_Renda_Expert_NeverAutoLandsFromFloorHelp" methodname="Tick_Renda_Expert_NeverAutoLandsFromFloorHelp" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="267994548" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000090" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1169" name="Tick_Renda_GaugeNeverDropsBelowFloor_AndAccumulatesFloorHeldSec" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.Tick_Renda_GaugeNeverDropsBelowFloor_AndAccumulatesFloorHeldSec" methodname="Tick_Renda_GaugeNeverDropsBelowFloor_AndAccumulatesFloorHeldSec" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="1500976489" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000053" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1170" name="Tick_Renda_Relaxed_HelpAfterFloor10Sec_LandsAutomatically" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.Tick_Renda_Relaxed_HelpAfterFloor10Sec_LandsAutomatically" methodname="Tick_Renda_Relaxed_HelpAfterFloor10Sec_LandsAutomatically" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="1744255655" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000127" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1173" name="Tick_Renda_Relaxed_TimeBasedHelp_RescuesSlowTapper" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.Tick_Renda_Relaxed_TimeBasedHelp_RescuesSlowTapper" methodname="Tick_Renda_Relaxed_TimeBasedHelp_RescuesSlowTapper" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="1196966611" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000259" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1160" name="Tick_Wait_Completes_TransitionsToBite_WithNeutralWindow" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.Tick_Wait_Completes_TransitionsToBite_WithNeutralWindow" methodname="Tick_Wait_Completes_TransitionsToBite_WithNeutralWindow" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="1156605342" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000090" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1162" name="Tick_Wait_Completes_WithExactlyTwoMisses_WindowIsDoubled" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.Tick_Wait_Completes_WithExactlyTwoMisses_WindowIsDoubled" methodname="Tick_Wait_Completes_WithExactlyTwoMisses_WindowIsDoubled" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="930183385" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000053" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1161" name="Tick_Wait_Completes_WithPity20Pct_WindowIs2Point4" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.Tick_Wait_Completes_WithPity20Pct_WindowIs2Point4" methodname="Tick_Wait_Completes_WithPity20Pct_WindowIs2Point4" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="34516084" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000058" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1163" name="Tick_Wait_Completes_WithThreeMisses_AutoHooksToRendaWithoutWindowDouble" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.Tick_Wait_Completes_WithThreeMisses_AutoHooksToRendaWithoutWindowDouble" methodname="Tick_Wait_Completes_WithThreeMisses_AutoHooksToRendaWithoutWindowDouble" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="1254173341" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000066" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1155" name="TuningConstants_MatchSpec" fullname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests.TuningConstants_MatchSpec" methodname="TuningConstants_MatchSpec" classname="Pono.KawaGlint.Tests.EditMode.TsuriCoreEditModeTests" runstate="Runnable" seed="758661839" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000243" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1182" name="TsuriDexEditModeTests" fullname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests" classname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests" runstate="Runnable" testcasecount="16" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.024898" total="16" passed="16" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1190" name="ApplyCatch_Maguro_EdibleTrueWithNullInventoryKey_StillIncrementsCount" fullname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests.ApplyCatch_Maguro_EdibleTrueWithNullInventoryKey_StillIncrementsCount" methodname="ApplyCatch_Maguro_EdibleTrueWithNullInventoryKey_StillIncrementsCount" classname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests" runstate="Runnable" seed="119722506" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.001080" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1187" name="ApplyCatch_SameOpIdTwice_IsIdempotent" fullname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests.ApplyCatch_SameOpIdTwice_IsIdempotent" methodname="ApplyCatch_SameOpIdTwice_IsIdempotent" classname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests" runstate="Runnable" seed="2102264529" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000185" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1191" name="ApplyCatch_UnknownOpIdOrSpeciesId_ReturnsFalse" fullname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests.ApplyCatch_UnknownOpIdOrSpeciesId_ReturnsFalse" methodname="ApplyCatch_UnknownOpIdOrSpeciesId_ReturnsFalse" classname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests" runstate="Runnable" seed="687971176" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000108" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1188" name="ApplyEscape_DoesNotIncrementSourceOrLocationCounts" fullname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests.ApplyEscape_DoesNotIncrementSourceOrLocationCounts" methodname="ApplyEscape_DoesNotIncrementSourceOrLocationCounts" classname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests" runstate="Runnable" seed="967338115" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000176" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1189" name="ApplyEscape_SameOpIdTwice_IsIdempotent" fullname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests.ApplyEscape_SameOpIdTwice_IsIdempotent" methodname="ApplyEscape_SameOpIdTwice_IsIdempotent" classname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests" runstate="Runnable" seed="916438033" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000079" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1197" name="Document_Merge_UnionsSpeciesAndAppliedOps" fullname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests.Document_Merge_UnionsSpeciesAndAppliedOps" methodname="Document_Merge_UnionsSpeciesAndAppliedOps" classname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests" runstate="Runnable" seed="1498514560" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000802" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1194" name="Load_BothFilesCorrupted_ReturnsEmptyNormalizedDocument" fullname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests.Load_BothFilesCorrupted_ReturnsEmptyNormalizedDocument" methodname="Load_BothFilesCorrupted_ReturnsEmptyNormalizedDocument" classname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests" runstate="Runnable" seed="2032597413" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.005609" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1193" name="Load_MainFileCorrupted_BackupValid_RecoversFromBackup" fullname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests.Load_MainFileCorrupted_BackupValid_RecoversFromBackup" methodname="Load_MainFileCorrupted_BackupValid_RecoversFromBackup" classname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests" runstate="Runnable" seed="348552219" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.012515" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1195" name="Load_NoFilesExist_ReturnsEmptyNormalizedDocument" fullname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests.Load_NoFilesExist_ReturnsEmptyNormalizedDocument" methodname="Load_NoFilesExist_ReturnsEmptyNormalizedDocument" classname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests" runstate="Runnable" seed="1750674598" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000144" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1185" name="Merge_FirstAt_BothNonPositiveAndUnequal_IsStillCommutative" fullname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests.Merge_FirstAt_BothNonPositiveAndUnequal_IsStillCommutative" methodname="Merge_FirstAt_BothNonPositiveAndUnequal_IsStillCommutative" classname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests" runstate="Runnable" seed="572869446" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000080" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1184" name="Merge_FirstAt_BothPositive_TakesMinRegardlessOfOrder" fullname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests.Merge_FirstAt_BothPositive_TakesMinRegardlessOfOrder" methodname="Merge_FirstAt_BothPositive_TakesMinRegardlessOfOrder" classname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests" runstate="Runnable" seed="651594920" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000077" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1183" name="Merge_IsCommutative_WithMixedNullAndZeroValues" fullname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests.Merge_IsCommutative_WithMixedNullAndZeroValues" methodname="Merge_IsCommutative_WithMixedNullAndZeroValues" classname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests" runstate="Runnable" seed="1569758190" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000970" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1186" name="Merge_NullArguments_TreatedAsEmptyRecord" fullname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests.Merge_NullArguments_TreatedAsEmptyRecord" methodname="Merge_NullArguments_TreatedAsEmptyRecord" classname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests" runstate="Runnable" seed="1851588647" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000089" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1198" name="Normalize_RemovesNullOrEmptyKeysAndClampsNegativeValues" fullname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests.Normalize_RemovesNullOrEmptyKeysAndClampsNegativeValues" methodname="Normalize_RemovesNullOrEmptyKeysAndClampsNegativeValues" classname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests" runstate="Runnable" seed="675055974" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000225" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1192" name="SaveThenLoad_RoundTrips_ToEquivalentDocument" fullname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests.SaveThenLoad_RoundTrips_ToEquivalentDocument" methodname="SaveThenLoad_RoundTrips_ToEquivalentDocument" classname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests" runstate="Runnable" seed="73739503" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.001305" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1196" name="TotalCountForSource_SumsAcrossAllSpecies" fullname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests.TotalCountForSource_SumsAcrossAllSpecies" methodname="TotalCountForSource_SumsAcrossAllSpecies" classname="Pono.KawaGlint.Tests.EditMode.TsuriDexEditModeTests" runstate="Runnable" seed="1657362344" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000266" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1199" name="TsuriWorldDataEditModeTests" fullname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests" classname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests" runstate="Runnable" testcasecount="16" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.005121" total="16" passed="16" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1206" name="AllNonAsaseLocations_WaitSecMax_IsAtMostEight" fullname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests.AllNonAsaseLocations_WaitSecMax_IsAtMostEight" methodname="AllNonAsaseLocations_WaitSecMax_IsAtMostEight" classname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests" runstate="Runnable" seed="1425936829" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.001007" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1210" name="BonusSpecies_AppearsInEffectivePool_WithExpectedHomeAndNonHomeMul" fullname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests.BonusSpecies_AppearsInEffectivePool_WithExpectedHomeAndNonHomeMul" methodname="BonusSpecies_AppearsInEffectivePool_WithExpectedHomeAndNonHomeMul" classname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests" runstate="Runnable" seed="749566881" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000707" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1200" name="BuildEffectivePool_Asase_MatchesRiverSpeciesIdsInOrder" fullname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests.BuildEffectivePool_Asase_MatchesRiverSpeciesIdsInOrder" methodname="BuildEffectivePool_Asase_MatchesRiverSpeciesIdsInOrder" classname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests" runstate="Runnable" seed="2085036388" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000093" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1208" name="BuildEffectivePool_UnknownSpeciesId_IsSkipped" fullname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests.BuildEffectivePool_UnknownSpeciesId_IsSkipped" methodname="BuildEffectivePool_UnknownSpeciesId_IsSkipped" classname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests" runstate="Runnable" seed="1112949216" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000126" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1201" name="BuildWeightMulMap_Asase_IsNull" fullname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests.BuildWeightMulMap_Asase_IsNull" methodname="BuildWeightMulMap_Asase_IsNull" classname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests" runstate="Runnable" seed="1878579932" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000042" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1202" name="ComputeSpeciesProbabilities_Asase_WithNullMap_MatchesTwoArgVersionExactly" fullname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests.ComputeSpeciesProbabilities_Asase_WithNullMap_MatchesTwoArgVersionExactly" methodname="ComputeSpeciesProbabilities_Asase_WithNullMap_MatchesTwoArgVersionExactly" classname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests" runstate="Runnable" seed="584188837" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000279" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1214" name="DefaultLocation_ReturnsAsaseAndSunahama" fullname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests.DefaultLocation_ReturnsAsaseAndSunahama" methodname="DefaultLocation_ReturnsAsaseAndSunahama" classname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests" runstate="Runnable" seed="1691941028" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000076" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1207" name="EachLocation_HasAtMostOneBoostedSpawnEntry_AndMatchesExpectedHomeSpecies" fullname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests.EachLocation_HasAtMostOneBoostedSpawnEntry_AndMatchesExpectedHomeSpecies" methodname="EachLocation_HasAtMostOneBoostedSpawnEntry_AndMatchesExpectedHomeSpecies" classname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests" runstate="Runnable" seed="172278589" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000267" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1213" name="GetLocationById_UnknownOrNull_FallsBackToAsase" fullname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests.GetLocationById_UnknownOrNull_FallsBackToAsase" methodname="GetLocationById_UnknownOrNull_FallsBackToAsase" classname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests" runstate="Runnable" seed="1682392184" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000049" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1211" name="IsUnlocked_NullUnlockCount_AlwaysTrue" fullname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests.IsUnlocked_NullUnlockCount_AlwaysTrue" methodname="IsUnlocked_NullUnlockCount_AlwaysTrue" classname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests" runstate="Runnable" seed="830924883" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000118" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1212" name="IsUnlocked_SyntheticThreshold_GatesOnZoneCatchCount" fullname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests.IsUnlocked_SyntheticThreshold_GatesOnZoneCatchCount" methodname="IsUnlocked_SyntheticThreshold_GatesOnZoneCatchCount" classname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests" runstate="Runnable" seed="1751745229" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000075" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1209" name="Kakou_ProbabilityOfSalmon_IncreasesWithWeightMulMap" fullname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests.Kakou_ProbabilityOfSalmon_IncreasesWithWeightMulMap" methodname="Kakou_ProbabilityOfSalmon_IncreasesWithWeightMulMap" classname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests" runstate="Runnable" seed="1094905060" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000444" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1203" name="NextWaitSecRange_Asase_MatchesTsuriKawaTuning" fullname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests.NextWaitSecRange_Asase_MatchesTsuriKawaTuning" methodname="NextWaitSecRange_Asase_MatchesTsuriKawaTuning" classname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests" runstate="Runnable" seed="1997714851" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000124" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1215" name="NicheFor_UsesSpawnEntryNiche_OrFallsBackToRepresentativeNiche" fullname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests.NicheFor_UsesSpawnEntryNiche_OrFallsBackToRepresentativeNiche" methodname="NicheFor_UsesSpawnEntryNiche_OrFallsBackToRepresentativeNiche" classname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests" runstate="Runnable" seed="881721586" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000147" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1204" name="RecipeFish_Ayu_AndSalmon_PresentInAsaseAndKakou_WithWeightMulOneInAsase" fullname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests.RecipeFish_Ayu_AndSalmon_PresentInAsaseAndKakou_WithWeightMulOneInAsase" methodname="RecipeFish_Ayu_AndSalmon_PresentInAsaseAndKakou_WithWeightMulOneInAsase" classname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests" runstate="Runnable" seed="2085467137" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000158" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1205" name="RecipeFish_Ebi_AndAji_PresentInSunahamaAndSecondSeaLocation_WithWeightMulOneInSunahama" fullname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests.RecipeFish_Ebi_AndAji_PresentInSunahamaAndSecondSeaLocation_WithWeightMulOneInSunahama" methodname="RecipeFish_Ebi_AndAji_PresentInSunahamaAndSecondSeaLocation_WithWeightMulOneInSunahama" classname="Pono.KawaGlint.Tests.EditMode.TsuriWorldDataEditModeTests" runstate="Runnable" seed="1326997953" result="Passed" start-time="2026-07-24 14:40:35Z" end-time="2026-07-24 14:40:35Z" duration="0.000061" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[Saving results to: /Users/ndw_mac/Library/Application Support/Kodama no Mori/ポノのあそびば/TestResults.xml
+]]></output>
+                </test-case>
+              </test-suite>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>
