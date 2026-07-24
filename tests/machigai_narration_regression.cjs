@@ -179,7 +179,7 @@ class FakeAudio {
   static rejectNextPlay = false;
 
   constructor() {
-    this.src = "";
+    this._src = "";
     this.preload = "";
     this.volume = 1;
     this.currentTime = 0;
@@ -190,7 +190,21 @@ class FakeAudio {
     this.pauseCalls = 0;
     this.loadCalls = 0;
     this.listeners = new Map();
+    this.emittedEvents = [];
     FakeAudio.instances.push(this);
+  }
+
+  get src() {
+    return this._src;
+  }
+
+  set src(value) {
+    const previous = this._src;
+    this._src = String(value || "");
+    if (previous && previous !== this._src) {
+      // Chromium / WebKit は旧音源の abort を、src 差し替え後の次tickで発火する。
+      queueMicrotask(() => this.emit("abort"));
+    }
   }
 
   addEventListener(type, listener) {
@@ -223,6 +237,7 @@ class FakeAudio {
   }
 
   emit(type) {
+    this.emittedEvents.push(type);
     const listeners = this.listeners.get(type);
     if (!listeners) return;
     Array.from(listeners).forEach((listener) => listener.call(this, { type, target: this }));
@@ -313,6 +328,10 @@ async function assertSpeechBehavior(catalog) {
   assert.equal(secondAudio, firstAudio, "all phrases must reuse one HTMLAudio player");
   assert.equal(secondAudio.playCalls, 2, "the reusable player starts the latest phrase");
   assert.equal(FakeAudio.instances.length, 1, "latest-wins must not create a second playback element");
+  assert.ok(
+    secondAudio.emittedEvents.includes("abort"),
+    "the regression fixture must reproduce the stale abort emitted by the replaced source"
+  );
   assert.equal(speech.getActiveText(), secondText, "only the latest phrase remains active");
 
   secondAudio.emit("ended");

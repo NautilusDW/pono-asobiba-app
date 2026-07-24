@@ -31,7 +31,7 @@ async function installFakeAudio(page, options = {}) {
       constructor() {
         super();
         this.id = state.nextId++;
-        this.src = '';
+        this._src = '';
         this.preload = '';
         this.volume = 1;
         this.defaultPlaybackRate = 1;
@@ -42,6 +42,19 @@ async function installFakeAudio(page, options = {}) {
         this.playCalls = 0;
         this.pauseCalls = 0;
         state.instances.push(this);
+      }
+
+      get src() {
+        return this._src;
+      }
+
+      set src(value) {
+        const previous = this._src;
+        this._src = String(value || '');
+        if (previous && previous !== this._src) {
+          // 実ブラウザ同様、旧ソース由来の abort が新 listener へ遅れて届く。
+          queueMicrotask(() => this.emit('abort'));
+        }
       }
 
       load() {
@@ -190,6 +203,9 @@ test('正解ラベルのMP3を再生し、次の正解とミュートで再生�
   });
   expect(afterReplacement.instanceCount).toBe(1);
   expect(afterReplacement.activeText).toBe('ことり');
+  await expect.poll(() => page.evaluate(() =>
+    window.__fakeAudioState.events.filter((event) => event.type === 'abort').length
+  )).toBe(1);
 
   await page.locator('.game-topbar .mute-toggle').click();
   await expect.poll(() => page.evaluate(() => window.MSL.Audio.isMuted())).toBe(true);

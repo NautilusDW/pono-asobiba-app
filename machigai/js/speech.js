@@ -121,7 +121,6 @@
     var audio;
     try {
       audio = configurePlayer(entry);
-      audio.currentTime = 0;
     } catch (e) {
       return Promise.resolve({ status: 'error', text: text });
     }
@@ -137,7 +136,6 @@
         try {
           audio.removeEventListener('ended', onEnded);
           audio.removeEventListener('error', onError);
-          audio.removeEventListener('abort', onAbort);
         } catch (e) {
           /* 無視 */
         }
@@ -160,14 +158,11 @@
         finish('error');
       }
 
-      function onAbort() {
-        finish('aborted');
-      }
-
       current = { token: token, audio: audio, text: text, finish: finish };
       audio.addEventListener('ended', onEnded);
       audio.addEventListener('error', onError);
-      audio.addEventListener('abort', onAbort);
+      // 同じ Audio の src 差し替え時、旧音源の abort が新音源の listener へ
+      // 遅れて届くブラウザがある。abort は失敗判定に使わず、play() と timeout で扱う。
       timeoutId = window.setTimeout(function () {
         if (generation === token) finish('timeout');
       }, timeoutMs);
