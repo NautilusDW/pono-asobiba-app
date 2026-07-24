@@ -59,7 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-24 - by Codex - [batch:1464-machigai-artifact-cleanup] - machigai/assets/processed/{jungle_a,jungle_b,jungle_t,bedroom_b}.webp, sw.js, play.html, tests/e2e/machigai/**, tests/machigai_difficulty_regression.cjs, AGENTS_CLAIMS.md, HANDOFF.md - ジャングルA/Bの不自然なバナナ樹形を共通の認識しやすいバナナ株へ置換し、寝室Bのゾウ両目・上向き鼻・角型枕を合成跡のない自然な形へ再生成。既存差分数・座標・難易度は維持し、小画面と当たり判定を再検証する [overlap: batch:1460-nazonazo-town-pitatto-round7 (sw.js/play.html)]
 
 - 2026-07-24 - by Claude - [batch:1463-tsuri-sea-worldmap-plan-doc] - docs/TSURI_SEA_WORLDMAP_PLAN_2026-07-24.md(新規), AGENTS_CLAIMS.md - 海バージョン+こだまの森ワールドマップ+図鑑/料理連携の統合企画書(設計のみ、実装なし)。fable4領域並列設計+8件クロスレビュー+統合+辛口クリティックの結果をdocsに保存。ユーザー承認待ちの意思決定事項多数(§6)、特に§7クリティックで「Unity単体には出荷経路が無くA〜D完遂しても誰もプレイできない」という致命的指摘あり、次アクションはユーザー判断待ち
 - 2026-07-24 - by Claude - [batch:1462-kawaglint-silhouette-opacity-hud-legibility] - unity/PonoNativeGames/Assets/Pono/Games/KawaGlint/**(既存ファイルのみ変更、AquaLumina等の保護4ディレクトリ不変更)、AGENTS_CLAIMS.md, HANDOFF.md - ユーザーフィードバック反映: ①魚シルエットが透けて見える不具合の原因調査+修正、②HUD上部テキスト(「どこに なげる？」「つれた かず」)が新背景アートに溶け込んで読めない問題への対応(アウトライン/影/背景パネル等)。fable設計→sonnet5並列実装→クロスレビューで進行予定 [overlap: batch:1461-kawaglint-art-integration(直前の本人作業、シルエットart差し替え担当)、batch:1449-tsuri-unity-water-spike(KawaGlint本体、継続作業)]
