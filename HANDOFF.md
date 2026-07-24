@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-25 - [batch:1473-spritecook-gpt-image2-policy] Codex: DONE — ユーザー承認により画像生成規約を更新。生成モデルは従来どおりGPT Image 2固定とし、Codex内蔵ImageGen／SpriteCookは「モデル」ではなく「制作パイプライン」の選択として分離。既定はCodex内蔵ImageGenだが、オートタイル、スプライトシート、アニメーション、透明背景、参照画風量産、Unity/Godot export等でSpriteCookが明確に有利な場合、理由・`model=gpt-image-2`・予想消費クレジットを生成前に提示してユーザーへ選択を確認する。ユーザーがSpriteCookを明示指定した場合はパイプライン承認済みとして扱うが、モデル変更許可とは扱わない。SpriteCookの無断クレジット消費・別モデルへの自動fallbackを禁止し、バッチ前残高確認を必須化。Codex ImageGenのraw／alpha禁則は維持しつつ、承認済みSpriteCookでは背景除去・スライス・engine-ready exportを許可し、asset ID／raw追跡を必須化。 (by Codex)
+
 - 2026-07-25 - [batch:1472-unity-towncraft-topdown] Codex: DONE — 承認済みの手描き田園コンセプトをGPT Image 2でUnity素材化し、通常2Dトップダウンの町づくり `TownCraft` を新規実装。16地形タイル、15小物、15種類の選択式「わたしのおうち」（花／木／菓子／丸太／赤レンガ／和風／古代／土／城／船／きのこ／モダン／未来ドーム／ロケット／浮遊未来）と動的な `〇〇の おうち` 表札、道路・川の4方向接続、丘・段差、用途別配置（建物／道沿い／植物／境界／水辺）、JSON保存・バックアップ、町テーマ差し替え、畑の収穫を「まちの おねがい／おすそわけ」経由で材料・ひらめきへ変える依頼ロジックを実装。おへや／家具／図鑑は既存シーンへ結ぶ遷移接続口を用意。隔離Unityコピーでセットアップ／素材検証PASS、専用EditMode 7/7 PASS、macOS build成功、960×540実画面でUI・地形・家・素材を確認。正本は `docs/TOWNCRAFT_TOPDOWN_TILE_SYSTEM_2026-07-25.md`。並走中KawaGlint差分、CLAUDE.md、MEMORY.mdは未変更。 (by Codex)
 
 - 2026-07-25 - [batch:1471-mojikazu-first-four] Codex: DONE — 「かずのゲームランド」共通ハブと第1バッチ4本を新規実装。①じゅんばんタッチ（1〜5／10／20、正順、軌跡、罰なしヒント）、②すうじパチンコ（Matter.js再利用、常時正立の数字ボール、指定1個／同数3個／指定数より大きい3個）、③すうじのれっしゃ（1〜5／10／ぬけた数字、タップ＋ドラッグ、順番吸着、発車演出）、④かずだけジャンプ（1〜5／10／20、3択足場、罰なしヒント、雲で安全に進行）。全画面かなUI、大きい実button、戻る、縦向き案内、reduced-motion、pointer／keyboardに対応。`play.html` のApp版メニューへ通常カードを追加し、LP free/bookには非表示の既存tier設計を維持。専用 `tests/mojikazu_smoke.cjs` でハブ＋4本を390×844／844×390／1024×768／1366×768、横overflow／HTTP 4xx／pageerror 0、4本の主要操作完走、App版タイトルカード描画までPASS。JS構文・diff-check PASS、SW／PAGE／PONO v2390へ同期。開始後に増えたUnity KawaGlint差分と既存dirtyドキュメントは別作業のため未変更・未stage。 (by Codex)
