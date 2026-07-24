@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2387: まちがいさがしで実際に使う全58種の差分ラベルとクリア文を、TTS 3.1の
+// 女性ナレLeda・1.15倍速焼き込み・24kHz mono MP3へ統一。面ごとの先読み、最新発話優先、
+// ミュート即停止、最終ラベルの読み終わり待ちを追加した。版付き音声はmedia cache-firstへ
+// 追加し、CRITICAL_ASSETSには追加しない。play.htmlの2箇所と同期 (2387)。
 // v2386: まちがいさがしのジャングルとよるのおへやを、局所レタッチの継ぎ足しではなく
 // GPT Image 2の一貫した場面として再生成。ジャングルは自然な一株のバナナ、段状羽対
 // 大きな一枚羽、自然な巻き尾対開いたS字尾へ更新。よるのおへやは横長対正方形の枕全体、
@@ -1159,7 +1163,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2386;
+const CACHE_VERSION = 2387;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
@@ -1695,7 +1699,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // 動画 (宝箱・ハリネズミ等) と BGM / storyboard 音声は cache-first (旧: 毎回 network
+  // 動画 (宝箱・ハリネズミ等) と BGM / storyboard / まちがいさがし音声は cache-first (旧: 毎回 network
   // no-store)。 旧実装は 4-5MB の mp4 / BGM mp3 を再生のたびに全量再ダウンロードして
   // いた (2026-07-10 修正)。
   // - cache key は query 込みの完全 URL。 差し替え時は画像と同じく (a) 新ファイル名 /
@@ -1708,7 +1712,8 @@ self.addEventListener('fetch', event => {
       || event.request.url.includes('/assets/videos/')
       || event.request.url.includes('/assets/audio/bgm/')
       || event.request.url.includes('/assets/audio/stickerbook/bgm/')
-      || event.request.url.includes('/assets/audio/storyboard/')) {
+      || event.request.url.includes('/assets/audio/storyboard/')
+      || event.request.url.includes('/machigai/assets/audio/narration/')) {
     const mediaUrl = event.request.url;
     event.respondWith(
       caches.match(mediaUrl).then(cached => {

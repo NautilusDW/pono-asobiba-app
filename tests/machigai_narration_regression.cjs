@@ -12,6 +12,8 @@ const STAGES_PATH = path.join(MACHIGAI_ROOT, "data", "stages.js");
 const NARRATION_PATH = path.join(MACHIGAI_ROOT, "data", "narration.js");
 const SPEECH_PATH = path.join(MACHIGAI_ROOT, "js", "speech.js");
 const INDEX_PATH = path.join(MACHIGAI_ROOT, "index.html");
+const SW_PATH = path.join(ROOT, "sw.js");
+const PLAY_PATH = path.join(ROOT, "play.html");
 const COMPLETION_TEXT = "ぜんぶ みつけた！すごい！";
 
 function runBrowserScript(filePath, windowObject, extraGlobals = {}) {
@@ -156,6 +158,20 @@ function assertScriptContract() {
   );
   assert.match(speechSource, /window\.MACHIGAI_NARRATION/, "speech.js must consume the versioned manifest");
   assert.match(speechSource, /window\.MSL\.Speech\s*=/, "speech.js must preserve the game-facing API");
+
+  const swSource = fs.readFileSync(SW_PATH, "utf8");
+  const playSource = fs.readFileSync(PLAY_PATH, "utf8");
+  assert.match(
+    swSource,
+    /event\.request\.url\.includes\(['"]\/machigai\/assets\/audio\/narration\/['"]\)/,
+    "service worker must cache-first the versioned machigai narration"
+  );
+  const swVersion = swSource.match(/const CACHE_VERSION = (\d+);/);
+  const pageVersion = playSource.match(/const PAGE_CACHE_VERSION = (\d+);/);
+  const exposedVersion = playSource.match(/window\.PONO_SW_VERSION = ['"]v(\d+)['"];/);
+  assert.ok(swVersion && pageVersion && exposedVersion, "all cache version declarations must exist");
+  assert.equal(pageVersion[1], swVersion[1], "play.html PAGE_CACHE_VERSION must match sw.js");
+  assert.equal(exposedVersion[1], swVersion[1], "play.html PONO_SW_VERSION must match sw.js");
 }
 
 class FakeAudio {
