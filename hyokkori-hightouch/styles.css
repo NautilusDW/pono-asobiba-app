@@ -415,7 +415,7 @@ a:focus-visible {
   padding: 0;
   transform: translate(-50%, -50%);
   border: 0;
-  border-radius: 36%;
+  border-radius: 0;
   overflow: visible;
   outline-offset: -3px;
   -webkit-appearance: none;
@@ -434,7 +434,7 @@ a:focus-visible {
   --foreground-top: 62%;
   --window-bottom: 35.5%;
   --char-width: 58%;
-  --char-ground-lift: 4cqh;
+  --char-ground-lift: 18.34%;
 }
 
 .hh-hole:focus-visible {
@@ -499,7 +499,7 @@ a:focus-visible {
  */
 .hh-char-wrap {
   position: absolute;
-  top: calc(0px - clamp(24px, var(--char-ground-lift), 48px));
+  top: calc(0px - var(--char-ground-lift));
   left: 50%;
   z-index: 3;
   width: min(var(--char-width), 220px);
@@ -536,7 +536,7 @@ a:focus-visible {
   transform: translate(-50%, 0);
 }
 
-.hh-char-wrap.is-bonus::before {
+.hh-char-wrap.is-bonus .hh-window::before {
   position: absolute;
   inset: 6%;
   z-index: 0;

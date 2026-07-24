@@ -53,20 +53,20 @@ var LOCATIONS = [
       far: {
         groundAnchorY: 78.2,
         foregroundTop: 67,
-        windowBottom: 30,
+        windowBottom: 36.26,
         charWidth: 52,
-        charLiftCqh: 7.5
+        charLiftPct: 18.34
       },
       near: {
         groundAnchorY: 75.3,
         foregroundTop: 64,
-        windowBottom: 28,
+        windowBottom: 35.75,
         charWidth: 58,
-        charLiftCqh: 8
+        charLiftPct: 19.56
       }
     },
     slots: [
-      { x: 27, groundY: 52, depth: 0.82, hideout: 'far', rotate: 0 },
+      { x: 30.8, groundY: 52, depth: 0.82, hideout: 'far', rotate: 0 },
       { x: 78, groundY: 49, depth: 0.88, hideout: 'far', rotate: 0 },
       { x: 24, groundY: 70.5, depth: 0.93, hideout: 'near', rotate: 0 },
       { x: 76, groundY: 70, depth: 0.95, hideout: 'near', rotate: 0 },
@@ -91,20 +91,20 @@ var LOCATIONS = [
       far: {
         groundAnchorY: 68.2,
         foregroundTop: 60,
-        windowBottom: 30,
+        windowBottom: 28.87,
         charWidth: 48,
-        charLiftCqh: 7.5
+        charLiftPct: 18.34
       },
       near: {
         groundAnchorY: 81,
         foregroundTop: 64,
-        windowBottom: 28,
+        windowBottom: 42.72,
         charWidth: 52,
-        charLiftCqh: 8.5
+        charLiftPct: 20.79
       }
     },
     slots: [
-      { x: 18, groundY: 52, depth: 0.82, hideout: 'far', rotate: 0 },
+      { x: 30, groundY: 58, depth: 0.88, hideout: 'far', rotate: 0 },
       { x: 82, groundY: 38, depth: 0.86, hideout: 'far', rotate: 0 },
       { x: 27, groundY: 81, depth: 0.95, hideout: 'near', rotate: 0 },
       { x: 72, groundY: 77, depth: 0.97, hideout: 'near', rotate: 0 },
@@ -128,16 +128,16 @@ var LOCATIONS = [
       far: {
         groundAnchorY: 69.8,
         foregroundTop: 64,
-        windowBottom: 30,
+        windowBottom: 27.36,
         charWidth: 50,
-        charLiftCqh: 7
+        charLiftPct: 17.12
       },
       near: {
         groundAnchorY: 66.8,
         foregroundTop: 56,
-        windowBottom: 28,
+        windowBottom: 34.06,
         charWidth: 55,
-        charLiftCqh: 8
+        charLiftPct: 19.56
       }
     },
     slots: [
@@ -164,16 +164,16 @@ var LOCATIONS = [
       far: {
         groundAnchorY: 67.8,
         foregroundTop: 60,
-        windowBottom: 30,
+        windowBottom: 28.92,
         charWidth: 50,
-        charLiftCqh: 7.5
+        charLiftPct: 18.34
       },
       near: {
         groundAnchorY: 76.3,
         foregroundTop: 64,
-        windowBottom: 28,
+        windowBottom: 36.79,
         charWidth: 55,
-        charLiftCqh: 8
+        charLiftPct: 19.56
       }
     },
     slots: [
@@ -202,16 +202,16 @@ var LOCATIONS = [
       far: {
         groundAnchorY: 65.8,
         foregroundTop: 60,
-        windowBottom: 30,
+        windowBottom: 24.92,
         charWidth: 50,
-        charLiftCqh: 7.5
+        charLiftPct: 18.34
       },
       near: {
         groundAnchorY: 67.9,
         foregroundTop: 61,
-        windowBottom: 28,
+        windowBottom: 26.97,
         charWidth: 55,
-        charLiftCqh: 8
+        charLiftPct: 19.56
       }
     },
     slots: [

@@ -454,7 +454,14 @@
       node.style.setProperty('--foreground-top', (Number(hideoutLayout.foregroundTop) || 60) + '%');
       node.style.setProperty('--window-bottom', (Number(hideoutLayout.windowBottom) || 35.5) + '%');
       node.style.setProperty('--char-width', (Number(hideoutLayout.charWidth) || 58) + '%');
-      node.style.setProperty('--char-ground-lift', (Number(hideoutLayout.charLiftCqh) || 4) + 'cqh');
+      var charLiftPct = Number(hideoutLayout.charLiftPct);
+      if (isFinite(charLiftPct) && charLiftPct > 0 && charLiftPct < 50) {
+        // stackは正方形。背景・外装と同じ基準にすることで、cqhのclamp差により
+        // 面ごとの停止位置と下側マスクが画面幅ごとにずれるのを防ぐ。
+        node.style.setProperty('--char-ground-lift', charLiftPct + '%');
+      } else {
+        node.style.setProperty('--char-ground-lift', (Number(hideoutLayout.charLiftCqh) || 4) + 'cqh');
+      }
       var hideouts = node.querySelectorAll('.hh-hideout');
       for (var h = 0; h < hideouts.length; h++) hideouts[h].src = hideoutSrc;
       (function (idx, buttonEl) {
@@ -1022,7 +1029,61 @@
   }
 
   // ═══ タップ判定処理 ═══
+  function resolveVisibleCharacterFromPoint(clientX, clientY) {
+    var bestIdx = null;
+    var bestDistance = Infinity;
+
+    for (var i = 0; i < holeRefs.length; i++) {
+      var refs = holeRefs[i];
+      if (!refs || !refs.wrap || !refs.img || !refs.windowEl) continue;
+      if (!refs.wrap.classList.contains('is-visible')) continue;
+
+      var imageRect = refs.img.getBoundingClientRect();
+      var windowRect = refs.windowEl.getBoundingClientRect();
+      if (imageRect.width <= 0 || imageRect.height <= 0 ||
+          windowRect.width <= 0 || windowRect.height <= 0) continue;
+
+      var windowBottom = parseFloat(
+        getComputedStyle(refs.hole).getPropertyValue('--window-bottom')
+      );
+      if (!isFinite(windowBottom)) windowBottom = 35.5;
+
+      // 動物画像は透明な正方形canvasを含み、顔や手がbutton矩形より上へ出る。
+      // 見えている画像幅と下側マスク線から操作面を作り、顔を押したつもりの
+      // タッチを背景扱いにしない。隣り合う候補は正規化距離が近い方を選ぶ。
+      var visibleBottom = Math.min(
+        imageRect.bottom,
+        windowRect.top + windowRect.height * (1 - windowBottom / 100)
+      );
+      var padX = Math.max(10, Math.min(18, imageRect.width * 0.12));
+      var padTop = Math.max(8, Math.min(16, imageRect.height * 0.1));
+      var padBottom = Math.max(6, Math.min(12, imageRect.height * 0.08));
+      var left = imageRect.left - padX;
+      var right = imageRect.right + padX;
+      var top = imageRect.top - padTop;
+      var bottom = visibleBottom + padBottom;
+      if (clientX < left || clientX > right || clientY < top || clientY > bottom) continue;
+
+      var halfWidth = Math.max(1, (right - left) / 2);
+      var halfHeight = Math.max(1, (bottom - top) / 2);
+      var centerX = (left + right) / 2;
+      var centerY = (top + bottom) / 2;
+      var dx = (clientX - centerX) / halfWidth;
+      var dy = (clientY - centerY) / halfHeight;
+      var distance = dx * dx + dy * dy;
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestIdx = i;
+      }
+    }
+
+    return bestIdx;
+  }
+
   function resolveHoleFromPoint(clientX, clientY) {
+    var visibleIdx = resolveVisibleCharacterFromPoint(clientX, clientY);
+    if (visibleIdx !== null) return visibleIdx;
+
     var el = document.elementFromPoint(clientX, clientY);
     if (!el || typeof el.closest !== 'function') return null;
     var holeEl = el.closest('.hh-hole');
@@ -1032,9 +1093,10 @@
   }
 
   function handleTapAt(clientX, clientY) {
-    if (phase !== 'playing') return;
+    if (phase !== 'playing' || tutorialOpen || boardEl.hasAttribute('inert')) return null;
     var idx = resolveHoleFromPoint(clientX, clientY);
     handleHoleActivation(idx);
+    return idx;
   }
 
   function handleHoleActivation(idx) {
@@ -1103,10 +1165,8 @@
     var t = e.changedTouches[0];
     if (!t) return;
     ensureAudio();
-    var el = document.elementFromPoint(t.clientX, t.clientY);
-    var holeEl = el && el.closest ? el.closest('.hh-hole') : null;
-    if (holeEl) holeEl.classList.add('is-pressed');
-    handleTapAt(t.clientX, t.clientY);
+    var idx = handleTapAt(t.clientX, t.clientY);
+    if (idx !== null && holeRefs[idx]) holeRefs[idx].hole.classList.add('is-pressed');
   }, { passive: true });
 
   function releasePressedHoles() {

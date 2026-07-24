@@ -132,12 +132,12 @@ function mulberry32(seed) {
 
   const expectedSlots = {
     komorebi_clearing: [
-      [27, 52, 0.82, "far", 0], [78, 49, 0.88, "far", 0],
+      [30.8, 52, 0.82, "far", 0], [78, 49, 0.88, "far", 0],
       [24, 70.5, 0.93, "near", 0], [76, 70, 0.95, "near", 0],
       [18, 91.5, 1.06, "near", 0], [82, 91.5, 1.08, "near", 0]
     ],
     donguri_path: [
-      [18, 52, 0.82, "far", 0], [82, 38, 0.86, "far", 0],
+      [30, 58, 0.88, "far", 0], [82, 38, 0.86, "far", 0],
       [27, 81, 0.95, "near", 0], [72, 77, 0.97, "near", 0],
       [50, 94, 1.06, "near", 0]
     ],
@@ -184,24 +184,24 @@ function mulberry32(seed) {
   };
   const expectedHideoutLayouts = {
     komorebi_clearing: {
-      far: { groundAnchorY: 78.2, foregroundTop: 67, windowBottom: 30, charWidth: 52, charLiftCqh: 7.5 },
-      near: { groundAnchorY: 75.3, foregroundTop: 64, windowBottom: 28, charWidth: 58, charLiftCqh: 8 }
+      far: { groundAnchorY: 78.2, foregroundTop: 67, windowBottom: 36.26, charWidth: 52, charLiftPct: 18.34 },
+      near: { groundAnchorY: 75.3, foregroundTop: 64, windowBottom: 35.75, charWidth: 58, charLiftPct: 19.56 }
     },
     donguri_path: {
-      far: { groundAnchorY: 68.2, foregroundTop: 60, windowBottom: 30, charWidth: 48, charLiftCqh: 7.5 },
-      near: { groundAnchorY: 81, foregroundTop: 64, windowBottom: 28, charWidth: 52, charLiftCqh: 8.5 }
+      far: { groundAnchorY: 68.2, foregroundTop: 60, windowBottom: 28.87, charWidth: 48, charLiftPct: 18.34 },
+      near: { groundAnchorY: 81, foregroundTop: 64, windowBottom: 42.72, charWidth: 52, charLiftPct: 20.79 }
     },
     mizube: {
-      far: { groundAnchorY: 69.8, foregroundTop: 64, windowBottom: 30, charWidth: 50, charLiftCqh: 7 },
-      near: { groundAnchorY: 66.8, foregroundTop: 56, windowBottom: 28, charWidth: 55, charLiftCqh: 8 }
+      far: { groundAnchorY: 69.8, foregroundTop: 64, windowBottom: 27.36, charWidth: 50, charLiftPct: 17.12 },
+      near: { groundAnchorY: 66.8, foregroundTop: 56, windowBottom: 34.06, charWidth: 55, charLiftPct: 19.56 }
     },
     mushroom_hill: {
-      far: { groundAnchorY: 67.8, foregroundTop: 60, windowBottom: 30, charWidth: 50, charLiftCqh: 7.5 },
-      near: { groundAnchorY: 76.3, foregroundTop: 64, windowBottom: 28, charWidth: 55, charLiftCqh: 8 }
+      far: { groundAnchorY: 67.8, foregroundTop: 60, windowBottom: 28.92, charWidth: 50, charLiftPct: 18.34 },
+      near: { groundAnchorY: 76.3, foregroundTop: 64, windowBottom: 36.79, charWidth: 55, charLiftPct: 19.56 }
     },
     moonlight_forest: {
-      far: { groundAnchorY: 65.8, foregroundTop: 60, windowBottom: 30, charWidth: 50, charLiftCqh: 7.5 },
-      near: { groundAnchorY: 67.9, foregroundTop: 61, windowBottom: 28, charWidth: 55, charLiftCqh: 8 }
+      far: { groundAnchorY: 65.8, foregroundTop: 60, windowBottom: 24.92, charWidth: 50, charLiftPct: 18.34 },
+      near: { groundAnchorY: 67.9, foregroundTop: 61, windowBottom: 26.97, charWidth: 55, charLiftPct: 19.56 }
     }
   };
 
@@ -222,7 +222,7 @@ function mulberry32(seed) {
       assert.ok(Number.isFinite(location.hideoutLayouts[variant].foregroundTop), `${location.id} ${variant} に手前縁位置がある`);
       assert.ok(Number.isFinite(location.hideoutLayouts[variant].windowBottom), `${location.id} ${variant} に動物窓の下端がある`);
       assert.ok(Number.isFinite(location.hideoutLayouts[variant].charWidth), `${location.id} ${variant} に動物幅がある`);
-      assert.ok(Number.isFinite(location.hideoutLayouts[variant].charLiftCqh), `${location.id} ${variant} に接地点基準の動物持ち上げ量がある`);
+      assert.ok(Number.isFinite(location.hideoutLayouts[variant].charLiftPct), `${location.id} ${variant} にstack比の動物持ち上げ量がある`);
     }
     assert.ok(location.slots.every(slot => !Object.prototype.hasOwnProperty.call(slot, "y")), `${location.id} に画像中心基準の旧y座標を残さない`);
     assert.ok(location.slots.every(slot => Number.isFinite(slot.groundY) && slot.groundY >= 0 && slot.groundY <= 100), `${location.id} の全slotに画面内の接地座標がある`);
@@ -896,6 +896,8 @@ function mulberry32(seed) {
   assert.equal((indexHtml.match(/class=["'][^"']*hh-hideout-foreground/g) || []).length, 1, "templateに共通の手前縁を1つ定義する");
   assert.match(stylesCss, /--foreground-top:\s*62%/, "手前縁マスクに近景基準の安全な既定値を持たせる");
   assert.match(stylesCss, /--window-bottom:\s*35\.5%/, "動物窓の下側マスクに安全な既定値を持たせる");
+  assert.match(stylesCss, /--char-ground-lift:\s*18\.34%/, "動物停止位置の既定値をground stack比で持つ");
+  assert.match(stylesCss, /top:\s*calc\(0px\s*-\s*var\(--char-ground-lift\)\)/, "動物停止位置に固定px clampを挟まずstack比をそのまま使う");
   assert.match(stylesCss, /\.hh-hideout-foreground\s*\{[^}]*z-index:\s*4[^}]*clip-path:\s*inset\(var\(--foreground-top\)\s+0\s+0\s+0\)/s, "場所別の手前縁をCSS変数で切り、キャラより上に重ねる");
   assert.match(stylesCss, /#board\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0/s, "可変配置の盤面をステージ全面へ重ねる");
   assert.match(stylesCss, /\.hh-hole\s*\{[^}]*position:\s*absolute[^}]*top:\s*var\(--slot-y[^}]*left:\s*var\(--slot-x/s, "かくれ場所buttonの中心を定義データの接地点へ置く");
@@ -928,15 +930,24 @@ function mulberry32(seed) {
   assert.match(stylesCss, /\.hh-char-wrap\s*\{[^}]*overflow:\s*visible/s, "月・光・加点を包む状態wrapは切り抜かない");
   assert.match(stylesCss, /\.hh-window\s*\{[^}]*overflow:\s*visible/s, "動物窓の上・左右はボーナス画像内の星と光彩を切らない");
   assert.match(stylesCss, /\.hh-window\s*\{[^}]*clip-path:\s*inset\(-30%\s+-30%\s+var\(--window-bottom\)\s+-30%\)/s, "通常画面は上・左右を広げ、下端だけを場所別変数で切る");
+  assert.match(stylesCss, /\.hh-char-wrap\.is-bonus\s+\.hh-window::before\s*\{[^}]*box-shadow:/s, "ボーナス光輪も動物窓の下側マスク内へ置く");
+  assert.doesNotMatch(stylesCss, /\.hh-char-wrap\.is-bonus::before/, "ボーナス光輪をマスク外のwrapへ残さない");
   assert.match(stylesCss, /\.hh-char-wrap\.is-visible\s+\.hh-char-rise\s*\{[^}]*translate\(-50%,\s*0\)/s, "停止時は胴体が不自然に切れない高さまで表示する");
+  assert.match(gameJs, /var\s+charLiftPct\s*=\s*Number\(hideoutLayout\.charLiftPct\)/, "場所別停止位置をstack比で読む");
+  assert.match(gameJs, /setProperty\(\s*['"]--char-ground-lift['"]\s*,\s*charLiftPct\s*\+\s*['"]%['"]\s*\)/, "停止位置を画面高ではなくstack比でCSSへ渡す");
   assert.ok(D.LOCATIONS.every(location => location.slots.filter(slot => slot.hideout === "far").length >= 2), "各場所に遠景専用の開口が2個以上ある");
   assert.ok(D.LOCATIONS.every(location => location.slots.filter(slot => slot.hideout === "near").length >= 2), "各場所に近景専用の開口が2個以上ある");
   assert.ok(D.LOCATIONS.every(location => location.slots.filter(slot => slot.hideout === "far").every(slot => slot.depth < 0.9)), "遠景列は0.9倍未満にする");
   assert.ok(D.LOCATIONS.every(location => location.slots.filter(slot => slot.hideout === "near").every(slot => slot.depth >= 0.9)), "近景列は0.9倍以上にする");
   assert.doesNotMatch(stylesCss, /\.hh-char-wrap\s*\{[^}]*scale\(var\(--depth-scale\)\)/s, "キャラだけへ遠近scaleを二重適用しない");
   assert.match(stylesCss, /\.hh-hole\.is-pressed\s+\.hh-ground-stack\s*\{[^}]*translateX\(-50%\)[^}]*scale\(var\(--depth-scale\)\)[^}]*rotate\(var\(--hideout-rotate\)\)[^}]*scale\(0\.96\)/s, "押した瞬間も接地点基準のstack全体で前後パースを保つ");
+  assert.match(stylesCss, /\.hh-hole\s*\{[^}]*border-radius:\s*0\s*;/s, "透明buttonの角で見えている耳・翼を判定外にしない");
+  assert.match(gameJs, /function\s+resolveVisibleCharacterFromPoint\(\s*clientX\s*,\s*clientY\s*\)/, "見えている動物を基準にした救済タップ判定がある");
+  assert.match(gameJs, /resolveHoleFromPoint\([^)]*\)\s*\{[\s\S]*?resolveVisibleCharacterFromPoint\(/, "DOMの穴判定より先に見えている動物を解決する");
+  assert.match(gameJs, /imageRect\.width\s*\*\s*0\.12[\s\S]*?bestDistance/, "動物サイズに沿う余白と最短候補で隣穴の誤反応を防ぐ");
+  assert.match(gameJs, /phase\s*!==\s*['"]playing['"]\s*\|\|\s*tutorialOpen\s*\|\|\s*boardEl\.hasAttribute\(\s*['"]inert['"]\s*\)/, "説明中・非操作中は救済判定を背後へ通さない");
   for (const src of ["styles.css", "js/locations.js", "js/game.js"]) {
-    assert.match(indexHtml, new RegExp(`${src.replace(/[./]/g, "\\$&")}\\?v=20260724-1453b`), `${src} は1453bの5面版キャッシュトークンで読む`);
+    assert.match(indexHtml, new RegExp(`${src.replace(/[./]/g, "\\$&")}\\?v=20260724-1456`), `${src} は1456の接地・タップ修正版キャッシュトークンで読む`);
   }
 }
 
