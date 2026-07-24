@@ -146,9 +146,9 @@ function mulberry32(seed) {
       [20, 88, 1.04, "near", 0], [80, 87, 1.02, "near", 0]
     ],
     mushroom_hill: [
-      [30, 55, 0.82, "far", 0], [71, 40, 0.86, "far", 0],
+      [31.2, 69, 0.8, "far", 0], [71, 40, 0.86, "far", 0],
       [18, 78, 0.98, "near", 0], [50, 84, 1.07, "near", 0],
-      [82, 77, 1, "near", 0]
+      [74, 80, 0.98, "near", 0]
     ],
     moonlight_forest: [
       [27, 39, 0.84, "far", 0], [73, 39, 0.86, "far", 0],
@@ -216,6 +216,7 @@ function mulberry32(seed) {
     assert.equal(path.basename(location.hideouts.far), expectedWorldAssets[location.id].far, `${location.id} は遠景専用の開口を使う`);
     assert.equal(path.basename(location.hideouts.near), expectedWorldAssets[location.id].near, `${location.id} は近景専用の開口を使う`);
     assert.deepEqual(location.hideoutLayouts, expectedHideoutLayouts[location.id], `${location.id} の開口ごとのマスク・動物幅がα境界の監査値と一致`);
+    assert.equal(location.scoreGoal, 50, `${location.id} は5回の通常成功で届く50点を次面条件にする`);
     for (const variant of ["far", "near"]) {
       assert.ok(Number.isFinite(location.hideoutLayouts[variant].groundAnchorY), `${location.id} ${variant} に素材内の接地アンカーがある`);
       assert.ok(location.hideoutLayouts[variant].groundAnchorY > 0 && location.hideoutLayouts[variant].groundAnchorY <= 100, `${location.id} ${variant} の接地アンカーは素材内に収まる`);
@@ -327,6 +328,11 @@ function mulberry32(seed) {
   assert.equal(D.locationForRun({ routeCompletedRuns: 3 }).id, "mushroom_hill", "3完走はきのこのおか");
   assert.equal(D.locationForRun({ routeCompletedRuns: 4 }).id, "moonlight_forest", "4完走はつきあかりのもり");
   assert.equal(D.locationForRun({ routeCompletedRuns: 5 }).id, "komorebi_clearing", "5完走で広場へ一周する");
+  assert.equal(D.scoreGoalForLocation("komorebi_clearing"), 50, "広場の達成点を取得できる");
+  assert.equal(D.scoreGoalForLocation("unknown"), Infinity, "未知の場所は進行できない達成点にする");
+  assert.equal(D.meetsLocationScoreGoal("komorebi_clearing", 49), false, "49点では次面へ進まない");
+  assert.equal(D.meetsLocationScoreGoal("komorebi_clearing", 50), true, "50点ちょうどで次面へ進む");
+  assert.equal(D.meetsLocationScoreGoal("unknown", 999), false, "未知の場所は高得点でも進行しない");
   assert.equal(
     D.locationForRun({ mode: "select", selectedLocationId: "mizube", routeCompletedRuns: 0 }).id,
     "mizube",
@@ -455,15 +461,42 @@ function mulberry32(seed) {
   assert.deepEqual(duplicateAdvance, firstAdvance, "同じrunIdの二重完了では歩数・記録を増やさない");
   assert.notEqual(duplicateAdvance, firstAdvance, "重複時も呼び出し側が安全に扱える新しい正規化オブジェクトを返す");
 
-  const secondAdvance = D.advanceWalkState(firstAdvance, {
+  const secondFailed = D.advanceWalkState(firstAdvance, {
+    runId: "run-2-low",
+    locationId: "donguri_path",
+    mode: "route",
+    score: 49,
+    bestCombo: 4
+  });
+  assert.equal(secondFailed.routeCompletedRuns, 1, "49点では一本道を進めない");
+  assert.deepEqual(secondFailed.completedLocationIds, ["komorebi_clearing"], "未達の場所を完了済みにしない");
+  assert.deepEqual(secondFailed.locationRecords.donguri_path, {
+    plays: 1,
+    bestScore: 49,
+    bestCombo: 4
+  }, "未達でも遊んだ回数・最高点・最大コンボは残す");
+  assert.equal(secondFailed.lastCompletedRunId, "run-2-low", "未達runIdも二重記録防止のため保存する");
+  assert.equal(D.locationForRun(secondFailed).id, "donguri_path", "未達後は同じこみちから再挑戦する");
+
+  const duplicateFailed = D.advanceWalkState(secondFailed, {
+    runId: "run-2-low",
+    locationId: "donguri_path",
+    mode: "route",
+    score: 999,
+    bestCombo: 99
+  });
+  assert.deepEqual(duplicateFailed, secondFailed, "同じ未達runIdを二重に記録しない");
+
+  const secondAdvance = D.advanceWalkState(secondFailed, {
     runId: "run-2",
     locationId: "donguri_path",
     mode: "route",
-    score: 0,
-    bestCombo: 0
+    score: 50,
+    bestCombo: 5
   });
-  assert.equal(secondAdvance.routeCompletedRuns, 2, "0点完走でも次へ進む");
-  assert.equal(secondAdvance.locationRecords.donguri_path.plays, 1, "0点でも完走回数を記録");
+  assert.equal(secondAdvance.routeCompletedRuns, 2, "50点ちょうどで一本道を1歩進める");
+  assert.equal(secondAdvance.locationRecords.donguri_path.plays, 2, "再挑戦も遊んだ回数へ記録する");
+  assert.equal(secondAdvance.locationRecords.donguri_path.bestScore, 50, "達成時の最高点へ更新する");
   assert.equal(D.locationForRun(secondAdvance).id, "mizube", "2歩目の次はみずべ");
 
   const thirdAdvance = D.advanceWalkState(secondAdvance, {
@@ -503,7 +536,7 @@ function mulberry32(seed) {
     bestCombo: 1
   });
   assert.equal(wrongRouteLocation.routeCompletedRuns, 2, "現在地と違う古いrunは一本道を飛ばさない");
-  assert.equal(wrongRouteLocation.locationRecords.komorebi_clearing.plays, 2, "古いrunも場所別完走としては記録する");
+  assert.equal(wrongRouteLocation.locationRecords.komorebi_clearing.plays, 2, "古いrunも遊んだ場所の記録としては残す");
 
   const selectedAdvance = D.advanceWalkState({
     ...secondAdvance,
@@ -992,9 +1025,9 @@ function mulberry32(seed) {
   assert.match(gameJs, /resolveHoleFromPoint\([^)]*\)\s*\{[\s\S]*?resolveVisibleCharacterFromPoint\(/, "DOMの穴判定より先に見えている動物を解決する");
   assert.match(gameJs, /imageRect\.width\s*\*\s*0\.12[\s\S]*?bestDistance/, "動物サイズに沿う余白と最短候補で隣穴の誤反応を防ぐ");
   assert.match(gameJs, /phase\s*!==\s*['"]playing['"]\s*\|\|\s*tutorialOpen\s*\|\|\s*boardEl\.hasAttribute\(\s*['"]inert['"]\s*\)/, "説明中・非操作中は救済判定を背後へ通さない");
-  assert.match(indexHtml, /styles\.css\?v=20260724-1464/, "styles.css は1464の睡眠タップ反応版キャッシュトークンで読む");
-  assert.match(indexHtml, /js\/game\.js\?v=20260724-1464/, "game.js は1464の睡眠タップ反応版キャッシュトークンで読む");
-  assert.match(indexHtml, /js\/locations\.js\?v=20260724-1462/, "locations.js は1462の地面配置・どんぐり手前縁版を維持する");
+  assert.match(indexHtml, /styles\.css\?v=20260725-1469/, "styles.css は1469の達成結果UI版キャッシュトークンで読む");
+  assert.match(indexHtml, /js\/game\.js\?v=20260725-1469/, "game.js は1469の50点進行版キャッシュトークンで読む");
+  assert.match(indexHtml, /js\/locations\.js\?v=20260725-1469/, "locations.js は1469のキノコ丘配置・達成点版キャッシュトークンで読む");
 }
 
 // ── 11b. ボーナス出現・リアルタイムコンボ・最大記録UI ──────────────
@@ -1119,10 +1152,15 @@ function mulberry32(seed) {
   assert.match(gameJs, /activeRun\s*=\s*\{[\s\S]*?runId:[\s\S]*?locationId:\s*currentLocation\.id[\s\S]*?mode:\s*walkState\.mode/, "run開始時にID・場所・モードを固定する");
   assert.match(gameJs, /function\s+advanceCompletedRunOnce\(\)[\s\S]*?activeRunAdvanced[\s\S]*?readWalkState\(\)[\s\S]*?H\.advanceWalkState\(/, "完走時は最新保存を再読込し1回だけ進行を確定する");
   assert.match(gameJs, /H\.advanceWalkState\([^;]*\{[\s\S]*?score:\s*state\.score[\s\S]*?bestCombo:\s*state\.bestCombo/, "場所別記録へ得点と最大コンボを渡す");
+  assert.match(gameJs, /resultCleared\s*=\s*H\.meetsLocationScoreGoal\(\s*activeRun\.locationId,\s*state\.score\s*\)/, "場所の達成点を結果進行の単一判定にする");
+  assert.match(gameJs, /nextLocation\s*=\s*resultCleared\s*\?\s*H\.locationForRun\(\s*walkState\s*\)\s*:\s*currentLocation/, "未達時は現在地、達成時だけ保存済みの次地点へ進む");
   assert.match(gameJs, /function\s+finishGame\(\)[\s\S]*?phase\s*===\s*['"]result['"][\s\S]*?advanceCompletedRunOnce\(\)/, "結果処理の二重発火を止めてから散歩を進める");
 
-  assert.match(gameJs, /state\.score\s*===\s*0[\s\S]*?さいごまで あそべた！/, "0点でも完走を肯定する結果文言がある");
-  for (const id of ["start-location", "walk-progress", "result-next-location", "retry-btn"]) {
+  assert.match(gameJs, /!resultCleared[\s\S]*?おしい！/, "未達時は見出しで再挑戦だと伝える");
+  assert.match(gameJs, /あと ['"]?\s*\+\s*scoreRemaining\s*\+\s*['"]てんで つぎへ/, "未達時は次面まで残り何点か伝える");
+  assert.match(gameJs, /retryEl\.textContent\s*=\s*resultCleared\s*\?\s*['"]さんぽを つづける['"]\s*:\s*['"]もういちど['"]/, "結果の主ボタンを達成／未達で明確に切り替える");
+  assert.match(gameJs, /if\s*\(\s*resultCleared\s*&&\s*rank\s*>=\s*1\s*\)/, "未達時に成功の紙吹雪・新記録ファンファーレを重ねない");
+  for (const id of ["start-location", "start-goal", "walk-progress", "result-goal-status", "result-next-location", "retry-btn"]) {
     assert.match(indexHtml, new RegExp(`id=["']${id}["']`), `${id} の表示先が存在する`);
   }
   assert.equal((indexHtml.match(/class=["'][^"']*walk-dot/g) || []).length, D.ROUTE_IDS.length, "散歩道の点数をルート定義と揃える");
@@ -1132,7 +1170,6 @@ function mulberry32(seed) {
   assert.match(gameJs, /currentLocation\.afterStory/, "開花後に次の種で周回する物語を案内する");
   assert.match(stylesCss, /#result-card\.is-final-bloom/, "最終開花だけを見分ける結果カード演出がある");
   assert.match(stylesCss, /#result-card\s+\.result-pono\.is-moon-flower/, "月の花画像に専用の開花アニメーションがある");
-  assert.match(gameJs, /nextLocation\s*=\s*H\.locationForRun\(\s*walkState\s*\)/, "完走後の次地点は保存済み進行から決める");
   assert.match(gameJs, /swapLocation\(\s*targetLocation\s*,\s*false\s*\)[\s\S]*?beginCountdown\(\)/, "つづける操作は次地点の読込完了後にカウントダウンする");
   assert.match(gameJs, /stageEl\.style\.setProperty\(\s*['"]--location-bg['"]/, "背景を場所定義からステージへ反映する");
   assert.match(gameJs, /requestEpoch\s*!==\s*locationLoadEpoch/, "遅れて完了した旧場所の画像読込を無視する");

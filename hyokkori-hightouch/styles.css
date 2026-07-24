@@ -375,6 +375,20 @@ a:focus-visible {
   white-space: pre-line;
 }
 
+#start-screen .start-goal {
+  margin-top: clamp(7px, 1.5vmin, 12px);
+  padding: 4px 13px;
+  border: 2px solid rgba(255, 255, 255, 0.88);
+  border-radius: 999px;
+  background: #fff0ad;
+  box-shadow: 0 2px 6px rgba(122, 94, 34, 0.14);
+  color: #8a5a1e;
+  font-size: clamp(14px, 2vmin, 18px);
+  font-weight: 900;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
 #start-screen .tap-btn {
   min-width: min(100%, 290px);
   min-height: 50px;
@@ -1152,6 +1166,34 @@ a:focus-visible {
   line-height: 1.25;
 }
 
+#result-card .result-goal-status {
+  min-height: 1.35em;
+  margin-top: 1px;
+  color: #3b8054;
+  font-size: clamp(16px, 2.55vmin, 22px);
+  font-weight: 900;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+#result-card .result-goal-status.is-missed {
+  color: #a86621;
+}
+
+#result-card.is-goal-missed {
+  border-color: rgba(255, 247, 210, 0.92);
+  background: linear-gradient(155deg, #fffdf4, #fff4d9);
+}
+
+#result-card.is-goal-missed .result-btn {
+  background: linear-gradient(145deg, #e8a84d, #c67a31);
+  box-shadow: 0 5px 0 #9b5a25, 0 9px 15px rgba(155, 90, 37, 0.2);
+}
+
+#result-card.is-goal-missed .result-btn:active {
+  box-shadow: 0 2px 0 #9b5a25, 0 5px 10px rgba(155, 90, 37, 0.18);
+}
+
 .result-combo-line {
   display: flex;
   align-items: baseline;
@@ -1353,9 +1395,15 @@ a:focus-visible {
     line-height: 1.45;
   }
 
+  #start-screen .start-goal {
+    margin-top: 4px;
+    padding: 2px 9px;
+    font-size: clamp(11px, 3.2vh, 14px);
+  }
+
   #start-screen .tap-btn {
     min-height: 44px;
-    margin-top: 10px;
+    margin-top: 6px;
     padding: 8px 18px;
     font-size: clamp(15px, 4.2vh, 18px);
     box-shadow: 0 5px 0 #276b48, 0 8px 13px rgba(39, 107, 72, 0.2);
@@ -1392,6 +1440,11 @@ a:focus-visible {
 
   #result-card .result-score {
     font-size: clamp(26px, 8.2vh, 34px);
+  }
+
+  #result-card .result-goal-status {
+    min-height: 1.2em;
+    font-size: clamp(12px, 3.6vh, 15px);
   }
 
   #result-combo {

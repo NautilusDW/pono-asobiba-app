@@ -42,7 +42,7 @@ window.__showHyokkoriLoadError=function(){
 <script src="../common/menu.js"></script>
 <script src="../common/highscore.js"></script>
 
-<link rel="stylesheet" href="styles.css?v=20260724-1464">
+<link rel="stylesheet" href="styles.css?v=20260725-1469">
 </head>
 <body>
 
@@ -88,6 +88,7 @@ window.__showHyokkoriLoadError=function(){
       <div class="title" id="start-title">ひょっこりハイタッチ</div>
       <div class="start-location" id="start-location">こもれびの ひろば</div>
       <div class="desc" id="start-desc">ひかりの たねを<br>つきの はなへ とどけよう</div>
+      <div class="start-goal" id="start-goal">50てんで つぎへ</div>
       <button class="tap-btn" id="start-btn" type="button">ここで あそぶ</button>
     </div>
   </div>
@@ -136,12 +137,13 @@ window.__showHyokkoriLoadError=function(){
 
   <canvas id="fx-canvas" aria-hidden="true"></canvas>
 
-  <div id="result-overlay" role="dialog" aria-modal="true" aria-labelledby="result-title" aria-describedby="result-score result-next-location">
+  <div id="result-overlay" role="dialog" aria-modal="true" aria-labelledby="result-title" aria-describedby="result-score result-goal-status result-next-location">
     <div id="result-card">
       <img class="result-pono" id="result-visual" src="../assets/images/hyokkori-hightouch/pono_title_highfive.png" alt="ポノが ハイタッチを しているよ" loading="lazy" decoding="async" draggable="false">
       <div class="result-copy">
         <div class="result-banner" id="result-title">おしまい！</div>
         <div class="result-score" id="result-score">0 てん</div>
+        <div class="result-goal-status" id="result-goal-status">あと 50てん</div>
         <div class="result-combo-line">
           <span id="result-combo">さいだい 0コンボ</span>
           <span class="result-combo-separator" aria-hidden="true">・</span>
@@ -167,9 +169,9 @@ window.__showHyokkoriLoadError=function(){
   </div>
 </div>
 
-<script src="js/locations.js?v=20260724-1462"></script>
+<script src="js/locations.js?v=20260725-1469"></script>
 <script src="js/logic.js?v=20260723-1442"></script>
-<script src="js/game.js?v=20260724-1464" onerror="window.__showHyokkoriLoadError()"></script>
+<script src="js/game.js?v=20260725-1469" onerror="window.__showHyokkoriLoadError()"></script>
 <script>
 window.setTimeout(function(){
   if(!document.body.classList.contains('pono-game-ready'))window.__showHyokkoriLoadError();

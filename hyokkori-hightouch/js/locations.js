@@ -44,6 +44,7 @@ var LOCATIONS = [
     shortName: 'ひろば',
     startStory: 'ひかりの たねを\nつきの はなへ とどけよう',
     resultStory: 'たねが こみちへ すすんだ！',
+    scoreGoal: 50,
     background: ASSET_BASE + 'bg_world_komorebi_lowangle_20260724.png',
     hideouts: {
       far: ASSET_BASE + 'hideout_world_komorebi_far_v2_20260724.png',
@@ -86,6 +87,7 @@ var LOCATIONS = [
     shortName: 'こみち',
     startStory: 'りすたちに みちを\nおしえて もらおう',
     resultStory: 'みずべまで きたよ！',
+    scoreGoal: 50,
     background: ASSET_BASE + 'bg_world_donguri_overlook_20260724.png',
     hideouts: {
       far: ASSET_BASE + 'hideout_world_donguri_far_v2_20260724.png',
@@ -127,6 +129,7 @@ var LOCATIONS = [
     shortName: 'みずべ',
     startStory: 'かわうそと たねを\nむこうぎしへ とどけよう',
     resultStory: 'ゆうやけの おかが みえた！',
+    scoreGoal: 50,
     background: ASSET_BASE + 'bg_world_mizube_waterline_v2_20260724.png',
     hideouts: {
       far: ASSET_BASE + 'hideout_world_mizube_far_v2_20260724.png',
@@ -167,6 +170,7 @@ var LOCATIONS = [
     shortName: 'おか',
     startStory: 'きのこの あかりを\nたよりに のぼろう',
     resultStory: 'つきあかりまで あと いっぽ！',
+    scoreGoal: 50,
     background: ASSET_BASE + 'bg_world_mushroom_hill_sunset_20260724.png',
     hideouts: {
       far: ASSET_BASE + 'hideout_world_mushroom_far_20260724.png',
@@ -193,11 +197,11 @@ var LOCATIONS = [
       }
     },
     slots: [
-      { x: 30, groundY: 55, depth: 0.82, hideout: 'far', rotate: 0 },
+      { x: 31.2, groundY: 69, depth: 0.8, hideout: 'far', rotate: 0 },
       { x: 71, groundY: 40, depth: 0.86, hideout: 'far', rotate: 0 },
       { x: 18, groundY: 78, depth: 0.98, hideout: 'near', rotate: 0 },
       { x: 50, groundY: 84, depth: 1.07, hideout: 'near', rotate: 0 },
-      { x: 82, groundY: 77, depth: 1, hideout: 'near', rotate: 0 }
+      { x: 74, groundY: 80, depth: 0.98, hideout: 'near', rotate: 0 }
     ],
     partnerIds: ['harinezumi', 'fukurou', 'kitsune', 'usagi', 'tanuki', 'yamane'],
     bonusPartnerId: 'hikari_momonga'
@@ -209,6 +213,7 @@ var LOCATIONS = [
     startStory: 'つきあかりへ たねを\nとどけよう',
     resultStory: 'つきの はなが さいた！',
     afterStory: 'あたらしい たねで また さんぽ！',
+    scoreGoal: 50,
     background: ASSET_BASE + 'bg_world_moonlight_forest_clearing_20260724.png',
     hideouts: {
       far: ASSET_BASE + 'hideout_world_moonlight_far_20260724.png',
@@ -345,8 +350,25 @@ function locationForRun(state) {
 }
 
 /**
- * 30秒完走を1回だけ反映する。
- * 同じrunIdの再呼び出しは無変更で返し、結果画面の二重発火で2歩進ませない。
+ * 場所ごとの「つぎへ進める点数」を返す。
+ * 不明な場所は進行させないため Infinity とし、表示側で既知IDだけを使う。
+ */
+function scoreGoalForLocation(locationId) {
+  var location = typeof locationId === 'string' ? LOCATION_BY_ID[locationId] : null;
+  if (!location) return Infinity;
+  var goal = nonNegativeInteger(location.scoreGoal);
+  return goal > 0 ? goal : Infinity;
+}
+
+function meetsLocationScoreGoal(locationId, score) {
+  var goal = scoreGoalForLocation(locationId);
+  return isFinite(goal) && nonNegativeInteger(score) >= goal;
+}
+
+/**
+ * 30秒遊んだ記録を1回だけ反映し、達成点に届いた時だけ散歩を進める。
+ * 同じrunIdの再呼び出しは無変更で返し、結果画面の二重発火で
+ * 遊んだ回数や散歩の歩数を二重に増やさない。
  */
 function advanceWalkState(state, completion) {
   var next = normalizeWalkState(state);
@@ -359,6 +381,8 @@ function advanceWalkState(state, completion) {
   var runMode = result.mode === 'select' || result.mode === 'route'
     ? result.mode
     : next.mode;
+  var score = nonNegativeInteger(result.score);
+  var cleared = meetsLocationScoreGoal(locationId, score);
   var existingRecord = next.locationRecords[locationId] || {
     plays: 0,
     bestScore: 0,
@@ -366,18 +390,18 @@ function advanceWalkState(state, completion) {
   };
   next.locationRecords[locationId] = {
     plays: Math.min(Number.MAX_SAFE_INTEGER, existingRecord.plays + 1),
-    bestScore: Math.max(existingRecord.bestScore, nonNegativeInteger(result.score)),
+    bestScore: Math.max(existingRecord.bestScore, score),
     bestCombo: Math.max(existingRecord.bestCombo, nonNegativeInteger(result.bestCombo))
   };
 
-  if (next.completedLocationIds.indexOf(locationId) === -1) {
+  if (cleared && next.completedLocationIds.indexOf(locationId) === -1) {
     next.completedLocationIds.push(locationId);
     next.completedLocationIds = ROUTE_IDS.filter(function (id) {
       return next.completedLocationIds.indexOf(id) !== -1;
     });
   }
 
-  if (runMode === 'route') {
+  if (cleared && runMode === 'route') {
     var expectedLocationId = ROUTE_IDS[next.routeCompletedRuns % ROUTE_IDS.length];
     if (locationId === expectedLocationId) {
       next.routeCompletedRuns = Math.min(Number.MAX_SAFE_INTEGER, next.routeCompletedRuns + 1);
@@ -396,6 +420,8 @@ var PUBLIC_API = {
   WALK_SAVE_KEY: WALK_SAVE_KEY,
   normalizeWalkState: normalizeWalkState,
   locationForRun: locationForRun,
+  scoreGoalForLocation: scoreGoalForLocation,
+  meetsLocationScoreGoal: meetsLocationScoreGoal,
   advanceWalkState: advanceWalkState
 };
 

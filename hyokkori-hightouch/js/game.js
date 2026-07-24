@@ -368,6 +368,10 @@
     if (startDescEl) {
       startDescEl.textContent = currentLocation.startStory || 'おきている どうぶつと\nハイタッチしよう！';
     }
+    var startGoalEl = document.getElementById('start-goal');
+    if (startGoalEl) {
+      startGoalEl.textContent = H.scoreGoalForLocation(currentLocation.id) + 'てんで つぎへ';
+    }
   }
 
   function resetStageViewportScroll() {
@@ -579,6 +583,7 @@
   var comboSlamTimer = 0;
   var activeRun = null;
   var activeRunAdvanced = false;
+  var resultCleared = false;
   var resultCompletedLap = false;
   var nextWarmTimer = 0;
 
@@ -654,6 +659,7 @@
     tutorialOpen = false;
     activeRun = null;
     activeRunAdvanced = false;
+    resultCleared = false;
     resultCompletedLap = false;
     comboRecordBroken = false;
     renderedCombo = -1;
@@ -1057,6 +1063,10 @@
   function playFanfare() {
     [523, 659, 784, 1047, 1319].forEach(function (f, i) { tone(f, i * 0.11, 0.18, 'triangle', 0.13); });
   }
+  function playTryAgainSound() {
+    tone(392, 0, 0.12, 'sine', 0.065);
+    tone(330, 0.13, 0.16, 'sine', 0.055);
+  }
   // ═══ HUD ═══
   var hudTimerEl = document.getElementById('hud-timer');
   var hudScoreEl = document.getElementById('hud-score');
@@ -1428,11 +1438,12 @@
     });
     var beforeRuns = Number(before.routeCompletedRuns) || 0;
     var afterRuns = Number(after.routeCompletedRuns) || 0;
-    resultCompletedLap = afterRuns > beforeRuns &&
+    resultCleared = H.meetsLocationScoreGoal(activeRun.locationId, state.score);
+    resultCompletedLap = resultCleared && afterRuns > beforeRuns &&
       H.ROUTE_IDS.length > 0 &&
       afterRuns % H.ROUTE_IDS.length === 0;
     walkState = writeWalkState(after);
-    nextLocation = H.locationForRun(walkState);
+    nextLocation = resultCleared ? H.locationForRun(walkState) : currentLocation;
     activeRunAdvanced = true;
   }
 
@@ -1479,19 +1490,34 @@
     }
     var nextEl = document.getElementById('result-next-location');
     if (nextEl) {
-      var resultStory = resultCompletedLap && currentLocation && currentLocation.afterStory
-        ? currentLocation.afterStory
-        : currentLocation && currentLocation.resultStory;
-      nextEl.textContent = resultStory || (nextLocation ? 'つぎは ' + nextLocation.name : '');
-      if (nextLocation) {
-        nextEl.setAttribute('aria-label', nextEl.textContent + ' つぎは ' + nextLocation.name);
+      if (!resultCleared) {
+        nextEl.textContent = 'おなじ ばしょで もういちど';
+        nextEl.setAttribute('aria-label', nextEl.textContent);
+      } else {
+        var resultStory = resultCompletedLap && currentLocation && currentLocation.afterStory
+          ? currentLocation.afterStory
+          : currentLocation && currentLocation.resultStory;
+        nextEl.textContent = resultStory || (nextLocation ? 'つぎは ' + nextLocation.name : '');
+        nextEl.setAttribute(
+          'aria-label',
+          nextEl.textContent + (nextLocation ? ' つぎは ' + nextLocation.name : '')
+        );
       }
     }
   }
 
   function showResult() {
+    var scoreGoal = H.scoreGoalForLocation(currentLocation && currentLocation.id);
+    var scoreRemaining = Math.max(0, scoreGoal - state.score);
     var scoreEl = document.getElementById('result-score');
     if (scoreEl) scoreEl.textContent = state.score + ' てん';
+    var goalStatusEl = document.getElementById('result-goal-status');
+    if (goalStatusEl) {
+      goalStatusEl.textContent = resultCleared
+        ? scoreGoal + 'てん クリア！'
+        : 'あと ' + scoreRemaining + 'てんで つぎへ';
+      goalStatusEl.classList.toggle('is-missed', !resultCleared);
+    }
     var comboEl = document.getElementById('result-combo');
     if (comboEl) comboEl.textContent = 'さいだい ' + state.bestCombo + 'コンボ';
     var bestComboEl = document.getElementById('result-best-combo');
@@ -1500,7 +1526,10 @@
     if (comboNewEl) comboNewEl.classList.toggle('hidden', !comboRecordBroken);
     var finalBloom = !!(resultCompletedLap && currentLocation && currentLocation.id === 'moonlight_forest');
     var resultCardEl = document.getElementById('result-card');
-    if (resultCardEl) resultCardEl.classList.toggle('is-final-bloom', finalBloom);
+    if (resultCardEl) {
+      resultCardEl.classList.toggle('is-final-bloom', finalBloom);
+      resultCardEl.classList.toggle('is-goal-missed', !resultCleared);
+    }
     var resultVisualEl = document.getElementById('result-visual');
     if (resultVisualEl) {
       resultVisualEl.src = ASSET_BASE + (finalBloom
@@ -1508,21 +1537,25 @@
         : 'pono_title_highfive.png');
       resultVisualEl.alt = finalBloom
         ? 'つきの はなが さいたよ'
-        : 'ポノが ハイタッチを しているよ';
+        : resultCleared
+          ? 'ポノが ハイタッチを しているよ'
+          : 'ポノが もういちどと おうえんしているよ';
       resultVisualEl.classList.toggle('is-moon-flower', finalBloom);
     }
     var bannerEl = document.querySelector('#result-card .result-banner');
     if (bannerEl) {
       if (finalBloom) bannerEl.textContent = currentLocation.resultStory;
-      else if (state.score === 0) bannerEl.textContent = 'さいごまで あそべた！';
+      else if (!resultCleared) bannerEl.textContent = 'おしい！';
       else bannerEl.textContent = 'ナイス ハイタッチ！';
     }
+    var retryEl = document.getElementById('retry-btn');
+    if (retryEl) retryEl.textContent = resultCleared ? 'さんぽを つづける' : 'もういちど';
     renderResultWalkProgress();
     var rank = state.score > 0 && window.saveHighScore
       ? window.saveHighScore(HIGH_SCORE_GAME_ID, state.score)
       : 0;
     var newEl = document.getElementById('result-new');
-    if (rank >= 1) {
+    if (resultCleared && rank >= 1) {
       if (newEl) newEl.textContent = rank === 1 ? 'スコア しんきろく！' : 'スコア ベスト5！';
       if (newEl) newEl.classList.remove('hidden');
       spawnConfettiBurst(fxCanvas.width / 2, fxCanvas.height * 0.25, rank === 1 ? 50 : 22);
@@ -1530,7 +1563,8 @@
       playFanfare();
     } else {
       if (newEl) newEl.classList.add('hidden');
-      playFanfare();
+      if (resultCleared) playFanfare();
+      else playTryAgainSound();
     }
     var overlay = document.getElementById('result-overlay');
     if (overlay) {
