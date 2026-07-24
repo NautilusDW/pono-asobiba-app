@@ -220,7 +220,7 @@ const LOCATIONS = [
       { x: 71, groundY: 40, depth: 0.86, hideout: 'far', rotate: 0 },
       { x: 18, groundY: 78, depth: 0.98, hideout: 'near', rotate: 0 },
       { x: 50, groundY: 84, depth: 1.07, hideout: 'near', rotate: 0 },
-      { x: 74, groundY: 80, depth: 0.98, hideout: 'near', rotate: 0 },
+      { x: 68, groundY: 81, depth: 0.94, hideout: 'near', rotate: 0 },
     ],
   },
   {

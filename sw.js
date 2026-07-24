@@ -1,5 +1,10 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2388: ひょっこりハイタッチ「きのこの おか」の左上／右下の穴を、崖際と
+// 大きなキノコを避けた地面へ再配置。全5面に50点の次面条件を追加し、未達時は
+// 同じ場所での再挑戦を明示する。個別CSS/JSはnetwork-first配信のため
+// CRITICAL_ASSETSには追加しない。play.html PAGE_CACHE_VERSION/
+// window.PONO_SW_VERSIONと同期 (2388)。
 // v2387: まちがいさがしで実際に使う全58種の差分ラベルとクリア文を、TTS 3.1の
 // 女性ナレLeda・1.15倍速焼き込み・24kHz mono MP3へ統一。面ごとの先読み、最新発話優先、
 // ミュート即停止、最終ラベルの読み終わり待ちを追加した。版付き音声はmedia cache-firstへ
@@ -1163,7 +1168,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2387;
+const CACHE_VERSION = 2388;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

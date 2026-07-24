@@ -148,7 +148,7 @@ function mulberry32(seed) {
     mushroom_hill: [
       [31.2, 69, 0.8, "far", 0], [71, 40, 0.86, "far", 0],
       [18, 78, 0.98, "near", 0], [50, 84, 1.07, "near", 0],
-      [74, 80, 0.98, "near", 0]
+      [68, 81, 0.94, "near", 0]
     ],
     moonlight_forest: [
       [27, 39, 0.84, "far", 0], [73, 39, 0.86, "far", 0],
@@ -1027,7 +1027,7 @@ function mulberry32(seed) {
   assert.match(gameJs, /phase\s*!==\s*['"]playing['"]\s*\|\|\s*tutorialOpen\s*\|\|\s*boardEl\.hasAttribute\(\s*['"]inert['"]\s*\)/, "説明中・非操作中は救済判定を背後へ通さない");
   assert.match(indexHtml, /styles\.css\?v=20260725-1469/, "styles.css は1469の達成結果UI版キャッシュトークンで読む");
   assert.match(indexHtml, /js\/game\.js\?v=20260725-1469/, "game.js は1469の50点進行版キャッシュトークンで読む");
-  assert.match(indexHtml, /js\/locations\.js\?v=20260725-1469/, "locations.js は1469のキノコ丘配置・達成点版キャッシュトークンで読む");
+  assert.match(indexHtml, /js\/locations\.js\?v=20260725-1469d/, "locations.js は1469のキノコ丘最終配置・達成点版キャッシュトークンで読む");
 }
 
 // ── 11b. ボーナス出現・リアルタイムコンボ・最大記録UI ──────────────
