@@ -210,8 +210,23 @@ namespace Pono.KawaGlint.Rendering
         // art), so only the ANCHOR moves -- picked per location by locating
         // that background's own "seat" feature (pier deck / low tide rock /
         // a small boat's low freeboard) in the delivered art:
-        //   bg_tsuri_sea_sunahama: wooden pier deck, right side, well above
-        //     the waterline (elevated walkway).
+        //   bg_tsuri_sea_sunahama: wooden pier deck, at the cantilevered
+        //     near/left end of the dock (right beside the first post's
+        //     stub), at plank height. A code-review pass (2026-07-25) found
+        //     the original pick -- (4.14, 2.85), "right side, well above the
+        //     waterline" -- was measured against the post's decorative
+        //     rope-wrapped knob rather than the walkway surface itself: with
+        //     AnglerArtWorldHeight=2.6 added on top, its sprite top (5.45)
+        //     overshot this camera's visible top edge (orthographicSize=5 ->
+        //     world y=+5) by ~0.45. Pixel-measured against the actual art
+        //     (bg_tsuri_sea_sunahama.png), the deck's true plank height
+        //     climbs as the pier recedes toward the camera-right/foreground
+        //     side, so no point along the "right side" reading stays under
+        //     the camera top once Pono's height is added -- only the
+        //     dock's own near/left end (where the plank is lowest, right by
+        //     the first post) does, hence the reinterpreted anchor here
+        //     (sprite top = 4.80, a comfortable margin under both the ~4.9
+        //     recommended cap and the hard 5.0 camera edge).
         //   bg_tsuri_sea_iwaba: a low rock right at the shore's edge, right
         //     side (the rocky cliff itself starts further right/up; this is
         //     the lowest ledge, close to the water like river_asase's own
@@ -227,9 +242,17 @@ namespace Pono.KawaGlint.Rendering
         // happens to already sit almost exactly where that same fallback
         // anchor lands (verified against the delivered art), so no override
         // is needed there either -- see ResolveAnglerAnchor.
+        //
+        // Every entry here (not just sunahama) must keep anchor.y +
+        // AnglerArtWorldHeight comfortably at or under this camera's
+        // visible top edge -- see
+        // KawaGlintAnglerPlacementEditModeTests.Build_AnyLocation_AnglerSpriteTopStaysWithinCameraVisibleBounds,
+        // which asserts exactly that for every key below plus the
+        // river_asase/river_kakou fallback, so a future per-location tweak
+        // here can't silently reintroduce this same off-screen regression.
         private static readonly Dictionary<string, Vector3> AnglerAnchorByBackgroundKey = new Dictionary<string, Vector3>
         {
-            { "bg_tsuri_sea_sunahama", new Vector3(4.14f, 2.85f, 0f) },
+            { "bg_tsuri_sea_sunahama", new Vector3(0.90f, 2.20f, 0f) },
             { "bg_tsuri_sea_iwaba", new Vector3(2.59f, 1.89f, 0f) },
             { "bg_tsuri_sea_oki", new Vector3(4.20f, 2.03f, 0f) },
         };

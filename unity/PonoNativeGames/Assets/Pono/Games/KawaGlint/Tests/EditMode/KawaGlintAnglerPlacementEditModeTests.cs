@@ -80,7 +80,7 @@ namespace Pono.KawaGlint.Tests.EditMode
             AssertVector3(stage.RodTipWorldPosition, AsaseRodTip, 0.02f, "river_kakou's rod tip must match the same fallback anchor's rod tip.");
         }
 
-        [TestCase("bg_tsuri_sea_sunahama", 4.14f, 2.85f)]
+        [TestCase("bg_tsuri_sea_sunahama", 0.90f, 2.20f)]
         [TestCase("bg_tsuri_sea_iwaba", 2.59f, 1.89f)]
         [TestCase("bg_tsuri_sea_oki", 4.20f, 2.03f)]
         public void Build_SeaExpansionBackgroundKey_PlacesAnglerAtItsOwnAnchor(string backgroundKey, float expectedX, float expectedY)
@@ -125,6 +125,52 @@ namespace Pono.KawaGlint.Tests.EditMode
 
             AssertVector3(angler.position, AsaseAnchor, 0.01f, "Switching back to a null/unmapped key should return Pono to the asase anchor.");
             AssertVector3(newRodTip, AsaseRodTip, 0.02f, "...and its rod tip should return to the asase value too.");
+        }
+
+        // Mirrors KawaGlintStageBuilder's own private AnglerArtWorldHeight
+        // const (Pono's illustrated world height, never assigned
+        // independently -- see BuildAnglerArt) -- duplicated here for the
+        // same reason AsaseAnchor/AsaseRodTip above are: this test file has
+        // no internals-visibility into Pono.KawaGlint.Rendering, so every
+        // fixed art constant it needs is copied, not referenced.
+        private const float AnglerArtWorldHeight = 2.6f;
+
+        // Regression coverage for a code-review finding (2026-07-25):
+        // bg_tsuri_sea_sunahama's original anchor, (4.14, 2.85), was picked
+        // against the first post's decorative rope-wrapped knob rather than
+        // the walkway surface itself, so its sprite top (anchor.y +
+        // AnglerArtWorldHeight = 5.45) overshot this camera's visible top
+        // edge (orthographicSize=5, position.y=0 -> world y=+5) by ~0.45 --
+        // roughly 17% of Pono's own drawn height poking off the top of the
+        // frame. Every *_PlacesAnglerAtItsOwnAnchor test above only asserts
+        // an anchor matches its own dictionary entry, so a wrong-but-
+        // internally-consistent anchor value would still pass all of them
+        // by construction; none of the existing coverage could have caught
+        // this off-screen regression. This test instead asserts the actual
+        // on-screen invariant -- against river_asase/river_kakou's shared
+        // fallback anchor plus every sea-expansion location's own anchor --
+        // so a future per-location anchor tweak can't silently push Pono
+        // off the top of the camera again.
+        [TestCase(null)]
+        [TestCase("bg_tsuri_river_kakou")]
+        [TestCase("bg_tsuri_sea_sunahama")]
+        [TestCase("bg_tsuri_sea_iwaba")]
+        [TestCase("bg_tsuri_sea_oki")]
+        public void Build_AnyLocation_AnglerSpriteTopStaysWithinCameraVisibleBounds(string backgroundKey)
+        {
+            var stage = KawaGlintStageBuilder.Build(_parentGo.transform, Camera, backgroundKey);
+
+            var angler = _parentGo.transform.Find("KawaStage/Angler");
+            Assert.That(angler, Is.Not.Null, "Build should create an Angler child under the stage root.");
+
+            var spriteTopWorldY = angler.position.y + AnglerArtWorldHeight;
+            var cameraTopWorldY = Camera.transform.position.y + Camera.orthographicSize;
+
+            Assert.That(
+                spriteTopWorldY,
+                Is.LessThanOrEqualTo(cameraTopWorldY),
+                $"{(backgroundKey ?? "(null -> river_asase)")}'s Angler sprite top ({spriteTopWorldY:F2}) "
+                + $"must not exceed the camera's visible top edge ({cameraTopWorldY:F2}); anchor.y={angler.position.y:F2}.");
         }
 
         private static void AssertVector3(Vector3 actual, Vector3 expected, float tolerance, string message)
