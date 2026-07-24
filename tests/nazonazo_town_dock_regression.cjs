@@ -260,29 +260,67 @@ check(/\.town-dock-station-helper-figure\{/.test(css), "the CSS-shape waiting-vi
 check(/\.tun\.is-blink\{/.test(css), "hint-tier-1 blink must target the real gate element directly (no bespoke marker to blink anymore)");
 check(/#townDockThrottle\{/.test(css), "throttle button CSS missing");
 check(/@media \(prefers-reduced-motion:reduce\)\{[\s\S]*\.tun\.is-blink\{animation:none!important/.test(css), "reduced-motion override for the real gate's blink missing");
+check(/@media \(prefers-reduced-motion:reduce\)\{[\s\S]*\.town-dock-approach-arrow-glyph\{animation:none!important/.test(css), "reduced-motion override for the approach-arrow's bounce missing");
 // body.town-dock-active must no longer hide #veh/#cars (checked above in the DOM contract via the
 // exact old rule text), and there must be no separate z-index-layered approach scene anymore --
 // the real .tun.station gates live inside #world itself and inherit its stacking/scroll for free.
 check(!/#townDockApproachLayer/.test(css), "no separate approach-layer stacking context should exist in v3");
 
-// ---- v4 (round7): on-track brake-zone strip + red stop-target box, replacing the old abstract
-// floating gauge concept entirely. Per user feedback these must render as real elements inside
-// #world (same left:Nvw + world.style.transform scroll technique as the .tun.station gates), not
-// a second independent fixed-position HUD layer. ----
+// ---- v5 (round7 追補): on-track brake-zone strip + green stop-target box + approach arrow,
+// replacing the old abstract floating gauge concept entirely. A user screenshot review found
+// two problems with the first v4 cut: (1) placed at low "track height" inside #world, the zone
+// was hidden behind the foreground decor layer #fgT (z-index:8) because #world establishes its
+// own stacking context (position:absolute + z-index:3), so no child z-index can ever paint above
+// a *sibling* of #world -- moving the zone up to bottom:18-19vh "fixed" the occlusion but made it
+// read as a floating band disconnected from the track/station art, which is what the user then
+// flagged. (2) the zone's world-space anchor was derived from legLen (distance to the quiz-style
+// stops(o,i) checkpoint), which is CHECKPOINT_STOP_LEFT_VW(24vw) *before* the real gate's rendered
+// left edge (tunX(o,i)=stops(o,i)+24) -- so the stop-box never actually reached the gate art.
+// v5 fixes both: the three elements move to be direct children of #scene (siblings of
+// #world/#fgT/#veh, escaping #world's stacking context so a z-index above #fgT actually works),
+// positioned every frame via the same "transform:translate3d(cssXFromVw(worldSpaceX-worldX),0,0)"
+// technique the branch-stage-polish sprites already use elsewhere in this file for world-synced
+// sibling layers; and the zone's center is now anchored directly to the real gate's own coordinate
+// (tunX(origin(stg),stationIndex)), not a legLen subtraction. ----
 check(/\.town-dock-brake-zone\{/.test(css), "brake-zone strip CSS missing");
 check(/\.town-dock-stop-box\{/.test(css), "stop-target box CSS missing");
-check(!/\.town-dock-brake-zone\{[^}]*position:\s*fixed/.test(css) && !/\.town-dock-stop-box\{[^}]*position:\s*fixed/.test(css),
-  "brake-zone/stop-box must be position:absolute children of the real scrolling #world, never position:fixed (that would reintroduce the floating-HUD-bar anti-pattern the user explicitly rejected)");
-check(/let townDockZoneEl=null,townDockStopBoxEl=null;/.test(game), "module-level refs for the brake-zone/stop-box elements missing");
-const buildWorldFnV4 = extractFunction(game, "buildWorld");
-check(/townDockZoneEl=document\.createElement\("div"\)/.test(buildWorldFnV4) && /townDockZoneEl\.className="town-dock-brake-zone"/.test(buildWorldFnV4), "buildWorld must create the brake-zone element inside the isTownDockStage() branch, same as the .tun.station gates");
-check(/townDockStopBoxEl=document\.createElement\("div"\)/.test(buildWorldFnV4) && /townDockStopBoxEl\.className="town-dock-stop-box"/.test(buildWorldFnV4), "buildWorld must create the stop-box element inside the isTownDockStage() branch, same as the .tun.station gates");
-check(/world\.appendChild\(townDockZoneEl\)/.test(buildWorldFnV4) && /world\.appendChild\(townDockStopBoxEl\)/.test(buildWorldFnV4), "brake-zone/stop-box must be appended as children of the real #world element, not a separate layer");
-check(/function townDockUpdateZoneVisual\(\)\{/.test(game), "townDockUpdateZoneVisual() missing -- must position the brake-zone/stop-box from real leg/zone geometry every frame");
+check(/\.town-dock-approach-arrow\{/.test(css) && /\.town-dock-approach-arrow-glyph\{/.test(css), "approach-arrow guide CSS (outer position element + inner bouncing glyph) missing");
+check(!/\.town-dock-brake-zone\{[^}]*position:\s*fixed/.test(css) && !/\.town-dock-stop-box\{[^}]*position:\s*fixed/.test(css) && !/\.town-dock-approach-arrow\{[^}]*position:\s*fixed/.test(css),
+  "brake-zone/stop-box/approach-arrow must be position:absolute, never position:fixed (that would reintroduce the floating-HUD-bar anti-pattern the user explicitly rejected)");
+// v5: colors must read as "approach / OK to release", not the old orange/red "danger" language.
+check(!/\.town-dock-stop-box\{[^}]*#ff3b30/.test(css) && !/\.town-dock-brake-zone\{[^}]*rgba\(255,1[34]\d,\d+/.test(css),
+  "v5: the old orange/red danger-colored brake-zone/stop-box must be gone, replaced by a blue(approach)/green(OK-to-release) color language per user feedback");
+check(/\.town-dock-stop-box\{[^}]*border:5px solid #2ecc71/.test(css), "stop-box border must be green (release-here-OK signal), not the old red");
+// v5: z-index must clear the foreground decor layer #fgT (z-index:8, a *sibling* of #scene's other
+// children) -- anything less would silently re-hide the zone behind foreground bushes/fences again.
+const zoneZIndexMatch = /\.town-dock-brake-zone\{[^}]*z-index:(\d+)/.exec(css);
+const boxZIndexMatch = /\.town-dock-stop-box\{[^}]*z-index:(\d+)/.exec(css);
+const arrowZIndexMatch = /\.town-dock-approach-arrow\{[^}]*z-index:(\d+)/.exec(css);
+check(!!zoneZIndexMatch && Number(zoneZIndexMatch[1]) > 8, "brake-zone z-index must be greater than #fgT's z-index:8, or it will be hidden behind foreground decor again");
+check(!!boxZIndexMatch && Number(boxZIndexMatch[1]) > 8, "stop-box z-index must be greater than #fgT's z-index:8, or it will be hidden behind foreground decor again");
+check(!!arrowZIndexMatch && Number(arrowZIndexMatch[1]) > 8, "approach-arrow z-index must be greater than #fgT's z-index:8, or it will be hidden behind foreground decor again");
+check(/const world=\$\("world"\),scene=\$\("scene"\)/.test(game), "module-level `scene` element ref missing (needed to host the brake-zone/stop-box/arrow as #world's siblings)");
+check(/let townDockZoneEl=null,townDockStopBoxEl=null,townDockArrowEl=null;/.test(game), "module-level refs for the brake-zone/stop-box/arrow elements missing");
+const buildWorldFnV5 = extractFunction(game, "buildWorld");
+check(/townDockZoneEl=document\.createElement\("div"\)/.test(buildWorldFnV5) && /townDockZoneEl\.className="town-dock-brake-zone"/.test(buildWorldFnV5), "buildWorld must create the brake-zone element inside the isTownDockStage() branch, same as the .tun.station gates");
+check(/townDockStopBoxEl=document\.createElement\("div"\)/.test(buildWorldFnV5) && /townDockStopBoxEl\.className="town-dock-stop-box"/.test(buildWorldFnV5), "buildWorld must create the stop-box element inside the isTownDockStage() branch, same as the .tun.station gates");
+check(/townDockArrowEl=document\.createElement\("div"\)/.test(buildWorldFnV5) && /townDockArrowEl\.className="town-dock-approach-arrow"/.test(buildWorldFnV5), "buildWorld must create the approach-arrow element inside the isTownDockStage() branch");
+check(/const zoneHost=scene\|\|world;/.test(buildWorldFnV5), "v5: brake-zone/stop-box/arrow must be hosted on #scene (falling back to #world only if #scene is somehow missing), not literally forced into #world's stacking context");
+check(/zoneHost\.appendChild\(townDockZoneEl\)/.test(buildWorldFnV5) && /zoneHost\.appendChild\(townDockStopBoxEl\)/.test(buildWorldFnV5) && /zoneHost\.appendChild\(townDockArrowEl\)/.test(buildWorldFnV5), "brake-zone/stop-box/arrow must be appended to the zoneHost (#scene), not literally into #world (which would reintroduce the z-index/stacking-context bug)");
+check(/if\(townDockZoneEl&&townDockZoneEl\.parentNode\)townDockZoneEl\.parentNode\.removeChild\(townDockZoneEl\);/.test(buildWorldFnV5), "buildWorld must explicitly remove any previous brake-zone element before recreating it -- world.innerHTML=\"\" no longer clears these since v5 moved them off of #world");
+check(/function townDockUpdateZoneVisual\(\)\{/.test(game), "townDockUpdateZoneVisual() missing -- must position the brake-zone/stop-box/arrow from real leg/zone geometry every frame");
 const zoneVisualFn = extractFunction(game, "townDockUpdateZoneVisual");
-check(/townDockZoneEl\.style\.left=\(state\.legStartX\+warnStart\)\+"vw";/.test(zoneVisualFn), "brake-zone left must be written in real absolute worldX-space vw (legStartX+warnStart), the same coordinate system tunX(o,i) uses for the .tun.station gates");
-check(/townDockStopBoxEl\.style\.left=\(state\.legStartX\+bounds\.start\)\+"vw";/.test(zoneVisualFn), "stop-box left must be written in real absolute worldX-space vw (legStartX+bounds.start), matching the exact success-judgment zone (bounds.start..bounds.end)");
-check(/townDockUpdateZoneVisual\(\);/.test(extractFunction(game, "syncTownDockPresentation")), "syncTownDockPresentation (called every tick) must refresh the brake-zone/stop-box position every frame, so the 3rd station's oscillating zone stays in sync");
+check(/function townDockWorldToScreenVw\(worldSpaceX\)\{return worldSpaceX-worldX;\}/.test(game), "townDockWorldToScreenVw bridge missing -- must convert a real world-space vw coordinate into a worldX-relative screen offset (worldSpaceX-worldX), mirroring the same math #world's own translate3d(-worldX,...) applies to its children");
+check(/townDockZoneEl\.style\.transform="translate3d\("\+cssXFromVw\(townDockWorldToScreenVw\(state\.legStartX\+warnStart\)\)\+",0,0\)";/.test(zoneVisualFn), "brake-zone position must be written via transform:translate3d(cssXFromVw(worldSpaceX-worldX),...) every frame, not a static #world-relative left (v5: no longer a child of #world)");
+check(/townDockStopBoxEl\.style\.transform="translate3d\("\+cssXFromVw\(townDockWorldToScreenVw\(state\.legStartX\+bounds\.start\)\)\+",0,0\)";/.test(zoneVisualFn), "stop-box position must be written via transform:translate3d(cssXFromVw(worldSpaceX-worldX),...) every frame, matching the exact success-judgment zone (bounds.start..bounds.end)");
+check(/townDockArrowEl\.style\.transform=/.test(zoneVisualFn) && /townDockArrowEl\.style\.opacity=/.test(zoneVisualFn), "approach-arrow position/intensity must be updated every frame from real zone geometry");
+check(/townDockUpdateZoneVisual\(\);/.test(extractFunction(game, "syncTownDockPresentation")), "syncTownDockPresentation (called every tick) must refresh the brake-zone/stop-box/arrow position every frame, so the 3rd station's oscillating zone stays in sync");
+// v5: the arrow's worldX-synced *position* transform (written every frame from JS) must never be
+// animated by the same CSS property via a keyframe animation on the same element -- a CSS
+// animation targeting `transform` overrides the inline style while running, which would silently
+// break the worldX position sync. The bounce must live on a separate inner glyph element instead.
+check(!/\.town-dock-approach-arrow\{[^}]*animation:/.test(css), "the OUTER .town-dock-approach-arrow (JS-positioned every frame) must not carry a CSS transform-animation itself -- that would fight the per-frame worldX sync");
+check(/\.town-dock-approach-arrow-glyph\{[^}]*animation:townDockArrowBounce/.test(css), "the bounce animation must live on the inner .town-dock-approach-arrow-glyph, decoupled from the outer element's JS-driven position transform");
 
 // ---- regression guard: the visual redesign must be presentation-only ----
 // syncTownDockPresentation() may READ townDockState fields to decide what to draw, but it must
@@ -334,23 +372,34 @@ check(/state\.legStartX=worldX;/.test(beginStationFnV4), "beginTownDockStation m
 check(/function townDockLegLen\(\)\{/.test(game), "townDockLegLen() helper missing -- must compute the current leg's real vw length from stops(origin(stg),stationIndex)-legStartX");
 const legLenFn = extractFunction(game, "townDockLegLen");
 check(/stops\(origin\(stg\),townDockState\.stationIndex\)-townDockState\.legStartX/.test(legLenFn), "townDockLegLen must be derived from the real stops()/legStartX geometry, never a fixed constant");
-check(/const trackLen=townDockLegLen\(\);/.test(tickFn) && /nextPos>=trackLen/.test(tickFn), "tickTownDockGame's hard position clamp must scale with the real per-leg length (townDockLegLen()), not a fixed shared TOWN_DOCK_TRACK_LEN");
+// v5: the hard position clamp must be at least bounds.end+margin, not just townDockLegLen() alone.
+// Since v5 anchors the success zone to the real gate (tunX(o,i), which sits CHECKPOINT_STOP_LEFT_VW
+// (24vw) *past* stops(o,i)), bounds.end can now legitimately exceed townDockLegLen() -- clamping to
+// townDockLegLen() alone would make the far part of the zone physically unreachable.
+check(/const trackLen=Math\.max\(townDockLegLen\(\),bounds\.end\+40\);/.test(tickFn) && /nextPos>=trackLen/.test(tickFn), "tickTownDockGame's hard position clamp must be max(townDockLegLen(), bounds.end+margin) so the gate-anchored zone's far edge always stays physically reachable");
 
-// ---- station config sanity: zoneWidth/zoneEndGap are real vw quantities now (not a 0..100
-// abstract scale), and zoneCenter is derived at runtime from the leg length so the same knobs
-// work correctly whether the current leg is ~296vw (station 1) or ~430vw (stations 2/3) ----
+// ---- station config sanity: zoneWidth/zoneGateAnchorVw are real vw quantities (not a 0..100
+// abstract scale), and zoneCenter is derived at runtime directly from the real gate's own
+// coordinate (tunX(origin(stg),stationIndex)) so the same knobs work correctly whether the
+// current leg is ~296vw (station 1) or ~430vw (stations 2/3) ----
 const stations = extractArray(game, "TOWN_DOCK_STATIONS");
 check(stations.length === 3, "must have exactly 3 stations");
-check(stations.every(s => typeof s.zoneWidth === "number" && typeof s.zoneEndGap === "number" && !("zoneCenter" in s)),
-  "v4: station knobs must be zoneWidth/zoneEndGap (real vw), not a precomputed zoneCenter -- zoneCenter must be derived at runtime from the leg length so it works for both the ~296vw and ~430vw legs");
+check(stations.every(s => typeof s.zoneWidth === "number" && typeof s.zoneGateAnchorVw === "number" && !("zoneCenter" in s) && !("zoneEndGap" in s)),
+  "v5: station knobs must be zoneWidth/zoneGateAnchorVw (real vw), not a precomputed zoneCenter and not the v4 zoneEndGap (which was derived from legLen, not the real gate, and put the zone ~32vw before the gate art)");
 check(stations[0].zoneWidth > stations[1].zoneWidth, "station 1 must have a wider (easier) stop zone than station 2, per the escalating-difficulty spec");
 check(stations.every(s => s.zoneWidth >= 30), "every station's stop zone must be a reasonably sized real-vw window a child can react to, not razor-thin");
 check(stations[2].oscAmplitude > 0 && stations[0].oscAmplitude === 0 && stations[1].oscAmplitude === 0,
   "only the 3rd station may oscillate, per spec");
 check(stations[2].oscAmplitude <= stations[2].zoneWidth * 0.35 && stations[2].oscAmplitude >= stations[2].zoneWidth * 0.2,
   "3rd station oscillation amplitude must be roughly 30% of the zone width, not a fast-moving target");
+// v5: zoneGateAnchorVw must actually land the zone's center within (or immediately adjacent to)
+// the real gate art's 49vw width, so the zone visually overlaps the station image rather than
+// sitting tens of vw before it (the exact bug the user's screenshot review caught in v4).
+check(stations.every(s => s.zoneGateAnchorVw >= 0 && s.zoneGateAnchorVw <= 49), "zoneGateAnchorVw must land within the real .tun.station gate's 49vw width (see styles.css .tun.station{width:49vw}), so the success zone visually overlaps the station art");
+const gateAnchorPosFn = extractFunction(game, "townDockGateAnchorPos");
+check(/tunX\(origin\(stg\),townDockState\.stationIndex\)-townDockState\.legStartX/.test(gateAnchorPosFn), "townDockGateAnchorPos must be derived from tunX(origin(stg),stationIndex) -- the exact same real coordinate buildWorld() uses as the .tun.station gate's own left edge (t.style.left=tunX(o,i)+\"vw\") -- not stops(o,i) or legLen (both of which sit CHECKPOINT_STOP_LEFT_VW=24vw before the gate's actual rendered position)");
 const zoneCenterFn = extractFunction(game, "townDockZoneCenter");
-check(/legLen-station\.zoneEndGap-width\/2/.test(zoneCenterFn), "zoneCenter must be legLen-zoneEndGap-width/2 so the zone's end (bounds.end) always sits a fixed zoneEndGap before the real leg end, regardless of leg length or widen-on-retry");
+check(/townDockGateAnchorPos\(\)\+station\.zoneGateAnchorVw/.test(zoneCenterFn), "zoneCenter must be townDockGateAnchorPos()+zoneGateAnchorVw so the success zone is anchored directly to the real gate's own coordinate, not derived from legLen (which the v4 cut got wrong by 24vw+)");
 
 // ---- v4 (round7): the assist (3rd+ attempt auto-taper) safety net must converge to a stop in a
 // bounded amount of time regardless of how long the current leg is. A physics-inconsistent

@@ -1052,11 +1052,18 @@ let tunnels=[],playing=false,cars=[],helpItems=[],rareCount=0,rareEl=null,rareSp
 // 分離する(townDock は tunnels を一切読まない設計を維持するため)。buildWorld() で
 // isTownDockStage() 用に生成し、resetTownDockGame() 等でワールド再構築のたびにクリアする。
 let townDockGates=[];
-// v4 (round7): ブレーキゾーン帯+赤枠停止ボックスの実DOM要素。.tun.station ゲートと全く同じ
-// 「#world の子要素として left をvw絶対座標で置き、world.style.transformの1:1スクロールに
-// 委ねる」方式。フロート型の独立HUDバーは作らない(過去に一度却下された設計の再発防止)。
-// buildWorld() のたびに再生成し、位置は毎フレーム townDockUpdateZoneVisual() が更新する。
-let townDockZoneEl=null,townDockStopBoxEl=null;
+// v5 (round7 追補): ブレーキゾーン帯+赤枠停止ボックス+誘導矢印の実DOM要素。
+// v4では #world の子要素(left をvw絶対座標で置き、world.style.transformの1:1スクロールに
+// 委ねる)にしていたが、#world は position:absolute+z-index:3 で独自のスタッキングコンテキストを
+// 作るため、子要素にどんな z-index を与えても前景装飾レイヤー #fgT(z-index:8、#worldの
+// 兄弟要素)より手前には出せないという CSS の制約に突き当たった(ユーザー実機確認で
+// 「線路の高さに置くと前景の柵/茂みに隠れる」)。v5 では #scene 直下(#world/#fgT/#veh と
+// 同じ兄弟階層)に生成し、branchWorldLifeLayer 等の演出スプライトが既に使っている
+// 「毎フレーム transform:translate3d(cssXFromVw(worldSpaceX-worldX),0,0) で worldX に同期する」
+// 手法を採用。フロート型の独立HUDバーではない(worldXから毎フレーム機械的に算出される
+// 本物のワールド座標駆動)という原則はそのまま維持しつつ、z-indexだけ #fgT より高く設定できる
+// ようになる。buildWorld() のたびに再生成し、位置は毎フレーム townDockUpdateZoneVisual() が更新する。
+let townDockZoneEl=null,townDockStopBoxEl=null,townDockArrowEl=null;
 let journeyScore=0,highScore=0,stageScore=0,stageScoreBreakdown=emptyStageScoreBreakdown(),stageClearScoreGranted=false,stageCompletionHandled=false;
 let tunnelFriendCandidates=[],tunnelFriendsFound=0,tunnelFriendTotalFound=0,tunnelFriendRewardGranted=false,tunnelFriendPerfectScoreGranted=false,tunnelFriendGameActive=false,tunnelFriendStartWorldX=0;
 let pendingBranchChoice=null,branchGateActive=false,branchGateTimer=0;
@@ -1137,15 +1144,22 @@ const TOWN_DOCK_ALL_CLEAR_DELAY_MS=1500;
 // ブレーキゾーン帯(トラック上のアンバー帯)を、実際の停止判定ゾーン(zoneStart)より
 // この分だけ手前から見せ始める「前もっての警告」用のリード距離(vw)。
 const TOWN_DOCK_ZONE_WARN_LEAD=42;
-// zoneWidth: 停止に成功できる幅(vw、実距離と同じ単位)。zoneEndGap: レグ終端(実際の
-// 駅停止位置)からゾーン終端までの余白(vw)。zoneCenter は実行時に
-// legLen-zoneEndGap-width/2 として毎回算出するため、レグの実距離が変わっても
-// (=駅ごとに296vw/430vwと違っても)常に「駅の少し手前でぴたっと止まる」配置になる。
-// 1駅目が最も広く簡単、2・3駅目はより狭く難しい、という既存の難易度傾斜は維持。
+// zoneWidth: 停止に成功できる幅(vw、実距離と同じ単位)。zoneGateAnchorVw: 本物の駅ゲート
+// (.tun.station、buildWorldでtunX(origin(stg),i)を左端に幅49vwで配置)の左端からどれだけ
+// 内側(進行方向)を成功ゾーンの中心に据えるか。
+// v5 (round7 追補): 当初 zoneCenter を「legLen(=stops(o,i)までの距離)からの引き算」で
+// 算出していたところ、tunX(o,i)=stops(o,i)+CHECKPOINT_STOP_LEFT_VW(24) だけゲートは
+// stops(o,i) より手前ではなく "先" にあるという事実を見落としており、ゾーンの終端が
+// ゲート左端よりさらに32vw前後も手前になっていた。「停止ボックスが駅の絵と噛み合わず、
+// 画面内に駅が全く映らない/駅のだいぶ手前になる」というユーザー報告はこれが原因。
+// v5では zoneCenter を legLen からではなく、本物のゲート座標 tunX(origin(stg),i) を
+// 直接の基準にして算出し直す(townDockZoneCenter参照)。これによりゾーンは常に本物の
+// ゲート画像の幅49vwの中(またはそのごく近く)に重なる。1駅目が最も広く簡単、2・3駅目は
+// より狭く難しい、という既存の難易度傾斜は維持。
 const TOWN_DOCK_STATIONS=Object.freeze([
- Object.freeze({zoneWidth:66,zoneEndGap:18,cruiseSpeed:19,oscAmplitude:0,oscPeriodMs:0}),
- Object.freeze({zoneWidth:44,zoneEndGap:16,cruiseSpeed:23,oscAmplitude:0,oscPeriodMs:0}),
- Object.freeze({zoneWidth:44,zoneEndGap:16,cruiseSpeed:23,oscAmplitude:12,oscPeriodMs:5200})
+ Object.freeze({zoneWidth:66,zoneGateAnchorVw:14,cruiseSpeed:19,oscAmplitude:0,oscPeriodMs:0}),
+ Object.freeze({zoneWidth:44,zoneGateAnchorVw:12,cruiseSpeed:23,oscAmplitude:0,oscPeriodMs:0}),
+ Object.freeze({zoneWidth:44,zoneGateAnchorVw:12,cruiseSpeed:23,oscAmplitude:12,oscPeriodMs:5200})
 ]);
 const TOWN_DOCK_LINES=Object.freeze({
  intro:["ればーを おしつづけて すすもう。はなすと ゆっくり とまるよ","こんどは ぴったり とまるのが むずかしいよ","とまる ばしょが すこし うごくよ！"],
@@ -1513,7 +1527,7 @@ function setDriverMood(mood){
 
 /* ================= dom ================= */
 const $=id=>document.getElementById(id);
-const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),branchDecorT=$("branchDecorT"),branchDinoMeadow=$("branchDinoMeadow"),fgT=$("fgT"),branchEffectFar=$("branchEffectFar"),branchWorldLifeLayer=$("branchWorldLifeLayer"),branchEffectMid=$("branchEffectMid"),branchEffectNear=$("branchEffectNear"),seaFishLayer=$("seaFishLayer"),seaHabitatLayer=$("seaHabitatLayer"),smokeLayer=$("smokeLayer"),townHorizonLoop=$("townHorizonLoop"),townMidLoop=$("townMidLoop"),futureHorizonLoop=$("futureHorizonLoop"),futureMidLoop=$("futureMidLoop"),futureForegroundLoop=$("futureForegroundLoop"),spaceHorizonLoop=$("spaceHorizonLoop"),spaceForegroundLoop=$("spaceForegroundLoop"),jungleHabitatBack=$("jungleHabitatBack");
+const world=$("world"),scene=$("scene"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),branchDecorT=$("branchDecorT"),branchDinoMeadow=$("branchDinoMeadow"),fgT=$("fgT"),branchEffectFar=$("branchEffectFar"),branchWorldLifeLayer=$("branchWorldLifeLayer"),branchEffectMid=$("branchEffectMid"),branchEffectNear=$("branchEffectNear"),seaFishLayer=$("seaFishLayer"),seaHabitatLayer=$("seaHabitatLayer"),smokeLayer=$("smokeLayer"),townHorizonLoop=$("townHorizonLoop"),townMidLoop=$("townMidLoop"),futureHorizonLoop=$("futureHorizonLoop"),futureMidLoop=$("futureMidLoop"),futureForegroundLoop=$("futureForegroundLoop"),spaceHorizonLoop=$("spaceHorizonLoop"),spaceForegroundLoop=$("spaceForegroundLoop"),jungleHabitatBack=$("jungleHabitatBack");
 const vehicleSteerShell=$("vehicleSteerShell"),seaSteerSurface=$("seaSteerSurface"),spaceSteerSurface=$("spaceSteerSurface"),seaAnswerLayer=$("seaAnswerLayer"),seaBossLayer=$("seaBossLayer"),seaRescueMessage=$("seaRescueMessage"),seaArenaShade=$("seaArenaShade"),seaRoundCountdown=$("seaRoundCountdown"),seaQuizGuide=$("seaQuizGuide"),seaSteerHint=$("seaSteerHint"),spaceSteerHint=$("spaceSteerHint");
 const futureCapsuleLayer=$("futureCapsuleLayer"),spaceGalaxyLayer=$("spaceGalaxyLayer");
 const dinoAdventureLayer=$("dinoAdventureLayer"),dinoAdventureTitle=$("dinoAdventureTitle"),dinoAdventureGuide=$("dinoAdventureGuide"),dinoAdventureProgress=$("dinoAdventureProgress"),dinoApproachNotice=$("dinoApproachNotice");
@@ -2538,6 +2552,13 @@ function buildWorld(keepCover){
  world.innerHTML="";
  if(keepCover&&transitCover)world.appendChild(transitCover);
  tunnels=[];townDockGates=[];
+ // v5: ブレーキゾーン帯/停止ボックス/誘導矢印は#worldではなく#scene直下(#worldの兄弟)に
+ // 生きているため、world.innerHTML=""では消えない。ここで明示的に前回分を取り除いてから
+ // 作り直す(loop周回でtownへ再突入した場合や、他ステージへ切り替わった場合の残留防止)。
+ if(townDockZoneEl&&townDockZoneEl.parentNode)townDockZoneEl.parentNode.removeChild(townDockZoneEl);
+ if(townDockStopBoxEl&&townDockStopBoxEl.parentNode)townDockStopBoxEl.parentNode.removeChild(townDockStopBoxEl);
+ if(townDockArrowEl&&townDockArrowEl.parentNode)townDockArrowEl.parentNode.removeChild(townDockArrowEl);
+ townDockZoneEl=null;townDockStopBoxEl=null;townDockArrowEl=null;
  const o=origin(stg),st=STAGES[stg],P=palOf(stg);
  if(!isDinoAdventureStage(st)&&!isTownDockStage(st))for(let i=0;i<QN;i++){
  const t=document.createElement("div");t.className="tun";
@@ -2623,18 +2644,32 @@ function buildWorld(keepCover){
    t.appendChild(hp);
    world.appendChild(t);townDockGates.push(t);
   }
-  // v4 (round7): ブレーキゾーン帯+赤枠停止ボックスも本物の#world直下の子要素として生成する
-  // (.tun.station ゲートと全く同じ座標系)。buildWorld() は world.innerHTML="" で毎回まっさらに
-  // なるため、参照もここで作り直す。位置(left/width)はレグ開始のたびtownDockUpdateZoneVisual()
-  // が実データから書き込む(ここでは空のプレースホルダとして生成するだけ)。
+  // v5: ブレーキゾーン帯+赤枠停止ボックス+誘導矢印を #scene 直下(#world/#fgT/#veh と同じ
+  // 兄弟階層)に生成する。#fgT(前景装飾、z-index:8)より高いz-indexを与えられるようにするため、
+  // 独自スタッキングコンテキストを作る#worldの子要素にはしない(#worldの中に入れる限り、
+  // 子要素にどんなz-indexを与えても#worldの兄弟である#fgTより手前には出せないCSSの制約を
+  // 実機確認で踏んだため)。位置は毎フレーム townDockUpdateZoneVisual() が
+  // transform:translate3d(...) で worldX から機械的に算出して書き込む(ここでは空の
+  // プレースホルダとして生成するだけ)。scene が無い異常系では#worldへフォールバックする。
+  const zoneHost=scene||world;
   townDockZoneEl=document.createElement("div");
   townDockZoneEl.className="town-dock-brake-zone";
   townDockZoneEl.hidden=true;townDockZoneEl.setAttribute("aria-hidden","true");
-  world.appendChild(townDockZoneEl);
+  zoneHost.appendChild(townDockZoneEl);
   townDockStopBoxEl=document.createElement("div");
   townDockStopBoxEl.className="town-dock-stop-box";
   townDockStopBoxEl.hidden=true;townDockStopBoxEl.setAttribute("aria-hidden","true");
-  world.appendChild(townDockStopBoxEl);
+  zoneHost.appendChild(townDockStopBoxEl);
+  townDockArrowEl=document.createElement("div");
+  townDockArrowEl.className="town-dock-approach-arrow";
+  // 内側に「バウンドするCSSアニメーション専用」の子要素を分離する。外側(townDockArrowEl)の
+  // transformは毎フレームJSがworldX同期のため書き換えるので、同じtransformプロパティを
+  // CSS keyframeアニメーションでも揺らそうとすると競合してworldX追従が壊れる
+  // (CSSアニメーションは実行中そのプロパティをinline styleより優先して上書きするため)。
+  // 内側の.town-dock-approach-arrow-glyphだけに弾む演出を持たせて分離する。
+  townDockArrowEl.innerHTML='<div class="town-dock-approach-arrow-glyph"></div>';
+  townDockArrowEl.hidden=true;townDockArrowEl.setAttribute("aria-hidden","true");
+  zoneHost.appendChild(townDockArrowEl);
  }
  if(!isMainlineFinalStg(stg)){
   if(!isDinoAdventureStage(st)&&!isTownDockStage(st)){
@@ -7624,12 +7659,17 @@ function townDockLegLen(){
  return Math.max(1,stops(origin(stg),townDockState.stationIndex)-townDockState.legStartX);
 }
 function townDockZoneWidth(station){return station.zoneWidth*(townDockState.attempts>=2?TOWN_DOCK_ZONE_WIDEN_FACTOR:1);}
-// zoneCenterは「レグ終端(実際の駅停止位置)からzoneEndGap+幅/2だけ手前」で算出する。
-// これにより2回目失敗でゾーンが広がっても(=widthが増えても)ゾーンの終端(bounds.end)は
-// legLen-zoneEndGapのまま動かず、広がった分だけ始端が手前に伸びる(=易しくなる)。
+// v5: zoneCenterは本物の駅ゲート(tunX(origin(stg),stationIndex)、buildWorldが.tun.station
+// を左端に幅49vwで置く、そのものと同じ実座標)を直接の基準にする。zoneGateAnchorVw分だけ
+// ゲート左端より内側(進行方向)を中心に据えることで、成功ゾーンが常に本物のゲート画像の
+// 幅の中に重なるようにする(legLenからの逆算だと24vw分のCHECKPOINT_STOP_LEFT_VWオフセットを
+// 見落としてゲートよりずっと手前になっていた旧バグの修正)。widthが2回目失敗で広がっても、
+// 中心(=ゲート基準点)は動かず両側に均等に広がる。
+function townDockGateAnchorPos(){
+ return tunX(origin(stg),townDockState.stationIndex)-townDockState.legStartX;
+}
 function townDockZoneCenter(station){
- const legLen=townDockLegLen(),width=townDockZoneWidth(station);
- const center=legLen-station.zoneEndGap-width/2;
+ const center=townDockGateAnchorPos()+station.zoneGateAnchorVw;
  return station.oscAmplitude?center+Math.sin(townDockState.oscPhase)*station.oscAmplitude:center;
 }
 function townDockZoneBounds(station){
@@ -7708,25 +7748,38 @@ function handleTownDockKeyUp(event){
  const key=event.key;
  if(key===" "||key==="Enter"){event.preventDefault();if(townDockState.keyDirection)townDockState.keyDirection=0;updateTownDockThrottlePresentation();}
 }
-// v4 (round7): ブレーキゾーン帯(アンバー)+赤枠停止ボックスを、本物の#world直下の
-// townDockZoneEl/townDockStopBoxElへ「実worldX絶対座標」で書き込む。.tun.stationゲートと
-// 全く同じ「leftをvwで置き、world.style.transformのスクロールに委ねる」方式なので、
-// フロート型の独立HUDバーとは違い、実スクロール世界の一部として自然に近づいてくる。
+// v5: ブレーキゾーン帯(青)+緑枠停止ボックス+誘導矢印を、#scene直下のtownDockZoneEl/
+// townDockStopBoxEl/townDockArrowElへ「実worldX絶対座標」で書き込む。#worldの子ではないので
+// leftをvwで置くだけでは動かず、branchWorldLifeLayer等の演出スプライトと同じ
+// 「毎フレームtransform:translate3d(cssXFromVw(worldSpaceX-worldX),0,0)を計算して書く」
+// 手法を使う(cssXFromVwは#worldのtranslate3d(-worldX,...)と同じvw→px換算を共有するので、
+// 結果として.tun.stationゲートと寸分違わずworldXに同期してスクロールする)。
 // ブレーキ帯はbounds.startよりTOWN_DOCK_ZONE_WARN_LEAD手前から見せ始めることで、
 // 「駅の手前で見える減速サイン」のような前もっての警告になる(3枚目のoscillateする駅では
-// 毎フレーム位置が揺れるので、tickの度に呼ぶ前提)。
+// 毎フレーム位置が揺れるので、tickの度に呼ぶ前提)。矢印は停止ボックスの少し上に置き、
+// 残り距離が縮まるほど濃く・大きく見えるようにする(あくまで読み取り専用の演出で、
+// state.pos/vel等の物理・判定フィールドには一切書き込まない)。
+function townDockWorldToScreenVw(worldSpaceX){return worldSpaceX-worldX;}
 function townDockUpdateZoneVisual(){
  const state=townDockState;
- if(!townDockZoneEl||!townDockStopBoxEl)return;
- if(state.phase!=="run"){townDockZoneEl.hidden=true;townDockStopBoxEl.hidden=true;return;}
+ if(!townDockZoneEl||!townDockStopBoxEl||!townDockArrowEl)return;
+ if(state.phase!=="run"){townDockZoneEl.hidden=true;townDockStopBoxEl.hidden=true;townDockArrowEl.hidden=true;return;}
  const station=currentTownDockStation(),bounds=townDockZoneBounds(station);
  const warnStart=Math.max(0,bounds.start-TOWN_DOCK_ZONE_WARN_LEAD);
- townDockZoneEl.style.left=(state.legStartX+warnStart)+"vw";
+ townDockZoneEl.style.transform="translate3d("+cssXFromVw(townDockWorldToScreenVw(state.legStartX+warnStart))+",0,0)";
  townDockZoneEl.style.width=Math.max(1,bounds.end-warnStart)+"vw";
  townDockZoneEl.hidden=false;
- townDockStopBoxEl.style.left=(state.legStartX+bounds.start)+"vw";
+ townDockStopBoxEl.style.transform="translate3d("+cssXFromVw(townDockWorldToScreenVw(state.legStartX+bounds.start))+",0,0)";
  townDockStopBoxEl.style.width=bounds.width+"vw";
  townDockStopBoxEl.hidden=false;
+ // 矢印: 停止ボックスの水平中央(bounds.center)を指すように置く。見え始め(pos===warnStart)を
+ // 0、ゾーンの中心に達したら1になるよう線形に濃さ/大きさを上げ、近づくほど分かりやすくなる
+ // 演出にする。remaining/intensityは表示だけに使うローカル計算値で、判定には一切使わない。
+ const remaining=clamp((bounds.center-state.pos)/Math.max(1,bounds.center-warnStart),0,1);
+ const intensity=1-remaining;
+ townDockArrowEl.style.transform="translate3d("+cssXFromVw(townDockWorldToScreenVw(state.legStartX+bounds.center))+",0,0) translateX(-50%) scale("+(.78+intensity*.34)+")";
+ townDockArrowEl.style.opacity=(.45+intensity*.55).toFixed(2);
+ townDockArrowEl.hidden=false;
 }
 function syncTownDockPresentation(){
  // 見た目は本物の worldX スクロール+本物の .tun.station ゲート(buildWorld 内、
@@ -7898,7 +7951,11 @@ function tickTownDockGame(now,dt){
  const accelLimit=(targetSpeed>=state.vel?TOWN_DOCK_ACCEL_RATE:decelRate)*Math.max(0,dt);
  state.vel+=clamp(targetSpeed-state.vel,-accelLimit,accelLimit);
  let nextPos=state.pos+state.vel*dt;
- const trackLen=townDockLegLen();
+ // v5: ハードクランプの上限は「legLen(=stops(o,i)までの距離)」と「ゾーン終端+安全マージン」の
+ // うち大きい方にする。v5でzoneCenterを本物のゲート座標基準に変えたことで、ゾーンの終端が
+ // legLenより先(=ゲートの中)まで伸びるようになったため、legLenだけをクランプに使うと
+ // ゾーンの奥側にposが物理的に到達できなくなってしまう(成功不能バグ)のを防ぐ。
+ const trackLen=Math.max(townDockLegLen(),bounds.end+40);
  if(nextPos<=0){nextPos=0;if(state.vel<0)state.vel=0;}
  if(nextPos>=trackLen){nextPos=trackLen;if(state.vel>0)state.vel=0;}
  state.pos=nextPos;

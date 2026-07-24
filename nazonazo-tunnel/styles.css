@@ -1535,23 +1535,36 @@ body.town-dock-active #dots{opacity:0;visibility:hidden}
    townDockState.pos を worldX へ書き込むだけで、既存の render() の
    world.style.transform=translate3d(-worldX,...) が自動的に本物の背景/駅ゲートを動かす。
    ここに書く CSS は「待ち人の中身(CSS図形、実画像なし)」と「ヒント点滅の見た目」のみ。 */
-/* v4 (round7): ブレーキゾーン帯(アンバー)+赤枠停止ボックス。フロート型の独立HUDバーは
-   作らない(過去に一度却下された設計の再発防止)。#world 直下の実DOM要素として
-   left/width をvwで書き込み(js: townDockUpdateZoneVisual)、既存の world.style.transform の
-   スクロールにそのまま乗せる -- .tun.station ゲートと全く同じ座標系。列車が実際に近づく
-   につれて画面に現れる「前もっての減速サイン」になり、赤枠は正確な停止目標を示す。 */
-/* bottom/heightは #townDockThrottle (bottom最大18.4vh程度まで占有) より上、
-   実際の機関車本体(#veh、town/v-trainではbottom9.1vh〜おおむね43vh)の下寄りの高さに
-   重なるよう選んでいる。トラック直上の帯という体裁を保ちつつ、常に画面中央に固定表示される
-   発進ボタンの真後ろに隠れて見えなくなる事故を避けるため。 */
-.town-dock-brake-zone{position:absolute;bottom:19vh;height:8.4vh;z-index:3;border-radius:14px;pointer-events:none;
-  background:repeating-linear-gradient(115deg,rgba(255,181,66,.62) 0 24px,rgba(255,138,26,.76) 24px 40px);
-  border:3px solid rgba(255,214,140,.9);box-shadow:0 0 16px rgba(255,150,40,.55),inset 0 0 10px rgba(255,255,255,.28)}
+/* v5 (round7 追補): ブレーキゾーン帯(青)+緑枠停止ボックス+誘導矢印。フロート型の独立HUDバーは
+   作らない(過去に一度却下された設計の再発防止)。#scene 直下(#world/#fgT/#veh と同じ兄弟
+   階層)の実DOM要素として、毎フレーム transform:translate3d(...) を worldX から機械的に
+   算出して書き込む(js: townDockUpdateZoneVisual)。#world の子要素にすると、position:absolute+
+   z-index を持つ#world自身が独自スタッキングコンテキストを作るため、子要素にどんな
+   z-indexを与えても#worldの兄弟である前景装飾レイヤー#fgT(z-index:8)より手前に出せない
+   (実機確認で「線路の高さに置くと前景の柵/茂みに隠れる」不具合として発覚)。#scene直下の
+   兄弟要素にすることでこの制約を避け、#fgTより高いz-indexを直接指定できるようにした。
+   列車が実際に近づくにつれて画面に現れる「前もっての減速サイン」になり、緑枠は
+   「ここで離せばOK」の停止目標を示す(オレンジ/赤の危険色ではなく、青=接近中/緑=OKの
+   配色に変更)。矢印はゾーン中心を指して弾み、近づくほど濃く・大きくなる。 */
+/* bottom/heightは実際の線路・駅の絵の土台(#groundT高さ17vh、.tun.station bottom10.15vh)に
+   近い低い位置。z-indexで前景装飾より手前に出るため、#townDockThrottle(bottom最大18.4vh
+   程度まで占有)と水平位置が重なる短い時間帯はボタン側が上に来る(ボタンは
+   #townDockLayer(z-index:18)の子でこれらよりずっと高いため、常にボタンが勝つ)。 */
+.town-dock-brake-zone{position:absolute;left:0;bottom:3.5vh;height:8vh;z-index:9;border-radius:14px;pointer-events:none;
+  background:repeating-linear-gradient(115deg,rgba(79,195,247,.6) 0 24px,rgba(41,182,246,.78) 24px 40px);
+  border:3px solid rgba(179,229,252,.92);box-shadow:0 0 16px rgba(41,182,246,.55),inset 0 0 10px rgba(255,255,255,.3)}
 .town-dock-brake-zone[hidden]{display:none!important}
-.town-dock-stop-box{position:absolute;bottom:18vh;height:10.4vh;z-index:4;border-radius:16px;pointer-events:none;
-  border:5px solid #ff3b30;background:rgba(255,255,255,.2);
-  box-shadow:0 0 0 3px rgba(255,255,255,.62) inset,0 0 18px rgba(255,59,48,.65)}
+.town-dock-stop-box{position:absolute;left:0;bottom:2.8vh;height:9.6vh;z-index:10;border-radius:16px;pointer-events:none;
+  border:5px solid #2ecc71;background:rgba(255,255,255,.22);
+  box-shadow:0 0 0 3px rgba(255,255,255,.65) inset,0 0 18px rgba(46,204,113,.6)}
 .town-dock-stop-box[hidden]{display:none!important}
+.town-dock-approach-arrow{position:absolute;left:0;bottom:12.6vh;width:0;height:0;z-index:11;pointer-events:none}
+.town-dock-approach-arrow[hidden]{display:none!important}
+.town-dock-approach-arrow-glyph{position:absolute;left:-15px;bottom:0;width:0;height:0;
+  border-left:15px solid transparent;border-right:15px solid transparent;border-top:22px solid #2ecc71;
+  filter:drop-shadow(0 3px 3px rgba(0,90,45,.4));
+  animation:townDockArrowBounce .9s ease-in-out infinite}
+@keyframes townDockArrowBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
 .town-dock-station-helper-figure{position:relative;width:100%;height:100%}
 .town-dock-station-helper-figure::before{content:"";position:absolute;left:50%;top:0;width:58%;aspect-ratio:1;transform:translateX(-50%);border-radius:50%;background:#ffd9ad;box-shadow:0 2px 0 rgba(140,90,40,.2)}
 .town-dock-station-helper-figure::after{content:"";position:absolute;left:50%;bottom:0;width:100%;height:64%;transform:translateX(-50%);border-radius:40% 40% 18% 18%;background:#e8834f;box-shadow:0 2px 0 rgba(140,90,40,.2)}
@@ -2002,5 +2015,6 @@ body.ios-device #quiz.show:not(.sea-quiz):not(.future-capsule-quiz):not(.space-g
   .jungle-flight-layer{display:none!important}
   .tunnel-friend,.tunnel-friend-visual,.tunnel-friend img,.tunnel-friend .tunnel-friend-emoji,.tunnel-friend::after{animation:none!important;will-change:auto!important}
   .tun.is-blink{animation:none!important;opacity:.7}
+  .town-dock-approach-arrow-glyph{animation:none!important;transform:translateY(4px)}
   body.town-dock-bright #scene{transition:none!important}
 }
