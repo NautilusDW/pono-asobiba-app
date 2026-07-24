@@ -47,6 +47,22 @@ function readWebpSize(filePath) {
 const stages = loadStages();
 const expectedHardIds = ['jungle', 'bedroom', 'space', 'dino', 'festival', 'snow', 'castle'];
 const allowedKinds = new Set(['shape', 'direction', 'pattern']);
+const expectedClarityTargets = {
+  jungle: [
+    { index: 0, label: 'おうむの はね', kind: 'pattern', minRadius: 0.085 },
+    { index: 1, label: 'さるの しっぽ', kind: 'shape', minRadius: 0.095 },
+    { index: 2, label: 'きりんの もよう', kind: 'pattern', minRadius: 0.080 }
+  ],
+  bedroom: [
+    { index: 0, label: 'おつきさまの むき', kind: 'direction', minRadius: 0.095 },
+    { index: 2, label: 'ぞうの はな', kind: 'direction', minRadius: 0.105 },
+    { index: 3, label: 'まくらの かど', kind: 'shape', minRadius: 0.105 }
+  ],
+  castle: [
+    { index: 3, label: 'どらごんの はね', kind: 'shape', minRadius: 0.100 },
+    { index: 4, label: 'かんむりの おおきさ', kind: 'shape', minRadius: 0.090 }
+  ]
+};
 
 assert.equal(stages.length, 15, '15ステージを維持する');
 assert.deepEqual(
@@ -68,6 +84,17 @@ assert.deepEqual(
   [3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5],
   '差分数は3→4→5の既存カーブを維持する'
 );
+
+Object.entries(expectedClarityTargets).forEach(([stageId, targets]) => {
+  const stage = stages.find((candidate) => candidate.id === stageId);
+  assert.ok(stage, `${stageId}: 再調整対象が存在`);
+  targets.forEach((target) => {
+    const diff = stage.differences[target.index];
+    assert.equal(diff.label, target.label, `${stageId}[${target.index}]: 納得できる差のラベル`);
+    assert.equal(diff.kind, target.kind, `${stageId}[${target.index}]: 差の意味`);
+    assert.ok(diff.r >= target.minRadius, `${stageId}[${target.index}]: 小画面向けhit radius`);
+  });
+});
 
 stages.forEach((stage) => {
   assert.match(stage.id, /^[a-z0-9]+$/, `${stage.id}: id形式`);

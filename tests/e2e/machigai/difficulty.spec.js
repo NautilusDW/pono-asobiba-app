@@ -23,7 +23,7 @@ async function stageData(page, stageId) {
   }, stageId);
 }
 
-test('後半7面は生成済みB画像で形・向き・模様の細かな差を表示する', async ({ page }) => {
+test('後半7面は生成済みB画像で形・向き・模様の意味が明確な差を表示する', async ({ page }) => {
   await setupPage(page);
   const errors = [];
   page.on('pageerror', (error) => errors.push(String(error)));
@@ -46,6 +46,23 @@ test('後半7面は生成済みB画像で形・向き・模様の細かな差を
     stage.hasRuntimeVisual === false &&
     stage.kinds.every((kind) => ['shape', 'direction', 'pattern'].includes(kind))
   )).toBe(true);
+
+  expect((await stageData(page, 'jungle')).differences.map(({ label, kind }) => ({ label, kind }))).toEqual([
+    { label: 'おうむの はね', kind: 'pattern' },
+    { label: 'さるの しっぽ', kind: 'shape' },
+    { label: 'きりんの もよう', kind: 'pattern' },
+    { label: 'ぞうの みみ', kind: 'shape' }
+  ]);
+  expect((await stageData(page, 'bedroom')).differences.map(({ label }) => label)).toEqual([
+    'おつきさまの むき',
+    'うさぎの みみ',
+    'ぞうの はな',
+    'まくらの かど'
+  ]);
+  expect((await stageData(page, 'castle')).differences.slice(3).map(({ label }) => label)).toEqual([
+    'どらごんの はね',
+    'かんむりの おおきさ'
+  ]);
 
   for (const stage of curve.slice(8)) {
     await page.evaluate((id) => {
@@ -112,27 +129,29 @@ test('ヒントは左右の同じ細部へ正しく表示される', async ({ pa
   expect(centers[0].y).toBeCloseTo(centers[1].y, 4);
 });
 
-test('高難度のおしろ面を左右どちらからでも5個見つけてクリアできる', async ({ page }) => {
+test('再調整した3面を左右どちらからでも全て見つけてクリアできる', async ({ page }) => {
   await setupPage(page);
   const errors = [];
   page.on('pageerror', (error) => errors.push(String(error)));
 
-  await openStage(page, 'castle');
-  const stage = await stageData(page, 'castle');
-  const panels = page.locator('.panel');
+  for (const stageId of ['jungle', 'bedroom', 'castle']) {
+    await openStage(page, stageId);
+    const stage = await stageData(page, stageId);
+    const panels = page.locator('.panel');
 
-  for (let index = 0; index < stage.differences.length; index++) {
-    const panel = panels.nth(index % 2);
-    const diff = stage.differences[index];
-    const box = await panel.boundingBox();
-    expect(box).not.toBeNull();
-    await panel.click({
-      position: { x: diff.x * box.width, y: diff.y * box.height }
-    });
-    await expect(page.locator('.stars-row .star.filled')).toHaveCount(index + 1);
+    for (let index = 0; index < stage.differences.length; index++) {
+      const panel = panels.nth(index % 2);
+      const diff = stage.differences[index];
+      const box = await panel.boundingBox();
+      expect(box).not.toBeNull();
+      await panel.click({
+        position: { x: diff.x * box.width, y: diff.y * box.height }
+      });
+      await expect(page.locator('.stars-row .star.filled')).toHaveCount(index + 1);
+    }
+
+    await expect(page.locator('.clear-title')).toHaveText('できた！', { timeout: 5000 });
+    await expect(page.locator('.clear-stars .star.filled')).toHaveCount(3);
   }
-
-  await expect(page.locator('.clear-title')).toHaveText('できた！', { timeout: 5000 });
-  await expect(page.locator('.clear-stars .star.filled')).toHaveCount(3);
   expect(errors).toEqual([]);
 });
