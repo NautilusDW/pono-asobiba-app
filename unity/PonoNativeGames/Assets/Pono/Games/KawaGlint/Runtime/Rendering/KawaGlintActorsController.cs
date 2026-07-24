@@ -191,6 +191,19 @@ namespace Pono.KawaGlint.Rendering
         /// Moves the (already-shown) target fish from its appear point toward
         /// <paramref name="targetWorldX"/> (offset by a fixed anchor gap) as
         /// <paramref name="progress01"/> advances from 0 to 1.
+        ///
+        /// Deliberately <b>not</b> clamped to [0,1]: during the post-arrival
+        /// nibble phase the caller feeds
+        /// <c>KawaGlintPreBitePlan.ApproachDisplayProgress(t) + NibbleOffset(t)</c>,
+        /// which is pinned at exactly 1.0 (the anchor) between bursts but
+        /// intentionally overshoots slightly past 1.0 during a lunge (the
+        /// fish pecking a little further in at the hook) and dips slightly
+        /// under 1.0 during the following drift-back. If this clamped to
+        /// [0,1] the way in (progress &gt; 1) would be invisible -- Lerp at
+        /// t=1 and t=1.07 both land exactly on the anchor -- silently
+        /// swallowing half of every nibble's back-and-forth motion. Normal
+        /// callers (0f while approaching, 1f once arrived/biting) are
+        /// unaffected either way.
         /// </summary>
         public void SetTargetFishApproach(float progress01, float targetWorldX)
         {
@@ -203,7 +216,7 @@ namespace Pono.KawaGlint.Rendering
             _targetFishTargetAnchorX = targetWorldX + TargetFishTargetXOffset;
 
             var anchor = new Vector3(_targetFishTargetAnchorX, TargetFishAnchorY, 0f);
-            _targetFishTransform.position = Vector3.Lerp(_targetFishAppearWorld, anchor, Mathf.Clamp01(progress01));
+            _targetFishTransform.position = Vector3.LerpUnclamped(_targetFishAppearWorld, anchor, progress01);
         }
 
         /// <summary>Toggles the renda ("引き寄せ") thrash jitter around the current anchor on/off.</summary>

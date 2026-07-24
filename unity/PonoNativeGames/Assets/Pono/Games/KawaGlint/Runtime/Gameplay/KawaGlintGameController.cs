@@ -212,7 +212,15 @@ namespace Pono.KawaGlint.Gameplay
             var elapsed = _waitTotalSec - Mathf.Max(0f, _session.WaitRemainingSec);
             if (_waitTotalSec > 0f && _preBitePlan != null)
             {
-                _actors.SetTargetFishApproach(_preBitePlan.ApproachDisplayProgress(elapsed), _targetX);
+                // ApproachDisplayProgress alone is the plain travel curve
+                // (0 -> 1, reaching 1 at ArrivalSec and staying there);
+                // NibbleOffset is the separate, purely local peck
+                // oscillation that only ever activates at/after ArrivalSec.
+                // Composing them here (rather than inside the plan) keeps
+                // the "travel" and "nibble at the hook" concerns visibly
+                // distinct all the way out to the actor.
+                var progress = _preBitePlan.ApproachDisplayProgress(elapsed) + _preBitePlan.NibbleOffset(elapsed);
+                _actors.SetTargetFishApproach(progress, _targetX);
             }
 
             var state = _actors.Bobber.VisualState;
@@ -223,9 +231,9 @@ namespace Pono.KawaGlint.Gameplay
 
             // Only Floating/Twitch bobber states are "on the water" and thus
             // eligible to nibble -- guards against the (normally impossible,
-            // since bursts only start at 35% of the wait while flight is a
-            // fixed 0.45s) case of a burst window overlapping the cast's
-            // Flying arc.
+            // since bursts only start once the fish has arrived at
+            // ArrivalSec, well after flight's fixed 0.45s) case of a burst
+            // window overlapping the cast's Flying arc.
             var onWater = state == KawaGlintBobberState.Floating || state == KawaGlintBobberState.Twitch;
             var idx = onWater && _preBitePlan != null ? _preBitePlan.CurrentNibbleIndex(elapsed) : -1;
             var nibbling = idx >= 0;

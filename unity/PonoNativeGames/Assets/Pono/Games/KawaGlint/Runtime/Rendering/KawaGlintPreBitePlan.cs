@@ -5,14 +5,37 @@ using UnityEngine;
 namespace Pono.KawaGlint.Rendering
 {
     /// <summary>
-    /// A single cast's "前あたり" (pre-bite nibble) plan: 1-3 short windows,
-    /// randomly placed and sized inside the wait period, during which the
-    /// target fish visibly lunges toward the bobber and drifts back a little
-    /// (<see cref="ApproachDisplayProgress"/>) while the bobber itself should
-    /// twitch (driven by the caller via <see cref="IsNibbling"/> /
-    /// <see cref="CurrentNibbleIndex"/>). Generated once per cast from a
-    /// decisional <see cref="System.Random"/> draw so the whole wait period plays
-    /// out deterministically once the plan exists.
+    /// A single cast's "前あたり" (pre-bite nibble) plan, split into two
+    /// strictly sequential phases:
+    /// <list type="number">
+    /// <item>
+    /// <b>Travel</b> (0 &lt;= elapsed &lt; <see cref="ArrivalSec"/>): the
+    /// target fish swims a smooth, monotonic, offset-free line from its
+    /// appear point to directly under the bobber
+    /// (<see cref="ApproachDisplayProgress"/>). The bobber itself must stay
+    /// plain Floating for the whole phase -- nothing here should move it.
+    /// </item>
+    /// <item>
+    /// <b>Nibble</b> (elapsed &gt;= <see cref="ArrivalSec"/>): 1-3 short
+    /// windows, randomly placed and sized inside the remainder of the wait
+    /// period, during which the (now arrived) target fish pecks at the hook
+    /// -- a small lunge-in/drift-back oscillation centered on the arrival
+    /// point (<see cref="NibbleOffset"/>) -- while the bobber twitches
+    /// (driven by the caller via <see cref="IsNibbling"/> /
+    /// <see cref="CurrentNibbleIndex"/>).
+    /// </item>
+    /// </list>
+    /// Callers compose the visible position as
+    /// <c>ApproachDisplayProgress(t) + NibbleOffset(t)</c> every frame
+    /// (see <see cref="KawaGlintActorsController.SetTargetFishApproach"/>).
+    /// Because nibbles only start at/after <see cref="ArrivalSec"/> (where
+    /// <see cref="ApproachDisplayProgress"/> is already pinned at exactly
+    /// 1.0), the peck reads as happening right at the hook, not out in the
+    /// middle of the swim-in -- fixes the reported bug where the fish
+    /// appeared to hitch and reverse direction while still far from the
+    /// bobber. Generated once per cast from a decisional
+    /// <see cref="System.Random"/> draw so the whole wait period plays out
+    /// deterministically once the plan exists.
     ///
     /// Kept free of <see cref="MonoBehaviour"/> (mirrors the sibling
     /// <see cref="KawaGlintSplashMath"/>: plain data + pure functions, only
@@ -34,8 +57,16 @@ namespace Pono.KawaGlint.Rendering
         /// <summary>Trailing quiet stretch before the real bite -- no nibbles allowed here, so the real bite reads as distinct.</summary>
         public const float QuietTailSec = 0.45f;
 
-        /// <summary>Fraction of the total wait after which nibbles may start (the cast/landing itself should stay quiet).</summary>
-        public const float WindowStartFrac = 0.35f;
+        /// <summary>
+        /// Fraction of the total wait at which the target fish's travel
+        /// completes and it is considered arrived directly under the
+        /// bobber/hook. Nibbles (see <see cref="Create"/>) can only be
+        /// scheduled at or after this point -- the fish must actually be at
+        /// the hook before it starts pecking at it. Picked mid-range of the
+        /// "50-60%" the feature was specced at, leaving comfortable slack
+        /// before the trailing <see cref="QuietTailSec"/>.
+        /// </summary>
+        public const float ArrivalFrac = 0.55f;
 
         /// <summary>Upper bound (inclusive) on how many nibble bursts a single cast can generate.</summary>
         public const int MaxNibbles = 3;
@@ -80,6 +111,14 @@ namespace Pono.KawaGlint.Rendering
         /// <summary>Number of nibble bursts this plan will play (0 for very short waits -- falls back to the old "no pre-bite" behavior).</summary>
         public int NibbleCount => _nibbles.Count;
 
+        /// <summary>
+        /// Seconds since cast landed at which the target fish's travel
+        /// completes (<see cref="ApproachDisplayProgress"/> reaches exactly
+        /// 1.0) and it becomes eligible to nibble. <see cref="ArrivalFrac"/>
+        /// of this plan's wait total.
+        /// </summary>
+        public float ArrivalSec => ArrivalFrac * _waitTotalSec;
+
         /// <summary>Start time (seconds since cast landed) of nibble burst <paramref name="index"/>.</summary>
         public float NibbleStartSec(int index) => _nibbles[index].Start;
 
@@ -107,18 +146,17 @@ namespace Pono.KawaGlint.Rendering
         public bool IsNibbling(float elapsedSec) => CurrentNibbleIndex(elapsedSec) >= 0;
 
         /// <summary>
-        /// Display progress (0..1) to feed <see cref="KawaGlintActorsController.SetTargetFishApproach"/>
-        /// every frame while waiting: the linear cast-to-bite progress
-        /// (t/waitTotal) plus a lunge-in bump during each nibble burst and a
-        /// drift-back right after, both faded out during the trailing
-        /// <see cref="QuietTailSec"/> so the curve lands exactly on 1.0 at
-        /// t == waitTotalSec (continuous with the Bite phase's
-        /// SetTargetFishApproach(1f, ...) call). The lunge term is exactly 0
-        /// at u == 1 (nibble.End) and the retreat term below is deliberately
-        /// shaped to also start at exactly 0 at sinceEnd == 0 -- otherwise the
-        /// two pieced-together curves would jump by ~RetreatProgressAmp in a
-        /// single frame right at the burst boundary, reading as the target
-        /// fish teleporting.
+        /// Pure travel curve (0..1) to feed
+        /// <see cref="KawaGlintActorsController.SetTargetFishApproach"/>
+        /// every frame while waiting: a plain, monotonic, offset-free
+        /// cast-to-hook progression that reaches exactly 1.0 at
+        /// <see cref="ArrivalSec"/> and stays pinned there for the rest of
+        /// the wait (including through the Bite phase's own
+        /// <c>SetTargetFishApproach(1f, ...)</c> call, so there is no
+        /// discontinuity at the phase boundary). Contains zero lunge/retreat
+        /// terms by design -- those live entirely in <see cref="NibbleOffset"/>
+        /// so the swim-in never hitches or reverses direction while the fish
+        /// is still travelling.
         /// </summary>
         public float ApproachDisplayProgress(float elapsedSec)
         {
@@ -127,13 +165,47 @@ namespace Pono.KawaGlint.Rendering
                 return 1f;
             }
 
-            var t = Mathf.Max(0f, elapsedSec);
-            if (t >= _waitTotalSec)
+            var arrivalSec = ArrivalSec;
+            if (arrivalSec <= 0f)
             {
                 return 1f;
             }
 
-            var baseProgress = t / _waitTotalSec;
+            var t = Mathf.Max(0f, elapsedSec);
+            if (t >= arrivalSec)
+            {
+                return 1f;
+            }
+
+            return t / arrivalSec;
+        }
+
+        /// <summary>
+        /// Local "ちょんちょん" oscillation (centered on 0, meant to be added
+        /// on top of <see cref="ApproachDisplayProgress"/> once it has
+        /// reached 1.0) driven by the same nibble-burst schedule as
+        /// <see cref="CurrentNibbleIndex"/>: a lunge-in bump during each
+        /// burst and a drift-back right after, both faded out during the
+        /// trailing <see cref="QuietTailSec"/> so the composed curve still
+        /// lands exactly on 1.0 at t == waitTotalSec (continuous with the
+        /// Bite phase's SetTargetFishApproach(1f, ...) call). The lunge term
+        /// is exactly 0 at u == 1 (nibble.End) and the retreat term below is
+        /// deliberately shaped to also start at exactly 0 at sinceEnd == 0
+        /// -- otherwise the two pieced-together curves would jump by
+        /// ~RetreatProgressAmp in a single frame right at the burst
+        /// boundary, reading as the target fish teleporting. Since every
+        /// nibble burst (see <see cref="Create"/>) only ever starts at or
+        /// after <see cref="ArrivalSec"/>, this is guaranteed to be exactly
+        /// 0 for every elapsedSec before arrival.
+        /// </summary>
+        public float NibbleOffset(float elapsedSec)
+        {
+            if (_waitTotalSec <= 0f)
+            {
+                return 0f;
+            }
+
+            var t = Mathf.Max(0f, elapsedSec);
             var offset = 0f;
             for (var i = 0; i < _nibbles.Count; i++)
             {
@@ -167,7 +239,7 @@ namespace Pono.KawaGlint.Rendering
                 offset *= fade;
             }
 
-            return Mathf.Clamp01(baseProgress + offset);
+            return offset;
         }
 
         /// <summary>
@@ -178,9 +250,13 @@ namespace Pono.KawaGlint.Rendering
         /// count is 1-3, randomly chosen and then capped so every burst
         /// (>= <see cref="NibbleDurationMinSec"/>) plus every required gap
         /// (>= <see cref="NibbleGapMinSec"/>) still fits inside the usable
-        /// window [<see cref="WindowStartFrac"/>*T, T-<see cref="QuietTailSec"/>].
-        /// Very short waits (usable window narrower than one minimum burst)
-        /// fall back to zero nibbles -- the old "no pre-bite" behavior.
+        /// window [<see cref="ArrivalFrac"/>*T, T-<see cref="QuietTailSec"/>].
+        /// Anchoring the window start at arrival (rather than some earlier
+        /// fraction of the whole wait) is what guarantees a nibble can never
+        /// fire while the fish is still travelling. Very short waits (usable
+        /// window narrower than one minimum burst, or arrival landing at/after
+        /// the quiet tail) fall back to zero nibbles -- the old "no pre-bite"
+        /// behavior.
         /// </summary>
         public static KawaGlintPreBitePlan Create(System.Random random, float waitTotalSec)
         {
@@ -190,7 +266,7 @@ namespace Pono.KawaGlint.Rendering
                 return new KawaGlintPreBitePlan(nibbles, waitTotalSec);
             }
 
-            var usableStart = WindowStartFrac * waitTotalSec;
+            var usableStart = ArrivalFrac * waitTotalSec;
             var usableEnd = waitTotalSec - QuietTailSec;
             var usableWidth = usableEnd - usableStart;
 
