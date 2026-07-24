@@ -1,5 +1,10 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2370: ひょっこりハイタッチを固定5面ルートへ拡張。夕方の「きのこの おか」と
+// 夜の「つきあかりの もり」、場所別far／near外装、かえる／やまね、
+// 5面完走時の月の花を追加し、旧3面完走セーブは4面から再開する。
+// ゲーム個別ファイルと画像はnetwork-first配信のためCRITICAL_ASSETSには
+// 追加しない。play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2370)。
 // v2369: Web版つりゲーム (tsuri-kawa/, common/tsuri/) をリポジトリから撤去し
 // Unity版 KawaGlint (unity/PonoNativeGames/Assets/Pono/Games/KawaGlint/) へ
 // ゲーム実装を完全一本化 (経緯は docs/TSURI_FISHING_GAME_PLAN_2026-07-23.md 冒頭注記)。
@@ -993,7 +998,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2369;
+const CACHE_VERSION = 2370;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
