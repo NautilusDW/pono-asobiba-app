@@ -136,7 +136,13 @@ const endHold = extractFunction(game, "endTownDockHoldPointer");
 check(/setPointerCapture/.test(beginHold), "beginTownDockHoldPointer must capture the pointer");
 check(/releasePointerCapture/.test(endHold), "endTownDockHoldPointer must release the pointer");
 check(/townDockThrottle\.addEventListener\(\"pointerdown\",beginTownDockHoldPointer\)/.test(game), "throttle pointerdown wiring missing");
-check(/for\(const type of \[\"pointerup\",\"pointercancel\",\"lostpointercapture\"\]\)townDockThrottle\.addEventListener\(type,endTownDockHoldPointer\)/.test(game), "throttle release must be bound to pointerup+pointercancel+lostpointercapture together (iOS hold-drag gotcha)");
+// Deliberately NOT the literal ["pointerup","pointercancel","lostpointercapture"] order dino uses:
+// nazonazo_tunnel_dino_adventure_regression.cjs counts occurrences of that exact dino-authored
+// literal via a raw source match to prove a pointercancel-removal mutation is caught; reusing the
+// identical literal string here would pad that count and silently desensitize dino's own check.
+// Same three event types, same "release on any of the three" contract, just a different (equally
+// valid) array order so the two mechanics' wiring stay textually distinguishable.
+check(/for\(const type of \[\"pointercancel\",\"pointerup\",\"lostpointercapture\"\]\)townDockThrottle\.addEventListener\(type,endTownDockHoldPointer\)/.test(game), "throttle release must be bound to pointerup+pointercancel+lostpointercapture together (iOS hold-drag gotcha)");
 check(!/townDockKnob\.addEventListener\(["']pointer|handleTownDockPointerMove|moveTownDockKnobTo/.test(game), "there must be no direct knob-drag control; the knob is presentation only");
 
 // ---- keyboard fallback shares held-direction state with pointer holding ----
@@ -155,7 +161,14 @@ check(/townDockState\.epoch!==epoch/.test(focusNextFrameFn), "focusTownDockThrot
 check(/function resetTownDockGame\(\)\{[\s\S]*?nextEpoch=\(old&&old\.epoch\|\|0\)\+1/.test(game), "resetTownDockGame must bump the epoch on every reset");
 
 // ---- pause/resume lifecycle wiring (document.hidden / resize / pageshow / pagehide) ----
-check(/pauseDinoAdventureInput\(true\);\s*\n\s*pauseTownDockInput\(true\);/.test(game), "visibilitychange hidden branch must pause town dock input alongside dino");
+// Note: pauseTownDockInput(true) is intentionally NOT placed directly after
+// pauseDinoAdventureInput(true) in the visibilitychange hidden branch -- doing so pushed the gap
+// between "visibilitychange" and "closeGameSettings()" past the 100-char window that
+// nazonazo_settings_menu_regression.cjs asserts on, breaking an unrelated existing test. Both
+// calls still fire inside the same hidden-branch block; just assert presence, not adjacency.
+const visibilityHiddenBranch = /document\.addEventListener\(\"visibilitychange\",\(\)=>\{\s*if\(document\.hidden\)\{[\s\S]*?\}else\{/.exec(game);
+check(!!visibilityHiddenBranch, "visibilitychange handler with a document.hidden branch missing");
+check(/pauseDinoAdventureInput\(true\)/.test(visibilityHiddenBranch[0]) && /pauseTownDockInput\(true\)/.test(visibilityHiddenBranch[0]), "visibilitychange hidden branch must pause both dino and town dock input");
 check(/resumeDinoAdventureInput\(\);\s*\n\s*resumeTownDockInput\(\);/.test(game), "visibilitychange visible branch must resume town dock input alongside dino");
 check(/pauseTownDockInput\(true\)/.test(game) && /resumeTownDockInput\(\)/.test(game), "pause/resume functions must exist and be wired");
 

@@ -8040,7 +8040,7 @@ if(dinoWaterStart)bindTap(dinoWaterStart,()=>{beginDinoWaterPuzzle();});
 if(dinoWaterContinue)bindTap(dinoWaterContinue,()=>{ensureAC();finishDinoWaterSuccess();});
 if(dinoBossRetry)bindTap(dinoBossRetry,()=>{ensureAC();startDinoBossAttempt(true);});
 
-if(townDockThrottle){townDockThrottle.addEventListener("pointerdown",beginTownDockHoldPointer);for(const type of ["pointerup","pointercancel","lostpointercapture"])townDockThrottle.addEventListener(type,endTownDockHoldPointer);}
+if(townDockThrottle){townDockThrottle.addEventListener("pointerdown",beginTownDockHoldPointer);for(const type of ["pointercancel","pointerup","lostpointercapture"])townDockThrottle.addEventListener(type,endTownDockHoldPointer);}
 if(townDockControls){townDockControls.addEventListener("keydown",handleTownDockKeyDown);townDockControls.addEventListener("keyup",handleTownDockKeyUp);}
 
 initGameSettingsMenu();
@@ -8061,13 +8061,12 @@ document.addEventListener("visibilitychange",()=>{
  if(document.hidden){
   pauseBranchStagePolish();
   pauseDinoAdventureInput(true);
-  pauseTownDockInput(true);
   closeGameSettings();
   hideWeatherNotice();
   spaceChaseState.frameAt=0;
   cancelSpaceChaseRescuePointer(true);
   if(seaRoundPhase==="ready"||seaRoundPhase==="go"){clearTimeout(seaRoundCountdownTimer);seaRoundCountdownTimer=0;}
-  pauseSeaInput();pauseFutureCraneInput();safeSuspend();
+  pauseSeaInput();pauseFutureCraneInput();pauseTownDockInput(true);safeSuspend();
  }else{
   spaceChaseState.frameAt=0;
   syncBranchStagePolishState();
