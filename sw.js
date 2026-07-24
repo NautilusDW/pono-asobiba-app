@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2392: もじとかずの本命候補5本を1280×720固定の16:9で追加。
+// おえかき／ダンジョン／まほうこうぼう／からくりいせき／たんていだんを
+// 専用ハブへ接続。個別ファイルはnetwork-first配信のためCRITICAL_ASSETSには
+// 追加しない。play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2392)。
 // v2391: もじとかずランドを選定19案の比較版へ拡張。既存4本を残して15本を
 // 追加し、じゅんばんタッチは絵になる線と非重複ランダム探索を分離した。
 // 個別HTML/CSS/JSはnetwork-first配信のためCRITICAL_ASSETSには追加しない。
@@ -1181,7 +1185,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2391;
+const CACHE_VERSION = 2392;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

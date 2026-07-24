@@ -1,0 +1,140 @@
+:root {
+  font-family: "Hiragino Maru Gothic ProN", "Yu Gothic", system-ui, sans-serif;
+  color: #28334d;
+  background: #13203c;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+body { touch-action: manipulation; }
+button, a { font: inherit; -webkit-tap-highlight-color: transparent; }
+
+#viewport {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 48%, #2d4469 0 2px, transparent 3px) 0 0 / 32px 32px,
+    #13203c;
+}
+
+#stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1280px;
+  height: 720px;
+  transform-origin: center;
+  overflow: hidden;
+  border-radius: 18px;
+  background: linear-gradient(#9ee7ff 0 65%, #8bd383 65%);
+  box-shadow: 0 0 0 3px rgba(255,255,255,.18), 0 24px 70px #070d1f;
+}
+
+.sky, .play-area { position: absolute; inset: 0; }
+.cloud {
+  position: absolute; width: 180px; height: 54px; border-radius: 50px;
+  background: rgba(255,255,255,.72);
+}
+.cloud::before, .cloud::after { content: ""; position: absolute; background: inherit; border-radius: 50%; }
+.cloud::before { width: 78px; height: 78px; left: 34px; top: -35px; }
+.cloud::after { width: 60px; height: 60px; right: 24px; top: -22px; }
+.cloud-a { left: 80px; top: 170px; }
+.cloud-b { right: 55px; top: 230px; transform: scale(.75); }
+.hill { position: absolute; bottom: -190px; width: 720px; height: 360px; border-radius: 50%; background: #5cae67; }
+.hill-a { left: -130px; }
+.hill-b { right: -130px; background: #6fc279; }
+
+.topbar {
+  position: absolute; z-index: 20; top: 24px; left: 28px; right: 28px;
+  height: 100px; display: grid; grid-template-columns: 92px 1fr 92px;
+  align-items: center; gap: 18px; padding: 12px 20px;
+  border: 4px solid #fff; border-radius: 30px;
+  background: rgba(255,255,255,.88); box-shadow: 0 8px 0 rgba(38,86,120,.22);
+}
+.topbar > div { text-align: center; }
+.eyebrow { margin: 0; color: #63718b; font-size: 20px; font-weight: 900; letter-spacing: .14em; }
+h1 { margin: 0; font-size: 35px; line-height: 1.15; }
+.round-btn {
+  width: 70px; height: 70px; display: grid; place-items: center;
+  border: 0; border-radius: 50%; background: #ffda58; color: #4b3b19;
+  box-shadow: 0 7px 0 #d8a92c; text-decoration: none; font-size: 45px; font-weight: 1000;
+  cursor: pointer;
+}
+.hint { font-size: 34px; }
+.round-btn:active { transform: translateY(5px); box-shadow: 0 2px 0 #d8a92c; }
+.round-btn:focus-visible, button:focus-visible { outline: 6px solid #ff4f8b; outline-offset: 4px; }
+
+.chooser {
+  position: absolute; z-index: 5; top: 160px; left: 95px; right: 95px; bottom: 105px;
+  display: flex; align-items: center; justify-content: center; gap: 40px;
+}
+.picture-card {
+  width: 300px; height: 350px; border: 6px solid #fff; border-radius: 40px;
+  background: linear-gradient(150deg,#fff,#fff2ba); color: #34415b;
+  box-shadow: 0 14px 0 #4d8c82, 0 20px 25px rgba(0,0,0,.16);
+  cursor: pointer; transition: transform .16s;
+}
+.picture-card:hover { transform: translateY(-8px) rotate(-1deg); }
+.picture-card:nth-child(2):hover { transform: translateY(-8px) rotate(1deg); }
+.picture-card:active { transform: translateY(8px); box-shadow: 0 6px 0 #4d8c82; }
+.card-art { display: block; font-size: 128px; filter: drop-shadow(0 8px 4px #0002); }
+.picture-card strong, .picture-card small { display: block; }
+.picture-card strong { font-size: 34px; }
+.picture-card small { margin-top: 8px; font-size: 22px; color: #68758c; font-weight: 800; }
+
+.play-area {
+  z-index: 4; top: 140px; left: 190px; width: 900px; height: 500px;
+  border: 6px solid #fff; border-radius: 48px;
+  background: rgba(255,255,238,.76); box-shadow: 0 15px 0 rgba(45,112,99,.38);
+}
+.reveal-art, #lineCanvas, .dots { position: absolute; inset: 0; width: 900px; height: 500px; }
+.reveal-art { opacity: .1; transition: opacity .45s; }
+.reveal-art.finished { opacity: 1; }
+#lineCanvas { pointer-events: none; }
+.dot {
+  position: absolute; width: 58px; height: 58px; margin: -29px;
+  border: 4px solid #fff; border-radius: 50%; background: #ff676d; color: #fff;
+  box-shadow: 0 5px 0 #bd3a51, 0 7px 12px #19395544;
+  font-size: 27px; font-weight: 1000; cursor: pointer; z-index: 4;
+  transition: transform .15s, opacity .2s;
+}
+.dot.next { transform: scale(1.23); animation: pulse .9s infinite; background: #ffbd2f; color: #4f3a10; }
+.dot.done { opacity: .25; transform: scale(.75); pointer-events: none; }
+.dot.wrong { animation: wiggle .3s; }
+.progress-wrap {
+  position: absolute; left: 110px; right: 110px; bottom: 18px; height: 18px;
+  overflow: hidden; border: 3px solid #fff; border-radius: 20px; background: #d8e4df;
+}
+.progress-bar { width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#ff6f8c,#ffd334,#69d875); transition: width .3s; }
+
+.message {
+  position: absolute; z-index: 12; left: 30px; bottom: 20px; margin: 0;
+  min-width: 250px; padding: 14px 25px; border: 4px solid #fff; border-radius: 28px;
+  background: #344d79; color: #fff; font-size: 24px; font-weight: 900; text-align: center;
+}
+.celebration {
+  position: absolute; z-index: 15; right: 25px; bottom: 18px; text-align: right;
+}
+.celebration p { margin: 0 10px 8px; color: #fff; font-size: 35px; font-weight: 1000; text-shadow: 0 4px #305f54; }
+.finish-actions { display: flex; gap: 12px; }
+.finish-actions button {
+  min-width: 150px; min-height: 60px; border: 4px solid #fff; border-radius: 24px;
+  background: #ffda58; color: #443714; box-shadow: 0 6px 0 #b78d20;
+  font-size: 23px; font-weight: 1000; cursor: pointer;
+}
+.finish-actions button:last-child { background: #ff7ead; color: #fff; box-shadow-color: #ba426f; }
+
+.spark {
+  position: absolute; z-index: 30; width: 18px; height: 18px;
+  border-radius: 5px; background: var(--c); animation: pop 1s both;
+}
+@keyframes pulse { 50% { filter: brightness(1.2) drop-shadow(0 0 12px #fff); } }
+@keyframes wiggle { 25% { transform: translateX(-9px); } 75% { transform: translateX(9px); } }
+@keyframes pop { from { transform: translate(0,0) scale(.3) rotate(0); opacity: 1; } to { transform: translate(var(--dx),var(--dy)) scale(1.2) rotate(220deg); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>もじかず たんていだん</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="stage">
+    <header>
+      <a class="back" href="../">‹ もどる</a>
+      <div class="title">もじかず たんていだん</div>
+      <div class="notebook" aria-label="しょうこてちょう">📕 <span id="evidence">☆ ☆ ☆</span></div>
+    </header>
+    <section class="casebar">
+      <div class="badge" id="caseNo">じけん 1</div>
+      <p id="mission">おへやを よく みて おぼえよう</p>
+      <button class="hint" id="hintBtn" type="button">💡 ヒント</button>
+    </section>
+    <section class="room" id="room" aria-label="じけんの おへや">
+      <div class="window">☀️</div>
+      <button class="sign target" id="sign" type="button">6</button>
+      <button class="poster target" id="poster" type="button">ねこ</button>
+      <div class="shelf">📗　📘　📙</div>
+      <button class="fruit target" id="fruit" type="button">🍎 🍎 🍎 🍎 🍎</button>
+      <div class="rug">🔶　🔷　🔶</div>
+      <div class="friend">🐰</div>
+      <button class="observe" id="observeBtn" type="button">おぼえた！</button>
+      <div class="curtain" id="curtain"><span>なにかが かわるよ…</span></div>
+      <div class="focus" id="focus" aria-hidden="true"></div>
+    </section>
+    <section class="result hidden" id="result" aria-live="polite">
+      <div class="resultCard">
+        <div class="resultIcon" id="resultIcon">🔎</div>
+        <h2 id="resultTitle">しょうこを みつけた！</h2>
+        <p id="resultText"></p>
+        <button id="nextBtn" type="button">つぎの じけんへ ▶</button>
+      </div>
+    </section>
+  </main>
+  <script src="game.js"></script>
+</body>
+</html>

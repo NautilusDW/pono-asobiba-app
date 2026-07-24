@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#11162d">
+  <title>もじかずダンジョン</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="viewport">
+    <section id="stage" aria-label="もじかずダンジョン">
+      <header class="hud">
+        <a class="round-button back" href="../" aria-label="もどる">←</a>
+        <div class="title-box">
+          <span class="small">もじかず</span>
+          <strong>ダンジョン</strong>
+        </div>
+        <div class="room-marks" aria-label="へやのすすみぐあい">
+          <span class="room-mark current">1</span><span class="room-mark">2</span><span class="room-mark">3</span>
+        </div>
+        <button id="hintButton" class="round-button hint" type="button" aria-label="ヒント">💡</button>
+      </header>
+
+      <div id="game" aria-live="polite">
+        <section class="room active" data-room="1" aria-label="いしのへや">
+          <div class="cave cave-one">
+            <div class="moon-glow"></div>
+            <div class="far-door"><span>★</span></div>
+            <div class="chasm"></div>
+            <div id="stoneField" class="stone-field" aria-label="すうじのいし"></div>
+            <div id="bridge" class="bridge" aria-hidden="true"></div>
+            <div class="guide">
+              <b>1</b>から じゅんばんに<br>いしを おそう
+            </div>
+            <button class="next-button" type="button" data-next="2">つぎの へやへ　▶</button>
+          </div>
+        </section>
+
+        <section class="room" data-room="2" aria-label="たいまつのへや">
+          <div class="cave cave-two">
+            <div class="stone-door" id="stoneDoor"><div class="door-eye">◇</div></div>
+            <div id="torches" class="torches" aria-label="たいまつ"></div>
+            <div class="guide guide-two">ひかっている<br>たいまつは いくつ？</div>
+            <div id="floorPlates" class="floor-plates" aria-label="ゆかのすうじ"></div>
+            <button class="next-button" type="button" data-next="3">ひらいた！　すすもう ▶</button>
+          </div>
+        </section>
+
+        <section class="room" data-room="3" aria-label="ことばのへや">
+          <div class="cave cave-three">
+            <div class="treasure" id="treasure" aria-label="たからばこ">
+              <div class="lock">🔒</div><div class="lid"></div><div class="box"></div>
+            </div>
+            <div class="magic-sign">
+              <span>ことばが どうぐに かわるよ</span>
+              <div id="wordSlots" class="word-slots" aria-label="ことばをつくる"></div>
+            </div>
+            <div id="letterBlocks" class="letter-blocks" aria-label="もじのブロック"></div>
+            <div class="guide guide-three">「かぎ」を つくって<br>たからばこを あけよう</div>
+            <div id="magicKey" class="magic-key" aria-hidden="true">🔑</div>
+            <button id="finishButton" class="next-button finish-button" type="button">もういちど あそぶ ↻</button>
+            <div id="celebration" class="celebration" aria-hidden="true">
+              <span>✨</span><strong>たからものを<br>みつけた！</strong><span>✨</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div id="toast" class="toast" role="status"></div>
+      <div id="rotateNote">よこむきに してね ↻</div>
+    </section>
+  </main>
+  <script src="game.js"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+:root{font-family:"Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;color:#402b27;background:#171226}
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0;overflow:hidden}
+body{position:fixed;inset:0;background:radial-gradient(circle,#493667,#171226 70%)}
+button,a{font:inherit}
+.stage{position:fixed;left:50%;top:50%;width:1280px;height:720px;overflow:hidden;background:#ffecc5;box-shadow:0 0 50px #0009;transform:translate(-50%,-50%) scale(var(--stage-scale,1));transform-origin:center}
+header{height:72px;display:grid;grid-template-columns:190px 1fr 140px;align-items:center;padding:10px 18px;background:#653c83;color:#fff}
+.back,.hint,.next{min-height:50px;border:0;border-radius:18px;font-weight:900;text-decoration:none;display:grid;place-items:center;cursor:pointer}
+.back{color:#fff;background:#46295f;box-shadow:inset 0 -5px #281638;font-size:22px}
+.title{text-align:center;font-size:30px;font-weight:900;letter-spacing:.04em}
+.progress{text-align:center;font-size:22px;font-weight:900;background:#fff2;border-radius:24px;padding:8px}
+.world{position:relative;height:360px;overflow:hidden;background:linear-gradient(#90d9ff 0 64%,#8ecb5b 64%);border-bottom:8px solid #6d482f}
+.cloud{position:absolute;top:25px;left:170px;font-size:76px;filter:grayscale(1)}.cloud2{left:auto;right:160px;top:8px}
+.rain{position:absolute;inset:72px 0 auto;text-align:center;font-size:38px;line-height:1.65;animation:rain 1.1s linear infinite}
+.hero{position:absolute;left:47%;bottom:43px;font-size:96px;z-index:4;transition:transform .5s}
+.result-object{position:absolute;z-index:5;left:48%;bottom:118px;font-size:110px;opacity:0;transform:scale(.2);transition:.55s cubic-bezier(.2,1.6,.4,1)}
+.result-object.show{opacity:1;transform:scale(1)}
+.land{display:none;position:absolute;bottom:0;width:39%;height:75px;background:#6d9347}.land-left{left:0}.land-right{right:0}
+.chest{display:none;position:absolute;right:155px;bottom:35px;font-size:100px}
+.story{position:absolute;left:22px;top:16px;margin:0;padding:14px 22px;border-radius:22px;background:#fffdf5e8;font-size:25px;font-weight:900;line-height:1.35;box-shadow:0 5px 0 #6b4b5144;z-index:7}
+.workbench{height:288px;position:relative;background:linear-gradient(#f5c878,#c58345);padding:14px 28px}
+.recipe{position:absolute;left:32px;top:16px;width:300px;text-align:center}.recipe-label{font-size:18px;font-weight:900}
+.slots{display:flex;gap:10px;justify-content:center;margin-top:8px}.slot{width:68px;height:68px;border-radius:15px;border:4px dashed #87502c;background:#fff9df;display:grid;place-items:center;font-size:42px;font-weight:900}.slot.filled{border-style:solid;background:#fff;color:#753b8c;animation:pop .3s}
+.forge{position:absolute;left:365px;top:18px;width:445px;height:90px;border:5px solid #723f36;border-radius:25px;background:#3f2430;color:#fff;display:flex;align-items:center;justify-content:center;gap:12px;font-size:19px;font-weight:900;box-shadow:inset 0 -8px #25141d}
+.flame{font-size:50px}
+.belt{position:absolute;left:54px;right:54px;bottom:27px;height:116px;padding:14px 74px;display:flex;justify-content:center;gap:24px;border:8px solid #655056;border-radius:34px;background:repeating-linear-gradient(90deg,#81747a 0 42px,#a79ba0 42px 84px)}
+.tile{width:78px;height:78px;border:0;border-radius:20px;background:#fff7d2;color:#5b3177;font-size:45px;font-weight:900;box-shadow:0 7px 0 #bd823b;cursor:grab;touch-action:none}.tile:active{transform:translateY(5px);box-shadow:0 2px 0 #bd823b}.tile.used{opacity:.18;pointer-events:none}.tile.hinted{animation:pulse .7s infinite;background:#fff}
+.hint,.next{position:absolute;right:28px;top:22px;width:150px;background:#fff5b7;color:#594114;box-shadow:0 6px 0 #bb8130;font-size:20px}.next{top:90px;background:#75d469;color:#153d1c;box-shadow:0 6px 0 #398f3e}.hidden{display:none}
+.sparkles{position:absolute;inset:0;display:none;place-items:center;font-size:80px;pointer-events:none}.sparkles.show{display:grid;animation:flash .8s}
+.shake{animation:shake .35s}
+@keyframes rain{to{transform:translateY(25px)}}@keyframes pop{50%{transform:scale(1.18)}}@keyframes pulse{50%{transform:scale(1.15)}}@keyframes shake{25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}@keyframes flash{from{opacity:0;transform:scale(.7)}50%{opacity:1}to{opacity:0;transform:scale(1.2)}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
