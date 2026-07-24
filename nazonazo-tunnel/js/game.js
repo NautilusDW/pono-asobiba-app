@@ -1137,6 +1137,13 @@ const TOWN_DOCK_ASSIST_DECEL_RATE=60;
 const TOWN_DOCK_SETTLE_VEL=.08;
 const TOWN_DOCK_ZONE_WIDEN_FACTOR=1.4;
 const TOWN_DOCK_ASSIST_ATTEMPT_TIER=3;
+// v6 (round8): 汽車本体(#veh, v-train)の描画中心は常に "50+TRAIN_RIGHT_SHIFT_VW" vwで固定される。
+// trainLeftVw()=50-(w/vw*50)+TRAIN_RIGHT_SHIFT_VW にtrainWidthVw()の半分(w/vw*50)を足すと
+// ±(w/vw*50)の項が相殺し、windowサイズやclamp(TRAIN_WIDTH_MIN_PX/MAX_PX)に一切依存せず
+// 厳密にこの定数になる(#vehは#worldの子ではなく兄弟要素で、worldXに関係なく常にこの
+// スクリーン位置に固定描画される「見かけ上のカメラ」役)。townDockWorldToScreenVw内で
+// このオフセットを使う理由はそのすぐ下のコメント参照。
+const TOWN_DOCK_TRAIN_CENTER_VW=50+TRAIN_RIGHT_SHIFT_VW;
 const TOWN_DOCK_STATION_SCORE=150;
 const TOWN_DOCK_RETRY_DELAY_MS=1150;
 const TOWN_DOCK_BOARD_DELAY_MS=1300;
@@ -1156,10 +1163,16 @@ const TOWN_DOCK_ZONE_WARN_LEAD=42;
 // 直接の基準にして算出し直す(townDockZoneCenter参照)。これによりゾーンは常に本物の
 // ゲート画像の幅49vwの中(またはそのごく近く)に重なる。1駅目が最も広く簡単、2・3駅目は
 // より狭く難しい、という既存の難易度傾斜は維持。
+// v6 (round8): 実playtestで「最高速が遅く感じる」フィードバックを受け、各駅のcruiseSpeedを
+// 旧値の約1.5倍に引き上げた(19→28.5, 23→34.5)。加減速レート(TOWN_DOCK_ACCEL_RATE/DECEL_RATE)は
+// そのまま据え置き(ホールドしてから巡航速度に達するまでは95vw/s²で頭打ち、離した後の
+// コースト感=じっくり感はDECEL_RATE=8のまま変えない)。Playwright実測: 1駅目(legLen≈296vw)
+// 約10秒、2・3駅目(legLen≈430vw)約12〜13秒(旧: 12〜21秒程度)で、幼児が反応できる範囲を
+// 保ったまま体感速度を上げられることを確認済み。
 const TOWN_DOCK_STATIONS=Object.freeze([
- Object.freeze({zoneWidth:66,zoneGateAnchorVw:14,cruiseSpeed:19,oscAmplitude:0,oscPeriodMs:0}),
- Object.freeze({zoneWidth:44,zoneGateAnchorVw:12,cruiseSpeed:23,oscAmplitude:0,oscPeriodMs:0}),
- Object.freeze({zoneWidth:44,zoneGateAnchorVw:12,cruiseSpeed:23,oscAmplitude:12,oscPeriodMs:5200})
+ Object.freeze({zoneWidth:66,zoneGateAnchorVw:14,cruiseSpeed:28.5,oscAmplitude:0,oscPeriodMs:0}),
+ Object.freeze({zoneWidth:44,zoneGateAnchorVw:12,cruiseSpeed:34.5,oscAmplitude:0,oscPeriodMs:0}),
+ Object.freeze({zoneWidth:44,zoneGateAnchorVw:12,cruiseSpeed:34.5,oscAmplitude:12,oscPeriodMs:5200})
 ]);
 const TOWN_DOCK_LINES=Object.freeze({
  intro:["ればーを おしつづけて すすもう。はなすと ゆっくり とまるよ","こんどは ぴったり とまるのが むずかしいよ","とまる ばしょが すこし うごくよ！"],
@@ -7759,7 +7772,30 @@ function handleTownDockKeyUp(event){
 // 毎フレーム位置が揺れるので、tickの度に呼ぶ前提)。矢印は停止ボックスの少し上に置き、
 // 残り距離が縮まるほど濃く・大きく見えるようにする(あくまで読み取り専用の演出で、
 // state.pos/vel等の物理・判定フィールドには一切書き込まない)。
-function townDockWorldToScreenVw(worldSpaceX){return worldSpaceX-worldX;}
+// v6 (round8, 実playtest不具合修正): 「緑ゾーンの中で止まったのにおしい判定になる」バグの
+// 正体はここだった。worldSpaceX-worldX という式は、#worldの子要素(.tun.stationゲート含む)が
+// 実際にスクロールする通りの「カメラ基準点=画面vw0」を前提にした変換であり、tickTownDockGame内の
+// 判定(bounds.start<=pos<=bounds.end)もtownDockZoneBounds()由来の同じレグローカル値をそのまま
+// 使っていた。ところが汽車本体(#veh)はvw0ではなく常にTOWN_DOCK_TRAIN_CENTER_VW(=55)を中心に
+// 固定描画される(#worldの兄弟要素)。この結果、pos が bounds.center にちょうど到達した瞬間
+// (=物理判定が成功とみなす瞬間)、ブレーキゾーン/停止ボックス/矢印は数式の恒等式として必ず
+// 画面のvw=0(ビューポート左端)にセンタリングされ、汽車本体(vw 39.5〜70.4、中心55)とは
+// 重ならない位置に描かれていた。実際には逆で、ゾーン/ボックスが汽車の位置に視覚的に重なって
+// 見えるタイミングではposはまだbounds.startに届いておらず(undershoot判定)、posが実際にbounds
+// 内へ入る頃には、ゾーン/ボックスは既に画面左へスクロールして汽車の手前を通り過ぎていた
+// (実測: Playwrightでpos=298.15、bounds.start=301の3vw弱手前で停止した際、停止ボックスの
+// 描画範囲が汽車の表示領域[333.8px,594.6px]の実に95%を覆っていたにもかかわらず「おしい」と
+// 判定された)。通常のクイズ駅間巡航ではgateの実座標(tunX)とtargetにする値(stops=tunX-24)を
+// 意図的にズラすことで同じ問題を回避していたが、townDockのゾーン/ボックス/矢印は判定用の
+// bounds(pos空間)とスクリーン描画を同じtownDockZoneBounds()の値からそのまま導出していたため、
+// このカメラのズレを一切考慮していなかった。判定側(tick内のpos比較)は今まで通りレグローカルの
+// 抽象距離のまま一切変更しない(物理計算自体は正しく機能している) — 直す必要があるのは
+// 「画面のどこに描くか」の変換式のみ。ここにTOWN_DOCK_TRAIN_CENTER_VWを足し込むことで、
+// 汽車本体の固定スクリーン中心と一致させる。ゾーン帯/停止ボックス/矢印の3要素は全てこの
+// 1つの関数を経由しているため、この1箇所を直すだけで3要素とも一貫して正しい位置に動く
+// (実座標側の計算=townDockZoneBounds/townDockZoneCenter/townDockGateAnchorPosは一切変更せず、
+// real-world→screenの変換だけを補正する「単一のソースから両方を導出する」形を維持)。
+function townDockWorldToScreenVw(worldSpaceX){return worldSpaceX-worldX+TOWN_DOCK_TRAIN_CENTER_VW;}
 function townDockUpdateZoneVisual(){
  const state=townDockState;
  if(!townDockZoneEl||!townDockStopBoxEl||!townDockArrowEl)return;
@@ -7923,8 +7959,15 @@ function tickTownDockGame(now,dt){
  const state=townDockState;
  if(!isTownDockStage()||state.phase!=="run"||state.pausedAt||document.hidden)return;
  if(state.heldPointers.size)reconcileTownDockPointers();
+ // v6 (round8): oscPhase の更新は bounds を読む「前」に必ず終わらせる。旧コードは
+ // bounds=townDockZoneBounds(station) を先に計算してから oscPhase をインクリメントして
+ // いたため、この後 syncTownDockPresentation() 内で再度 townDockZoneBounds(station) を
+ // 呼ぶ townDockUpdateZoneVisual() は「1フレーム進んだ後」の oscPhase を使うことになり、
+ // 判定用bounds(この関数内のsettled/undershoot/overshoot比較に使う)と見た目のズレが
+ // 生じていた(3駅目only, oscAmplitude=12の揺れる駅)。順序を入れ替えることで、この
+ // tick内で以後読まれるtownDockZoneBounds()の呼び出しは全て同じoscPhaseを見るようになる。
+ if(currentTownDockStation().oscAmplitude)state.oscPhase+=dt*(2*Math.PI*1000/currentTownDockStation().oscPeriodMs);
  const station=currentTownDockStation(),bounds=townDockZoneBounds(station);
- if(station.oscAmplitude)state.oscPhase+=dt*(2*Math.PI*1000/station.oscPeriodMs);
  const held=townDockHeld();
  let targetSpeed=held?station.cruiseSpeed:0;
  if(state.assist){

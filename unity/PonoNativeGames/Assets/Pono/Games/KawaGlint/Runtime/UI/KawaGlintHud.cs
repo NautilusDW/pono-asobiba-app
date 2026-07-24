@@ -436,7 +436,7 @@ namespace Pono.KawaGlint.UI
             KawaGlintUiFactory.Fill(tapImage.rectTransform);
             InputSurface = tapImage.gameObject.AddComponent<KawaGlintInputSurface>();
 
-            _phaseWord = KawaGlintUiFactory.CreateText("PhaseWord", canvasTransform, string.Empty, 64, TextAnchor.MiddleCenter, Color.white);
+            _phaseWord = KawaGlintUiFactory.CreateText("PhaseWord", canvasTransform, string.Empty, 64, TextAnchor.MiddleCenter, Color.white, outline: true, shadow: true);
             var phaseRect = _phaseWord.rectTransform;
             phaseRect.anchorMin = new Vector2(0.5f, 1f);
             phaseRect.anchorMax = new Vector2(0.5f, 1f);
@@ -455,7 +455,7 @@ namespace Pono.KawaGlint.UI
             _narrationBar = KawaGlintUiFactory.CreateText("NarrationBar", narrationBgRect, string.Empty, 40, TextAnchor.MiddleCenter, Color.white);
             KawaGlintUiFactory.Fill(_narrationBar.rectTransform);
 
-            _bucketCount = KawaGlintUiFactory.CreateText("BucketCount", canvasTransform, "つれた かず 0", 36, TextAnchor.UpperRight, Color.white);
+            _bucketCount = KawaGlintUiFactory.CreateText("BucketCount", canvasTransform, "つれた かず 0", 36, TextAnchor.UpperRight, Color.white, outline: true, shadow: true);
             var bucketRect = _bucketCount.rectTransform;
             bucketRect.anchorMin = new Vector2(1f, 1f);
             bucketRect.anchorMax = new Vector2(1f, 1f);

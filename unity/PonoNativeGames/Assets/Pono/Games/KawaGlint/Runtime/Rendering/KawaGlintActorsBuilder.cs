@@ -75,6 +75,12 @@ namespace Pono.KawaGlint.Rendering
         private static readonly Color FishShadowColor = HexColor(0x0A, 0x2E, 0x44);
         private const float FishShadowAlpha = 0.55f;
 
+        // Ambient fish tint when illustrated shadow art loads. High enough to
+        // kill the see-through look over the bright river cross-section art,
+        // but slightly under 1.0 so the fully-opaque target fish still reads
+        // as the most solid fish in the water.
+        private const float IllustratedAmbientFishAlpha = 0.9f;
+
         private const int BobberTextureWidth = 64;
         private const int BobberTextureHeight = 96;
         private const float BobberWorldHeight = 0.55f;
@@ -240,11 +246,13 @@ namespace Pono.KawaGlint.Rendering
                 renderer.flipX = direction > 0f;
                 if (artSprite != null)
                 {
-                    // Illustrated shadows are baked fully opaque; soften to
-                    // roughly match the procedural silhouette's own baked
-                    // FishShadowAlpha so ambient fish read as murky
-                    // underwater shapes rather than solid cutouts.
-                    renderer.color = new Color(1f, 1f, 1f, 0.8f);
+                    // Illustrated shadows are baked fully opaque (the source
+                    // PNGs have no built-in translucency). Tint down slightly
+                    // from 1.0 so ambient fish read as murky underwater
+                    // shapes distinct from the single fully-opaque target
+                    // fish, while staying solid enough not to wash out over
+                    // the bright river cross-section background art.
+                    renderer.color = new Color(1f, 1f, 1f, IllustratedAmbientFishAlpha);
                 }
 
                 // Per-fish wag phase only (module D) -- amplitude/speed stay

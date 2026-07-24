@@ -98,7 +98,9 @@ namespace Pono.KawaGlint.UI
             string value,
             int fontSize,
             TextAnchor alignment,
-            Color color)
+            Color color,
+            bool outline = false,
+            bool shadow = false)
         {
             var rect = CreateRect(name, parent);
             var text = rect.gameObject.AddComponent<Text>();
@@ -109,6 +111,29 @@ namespace Pono.KawaGlint.UI
             text.color = color;
             text.supportRichText = false;
             text.raycastTarget = false;
+
+            // Outline before Shadow: uGUI applies vertex-modifier components in
+            // AddComponent order, so Shadow must run on top of an
+            // already-outlined glyph mesh to shadow the outline too (not just
+            // the bare glyph). Both default to off so every pre-existing
+            // CreateText() call site (timing-ring labels, banners, etc., which
+            // already sit on their own dark panel背景) keeps its exact prior
+            // look.
+            if (outline)
+            {
+                var o = rect.gameObject.AddComponent<Outline>();
+                o.effectColor = new Color(0.05f, 0.16f, 0.24f, 1f); // deep river navy #0D2938 (matches NarrationBarBg)
+                o.effectDistance = new Vector2(2f, 2f);
+                o.useGraphicAlpha = true;
+            }
+            if (shadow)
+            {
+                var s = rect.gameObject.AddComponent<Shadow>();
+                s.effectColor = new Color(0f, 0f, 0f, 0.8f);
+                s.effectDistance = new Vector2(0f, -3f);
+                s.useGraphicAlpha = true;
+            }
+
             return text;
         }
 
