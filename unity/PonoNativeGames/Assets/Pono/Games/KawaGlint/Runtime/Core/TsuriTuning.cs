@@ -2,6 +2,9 @@
 // common/tsuri/core.js の TUNING / GEAR_MODS_NEUTRAL / RARITY_BASE_WEIGHT /
 // SESSION_DEDUPE_WEIGHT_MUL / TUG_CONFIG の純C#移植。 数値・意味は一切変えない
 // (企画書の「変更禁止」契約)。
+// v2 (2026-07-24): 実機フィードバックにより連打バランス3定数
+// (GaugeDecayPerSec / RendaGainMul / RendaHelpAfterSec) のみ Unity 版で
+// 意図的に乖離。 web core.js は不変 (batch:1455-kawaglint-bite-feel-and-renda-balance)。
 namespace Pono.KawaGlint.Core
 {
     /// <summary>
@@ -20,8 +23,31 @@ namespace Pono.KawaGlint.Core
         /// <summary>連打ゲージが0まで落ちない床。</summary>
         public const float GaugeFloorPct = 30f;
 
-        /// <summary>放置時のゲージ減衰(gearMods.decayMulで補正、Phase0は1固定)。</summary>
-        public const float GaugeDecayPerSec = 4f;
+        /// <summary>
+        /// 放置時のゲージ減衰(gearMods.decayMulで補正、Phase0は1固定)。
+        /// v2 (2026-07-24): 実機フィードバック(連打が簡単すぎる)により 4→9 に
+        /// 意図的に引き上げ(Unity版のみ、web core.jsは不変)。
+        /// </summary>
+        public const float GaugeDecayPerSec = 9f;
+
+        /// <summary>
+        /// v2 (2026-07-24) 新設: TapRenda の per-tap gain に一律で掛ける倍率。
+        /// 0.7 = 全種の gain を 70% に減衰させ、キャッチまでの必要タップ数を
+        /// 増やす(種間の相対難度は不変)。 web core.js には存在しない Unity 版
+        /// 専用の乖離定数。
+        /// </summary>
+        public const float RendaGainMul = 0.7f;
+
+        /// <summary>
+        /// v2 (2026-07-24) 新設: Renda 突入から合計この秒数(relaxedのみ)経過したら
+        /// 床未到達でもおたすけを発動する第2の安全網。 GaugeDecayPerSec を
+        /// 9 に引き上げたことで、1tap/s 程度の遅いタップの子は毎タップ後に
+        /// ゲージが床の上に浮き FloorHeldSec が毎回リセットされ続け、既存の
+        /// 床おたすけ(HelpAfterFloorSec=10s 連続滞在)が永久に発動しない新しい
+        /// 詰みが生まれるため、滞在合計時間ベースでこれを塞ぐ。
+        /// web core.js には存在しない Unity 版専用の乖離定数。
+        /// </summary>
+        public const float RendaHelpAfterSec = 18f;
 
         /// <summary>2連続逃し→3回目は窓2倍。</summary>
         public const int AssistDoubleWindowAfterMisses = 2;

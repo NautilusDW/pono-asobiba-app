@@ -192,6 +192,7 @@ namespace Pono.KawaGlint.Core
             next.BiteWindowRemainingSec = 0f;
             next.GaugePct = 0f;
             next.FloorHeldSec = 0f;
+            next.RendaElapsedSec = 0f;
             next.Phase = TsuriPhase.Wait;
             return next;
         }
@@ -230,6 +231,7 @@ namespace Pono.KawaGlint.Core
                         next.Phase = TsuriPhase.Renda;
                         next.GaugePct = 0f;
                         next.FloorHeldSec = 0f;
+                        next.RendaElapsedSec = 0f;
                     }
                     else
                     {
@@ -258,6 +260,10 @@ namespace Pono.KawaGlint.Core
 
             if (next.Phase == TsuriPhase.Renda)
             {
+                // v2 (2026-07-24) 新設: Renda 滞在合計時間(タップの有無に関わらず加算)。
+                // 時間ベースの第2おたすけ判定に使う(下記参照)。
+                next.RendaElapsedSec += dt;
+
                 float decay = TsuriTuning.GaugeDecayPerSec * m.DecayMul * dt;
                 // 床(GaugeFloorPct)より下には絶対に落とさない(初期値0からの最初のtickでも
                 // 床まで即座に持ち上がる=「連打ゲージが0まで落ちない」契約どおりの挙動)。
@@ -271,7 +277,14 @@ namespace Pono.KawaGlint.Core
                     next.FloorHeldSec = 0f;
                 }
 
-                if (next.Mode == TsuriMode.Relaxed && next.FloorHeldSec >= TsuriTuning.HelpAfterFloorSec)
+                // v2 (2026-07-24): GaugeDecayPerSec を 9 に引き上げたことで、
+                // 1tap/s 程度の遅いタップの子はタップの度にゲージが床の上へ
+                // 浮き FloorHeldSec が毎回リセットされ続け、既存の床おたすけが
+                // 永久に発動しない詰みが生まれ得る。 Renda 滞在合計時間
+                // (RendaElapsedSec >= RendaHelpAfterSec) を第2の安全網として追加。
+                bool floorHelp = next.FloorHeldSec >= TsuriTuning.HelpAfterFloorSec;
+                bool timeHelp = next.RendaElapsedSec >= TsuriTuning.RendaHelpAfterSec;
+                if (next.Mode == TsuriMode.Relaxed && (floorHelp || timeHelp))
                 {
                     // NOTE(tugスタブ骨組み・Phase 2で中身実装予定): IsTugEnabled() が
                     // true を返すようになったら、ここで Landed に直行せず Tug へ一旦
@@ -290,6 +303,7 @@ namespace Pono.KawaGlint.Core
                     next.Phase = TsuriPhase.Landed;
                     next.ConsecutiveMisses = 0;
                     next.FloorHeldSec = 0f;
+                    next.RendaElapsedSec = 0f;
                     MarkLanded(next, nowMs);
                 }
                 return next;
@@ -322,6 +336,7 @@ namespace Pono.KawaGlint.Core
             next.Phase = TsuriPhase.Renda;
             next.GaugePct = 0f;
             next.FloorHeldSec = 0f;
+            next.RendaElapsedSec = 0f;
             next.BiteWindowRemainingSec = 0f;
             return next;
         }
@@ -342,7 +357,9 @@ namespace Pono.KawaGlint.Core
             int tapsBase = (species != null && species.ChallengeProfile != null && species.ChallengeProfile.TapsBase > 0)
                 ? species.ChallengeProfile.TapsBase
                 : 1;
-            float gain = (100f / tapsBase) * m.GainMul;
+            // v2 (2026-07-24): 全種一律で RendaGainMul(0.7) を掛け、キャッチまでの
+            // 必要タップ数を増やす(種間の相対難度は不変、web core.jsは不変)。
+            float gain = (100f / tapsBase) * TsuriTuning.RendaGainMul * m.GainMul;
             next.GaugePct += gain;
             next.FloorHeldSec = 0f; // タップがあった=床に留まっていない
             if (next.GaugePct >= 100f)
@@ -351,6 +368,7 @@ namespace Pono.KawaGlint.Core
                 next.Phase = TsuriPhase.Landed;
                 next.ConsecutiveMisses = 0;
                 next.FloorHeldSec = 0f;
+                next.RendaElapsedSec = 0f;
                 MarkLanded(next, nowMs);
             }
             return next;

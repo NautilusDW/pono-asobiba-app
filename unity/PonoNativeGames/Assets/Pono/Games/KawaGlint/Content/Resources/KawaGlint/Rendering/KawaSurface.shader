@@ -164,8 +164,8 @@ Shader "Pono/KawaGlint/Surface"
                 float below = saturate(-d / 0.45);
                 float n = ValueNoise(float2(worldX * 1.4 + t * 0.5, worldY * 9.0));
                 float patch = ValueNoise(float2(worldX * 0.35 - t * 0.11, 3.7));
-                float glint = pow(saturate((n - 0.70) / 0.30), 3.0)
-                    * smoothstep(0.45, 0.75, patch)
+                float glint = pow(saturate((n - 0.66) / 0.30), 3.0)
+                    * smoothstep(0.40, 0.70, patch)
                     * (1.0 - below)
                     * step(d, 0.0);
                 float3 glintColor = _SparkleTint.rgb * 2.0 * glint;

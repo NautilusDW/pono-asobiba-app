@@ -27,7 +27,9 @@ namespace Pono.KawaGlint.Tests.EditMode
             Assert.That(TsuriTuning.WindowGraceSec(TsuriMode.Relaxed), Is.EqualTo(0.5f).Within(Tolerance));
             Assert.That(TsuriTuning.WindowGraceSec(TsuriMode.Expert), Is.EqualTo(0f).Within(Tolerance));
             Assert.That(TsuriTuning.GaugeFloorPct, Is.EqualTo(30f).Within(Tolerance));
-            Assert.That(TsuriTuning.GaugeDecayPerSec, Is.EqualTo(4f).Within(Tolerance));
+            Assert.That(TsuriTuning.GaugeDecayPerSec, Is.EqualTo(9f).Within(Tolerance));
+            Assert.That(TsuriTuning.RendaGainMul, Is.EqualTo(0.7f).Within(Tolerance));
+            Assert.That(TsuriTuning.RendaHelpAfterSec, Is.EqualTo(18f).Within(Tolerance));
             Assert.That(TsuriTuning.AssistDoubleWindowAfterMisses, Is.EqualTo(2));
             Assert.That(TsuriTuning.AutoHookAfterMisses, Is.EqualTo(3));
             Assert.That(TsuriTuning.HelpAfterFloorSec, Is.EqualTo(10f).Within(Tolerance));
@@ -52,6 +54,7 @@ namespace Pono.KawaGlint.Tests.EditMode
             Assert.That(session.WaitRemainingSec, Is.EqualTo(0f));
             Assert.That(session.BiteWindowRemainingSec, Is.EqualTo(0f));
             Assert.That(session.FloorHeldSec, Is.EqualTo(0f));
+            Assert.That(session.RendaElapsedSec, Is.EqualTo(0f));
             Assert.That(session.PityBySpecies, Is.Empty);
             Assert.That(session.SessionSeenIds, Is.Empty);
             Assert.That(session.CaughtLog, Is.Empty);
@@ -215,8 +218,10 @@ namespace Pono.KawaGlint.Tests.EditMode
 
         // ═══ 7. TapRenda ═════════════════════════════════════════════════
         [Test]
-        public void TapRenda_Ayu_EightTaps_LandsWithGauge100AndMisses0()
+        public void TapRenda_Ayu_TwelveTaps_LandsWithGauge100AndMisses0()
         {
+            // v2 (2026-07-24): RendaGainMul(0.7)適用によりayu(TapsBase=8)のper-tap gainは
+            // 8.75%に低下(旧12.5%)、キャッチに必要なタップ数が8→12に増える。
             var ayu = TsuriFishData.GetSpeciesById("fish_ayu");
             var session = TsuriCore.CreateSession(FullPool(), TsuriMode.Relaxed);
             session.Phase = TsuriPhase.Renda;
@@ -225,23 +230,40 @@ namespace Pono.KawaGlint.Tests.EditMode
             session.SpeciesId = "fish_ayu";
 
             var current = session;
-            for (int i = 0; i < 7; i++)
+            for (int i = 0; i < 11; i++)
             {
                 current = TsuriCore.TapRenda(current, ayu, TsuriGearMods.Neutral, 5000L);
             }
 
             Assert.That(current.Phase, Is.EqualTo(TsuriPhase.Renda));
-            Assert.That(current.GaugePct, Is.EqualTo(87.5f).Within(Tolerance));
+            Assert.That(current.GaugePct, Is.EqualTo(96.25f).Within(Tolerance));
 
             var landed = TsuriCore.TapRenda(current, ayu, TsuriGearMods.Neutral, 6000L);
 
             Assert.That(landed.Phase, Is.EqualTo(TsuriPhase.Landed));
             Assert.That(landed.GaugePct, Is.EqualTo(100f).Within(Tolerance));
             Assert.That(landed.ConsecutiveMisses, Is.EqualTo(0));
+            Assert.That(landed.RendaElapsedSec, Is.EqualTo(0f).Within(Tolerance));
             Assert.That(landed.SessionSeenIds, Does.Contain("fish_ayu"));
             Assert.That(landed.CaughtLog, Has.Count.EqualTo(1));
             Assert.That(landed.CaughtLog[0].SpeciesId, Is.EqualTo("fish_ayu"));
             Assert.That(landed.CaughtLog[0].AtMs, Is.EqualTo(6000L));
+        }
+
+        [Test]
+        public void TapRenda_GainAppliesRendaGainMul()
+        {
+            // treasure_boot(TapsBase=4)は旧gainなら1タップで25%だが、RendaGainMul(0.7)適用で17.5%になる。
+            var boot = TsuriFishData.GetSpeciesById("treasure_boot");
+            var session = TsuriCore.CreateSession(FullPool(), TsuriMode.Relaxed);
+            session.Phase = TsuriPhase.Renda;
+            session.GaugePct = 0f;
+            session.SpeciesId = "treasure_boot";
+
+            var next = TsuriCore.TapRenda(session, boot, TsuriGearMods.Neutral, 0L);
+
+            Assert.That(next.Phase, Is.EqualTo(TsuriPhase.Renda));
+            Assert.That(next.GaugePct, Is.EqualTo(17.5f).Within(Tolerance));
         }
 
         [Test]
@@ -297,19 +319,22 @@ namespace Pono.KawaGlint.Tests.EditMode
         [Test]
         public void Tick_Renda_Expert_NeverAutoLandsFromFloorHelp()
         {
+            // 25tick(=25秒)に拡張: 床おたすけ(10s)だけでなく新設の時間おたすけ(18s)を
+            // 越えてもExpertは自動着地しないことを同時に証明する。
             var session = TsuriCore.CreateSession(FullPool(), TsuriMode.Expert);
             session.Phase = TsuriPhase.Renda;
             session.GaugePct = 0f;
             session.SpeciesId = "fish_ayu";
 
             var current = session;
-            for (int i = 0; i < 15; i++)
+            for (int i = 0; i < 25; i++)
             {
                 current = TsuriCore.Tick(current, 1f, TsuriGearMods.Neutral, 0L);
             }
 
             Assert.That(current.Phase, Is.EqualTo(TsuriPhase.Renda));
             Assert.That(current.FloorHeldSec, Is.GreaterThanOrEqualTo(10f));
+            Assert.That(current.RendaElapsedSec, Is.GreaterThanOrEqualTo(TsuriTuning.RendaHelpAfterSec));
         }
 
         [Test]
@@ -324,6 +349,75 @@ namespace Pono.KawaGlint.Tests.EditMode
             var next = TsuriCore.TapRenda(session, ayu, TsuriGearMods.Neutral, 0L);
 
             Assert.That(next.FloorHeldSec, Is.EqualTo(0f));
+        }
+
+        [Test]
+        public void Tick_Renda_Relaxed_TimeBasedHelp_RescuesSlowTapper()
+        {
+            // v2 (2026-07-24): GaugeDecayPerSec(9)がper-tap gain(ayu 8.75%)を上回るため、
+            // 1tap/sの遅いタップの子はTick→タップの度にゲージが床(30%)へ押し戻され、
+            // FloorHeldSecはタップの度に0リセットされ続けて既存の床おたすけ(10s)が
+            // 永久に発動しない。 RendaElapsedSec(タップ有無に関わらず累積)ベースの
+            // 第2おたすけ(18s)が代わりに救済することを検証する。
+            var ayu = TsuriFishData.GetSpeciesById("fish_ayu");
+            var session = TsuriCore.CreateSession(FullPool(), TsuriMode.Relaxed);
+            session.Phase = TsuriPhase.Renda;
+            session.GaugePct = 0f;
+            session.SpeciesId = "fish_ayu";
+
+            var current = session;
+            for (int i = 0; i < 17; i++)
+            {
+                current = TsuriCore.Tick(current, 1f, TsuriGearMods.Neutral, 0L);
+                Assert.That(current.Phase, Is.EqualTo(TsuriPhase.Renda), $"cycle {i}: 18秒未満はRendaのまま");
+                Assert.That(current.FloorHeldSec, Is.LessThan(TsuriTuning.HelpAfterFloorSec),
+                    "タップでFloorHeldSecがリセットされ続けるため床おたすけ(10s)は発動しない");
+
+                current = TsuriCore.TapRenda(current, ayu, TsuriGearMods.Neutral, 0L);
+                Assert.That(current.Phase, Is.EqualTo(TsuriPhase.Renda));
+                Assert.That(current.FloorHeldSec, Is.EqualTo(0f).Within(Tolerance));
+                Assert.That(current.GaugePct, Is.LessThan(100f), "拮抗バランスによりタップだけでは100%に届かない想定");
+            }
+
+            var landed = TsuriCore.Tick(current, 1f, TsuriGearMods.Neutral, 18000L);
+
+            Assert.That(landed.Phase, Is.EqualTo(TsuriPhase.Landed));
+            Assert.That(landed.GaugePct, Is.EqualTo(100f).Within(Tolerance));
+            Assert.That(landed.RendaElapsedSec, Is.EqualTo(0f).Within(Tolerance));
+            Assert.That(landed.FloorHeldSec, Is.EqualTo(0f));
+            Assert.That(landed.CaughtLog, Has.Count.EqualTo(1));
+        }
+
+        [Test]
+        public void TapHook_And_AutoHook_ResetRendaElapsedSec()
+        {
+            // TapHook(Bite→Renda)は前回セッションの残骸(非0のRendaElapsedSec)があっても0にリセットする。
+            var biteSession = TsuriCore.CreateSession(FullPool(), TsuriMode.Relaxed);
+            biteSession.Phase = TsuriPhase.Bite;
+            biteSession.BiteWindowRemainingSec = 1f;
+            biteSession.RendaElapsedSec = 12f;
+            var hookResult = TsuriCore.TapHook(biteSession);
+            Assert.That(hookResult.Phase, Is.EqualTo(TsuriPhase.Renda));
+            Assert.That(hookResult.RendaElapsedSec, Is.EqualTo(0f).Within(Tolerance));
+
+            // 自動フッキング(3連続逃し→Wait終了で直接Renda)でも同様にリセットされる。
+            var waitSession = TsuriCore.CreateSession(FullPool(), TsuriMode.Relaxed);
+            waitSession.Phase = TsuriPhase.Wait;
+            waitSession.WaitRemainingSec = 0.5f;
+            waitSession.SpeciesId = "fish_ayu";
+            waitSession.ConsecutiveMisses = 3;
+            waitSession.RendaElapsedSec = 7f;
+            var autoHookResult = TsuriCore.Tick(waitSession, 1f, TsuriGearMods.Neutral, 1000L);
+            Assert.That(autoHookResult.Phase, Is.EqualTo(TsuriPhase.Renda));
+            Assert.That(autoHookResult.RendaElapsedSec, Is.EqualTo(0f).Within(Tolerance));
+
+            // Cast(新規キャスト)も防御的に0リセットする。
+            var landedSession = TsuriCore.CreateSession(FullPool(), TsuriMode.Relaxed);
+            landedSession.Phase = TsuriPhase.Landed;
+            landedSession.RendaElapsedSec = 9f;
+            var castResult = TsuriCore.Cast(landedSession, 2f, 5f, new Random(5));
+            Assert.That(castResult.Phase, Is.EqualTo(TsuriPhase.Wait));
+            Assert.That(castResult.RendaElapsedSec, Is.EqualTo(0f).Within(Tolerance));
         }
 
         // ═══ 9. ComputeSpeciesProbabilities ══════════════════════════════

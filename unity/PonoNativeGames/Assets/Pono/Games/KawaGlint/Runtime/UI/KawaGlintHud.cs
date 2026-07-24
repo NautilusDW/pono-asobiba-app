@@ -21,6 +21,42 @@ namespace Pono.KawaGlint.UI
         private const float FlyWordDurationSeconds = 0.6f;
         private const float FlyWordRiseCanvasUnits = 80f;
 
+        // ── Timing ring (module B, item 2): a pure visual guide for the bite
+        // window's remaining time -- never used to judge tap precision. See
+        // KawaGlintGameController.UpdateTimingRing/BiteWindowRemaining01 for
+        // the frame-by-frame driver; TsuriCore.TapHook's success/fail logic
+        // is untouched by any of this.
+        private const float TimingRingBaseSizeCanvasUnits = 170f;
+        private const float TimingRingOuterMaxScale = 2.8f;
+        private const float TimingRingCloseThreshold01 = 0.15f;
+        // 1.2Hz is comfortably under the 3Hz child-safety flicker limit, and
+        // +/-5% is a gentle "alive" pulse rather than a blink.
+        private const float TimingRingPulseFrequencyHz = 1.2f;
+        private const float TimingRingPulseAmplitude = 0.05f;
+        private static readonly Color TimingRingInnerBaseColor = new Color(1f, 1f, 1f, 0.85f);
+        private static readonly Color TimingRingOuterBaseColor = new Color(1f, 217f / 255f, 61f / 255f, 0.95f); // #FFD93D
+
+        // ── Hook-hit confirm effect (module B, item 3): a ~0.7s local burst
+        // (ring pop + label + radiating dots), entirely inside the HUD canvas
+        // -- no full-screen flash or camera shake, per the 3-7yo safety rules.
+        private const string HookHitLabelText = "ヒット！";
+        private const int HookHitLabelFontSize = 96;
+        private static readonly Color HookHitColor = new Color(1f, 217f / 255f, 61f / 255f, 1f); // #FFD93D
+        private const float HookHitBurstDurationSeconds = 0.30f;
+        private const float HookHitBurstStartScale = 1.0f;
+        private const float HookHitBurstMaxScale = 2.2f;
+        private const float HookHitBurstStartAlpha = 0.9f;
+        private const float HookHitLabelPopStartScale = 1.6f;
+        private const float HookHitLabelPopDurationSeconds = 0.15f;
+        private const float HookHitLabelHoldSeconds = 0.35f;
+        private const float HookHitLabelFadeDurationSeconds = 0.20f;
+        private const float HookHitTotalDurationSeconds =
+            HookHitLabelPopDurationSeconds + HookHitLabelHoldSeconds + HookHitLabelFadeDurationSeconds;
+        private const int HookHitDropletCount = 8;
+        private const float HookHitDropletDurationSeconds = 0.4f;
+        private const float HookHitDropletMaxRadiusCanvasUnits = 180f;
+        private const float HookHitDropletSizeCanvasUnits = 24f;
+
         private static readonly Color GaugeGreen = new Color32(0x6F, 0xCF, 0x6F, 0xFF);
         private static readonly Color GaugeYellow = new Color32(0xFF, 0xD9, 0x3D, 0xFF);
         private static readonly Color GaugeOrange = new Color32(0xFF, 0x8A, 0x3D, 0xFF);
@@ -43,6 +79,19 @@ namespace Pono.KawaGlint.UI
         private GameObject _escapeBanner;
         private Text _bucketCount;
         private RectTransform _flyWordLayer;
+
+        private RectTransform _timingRingRoot;
+        private RectTransform _timingRingOuter;
+        private Image _timingRingOuterImage;
+        private RectTransform _timingRingInner;
+        private Image _timingRingInnerImage;
+        private bool _timingRingActive;
+
+        private RectTransform _hookHitFxRoot;
+        private Image _hookHitBurstImage;
+        private Text _hookHitLabel;
+        private Image[] _hookHitDots;
+        private Coroutine _hookHitRoutine;
 
         private float _rendaComboScale = 1f;
 
@@ -69,12 +118,29 @@ namespace Pono.KawaGlint.UI
 
         private void Update()
         {
+            UpdateRendaComboPop();
+            UpdateTimingRingPulse();
+        }
+
+        private void UpdateRendaComboPop()
+        {
             if (_rendaComboNum == null || _rendaComboScale <= 1f)
             {
                 return;
             }
             _rendaComboScale = Mathf.Max(1f, _rendaComboScale - ComboDecayPerSecond * Time.deltaTime);
             _rendaComboNum.rectTransform.localScale = new Vector3(_rendaComboScale, _rendaComboScale, 1f);
+        }
+
+        /// <summary>Gentle 1.2Hz +/-5% "alive" pulse on the fixed inner target ring while the timing ring is shown -- purely decorative, never a flicker (child-safety: well under 3Hz).</summary>
+        private void UpdateTimingRingPulse()
+        {
+            if (!_timingRingActive || _timingRingInner == null)
+            {
+                return;
+            }
+            var pulse = 1f + TimingRingPulseAmplitude * Mathf.Sin(Time.time * TimingRingPulseFrequencyHz * Mathf.PI * 2f);
+            _timingRingInner.localScale = new Vector3(pulse, pulse, 1f);
         }
 
         // ── public HUD API (Gameplay-layer facing) ──────────────────────
@@ -208,6 +274,100 @@ namespace Pono.KawaGlint.UI
             }
         }
 
+        // ── timing ring (module B) ──────────────────────────────────────
+        // Pure visual guide for the current bite window's remaining time.
+        // TsuriCore.TapHook's success/fail contract (bite中ならいつタップし
+        // ても成功) is entirely untouched by this -- SetTimingRing only ever
+        // draws whatever remaining01 the caller (KawaGlintGameController)
+        // computes from the real session state, it never judges anything.
+
+        public void ShowTimingRing()
+        {
+            _timingRingActive = true;
+            if (_timingRingRoot != null)
+            {
+                _timingRingRoot.gameObject.SetActive(true);
+            }
+        }
+
+        public void HideTimingRing()
+        {
+            _timingRingActive = false;
+            if (_timingRingRoot != null)
+            {
+                _timingRingRoot.gameObject.SetActive(false);
+            }
+        }
+
+        /// <summary>
+        /// Positions the ring at <paramref name="viewportPos"/> (0..1, e.g.
+        /// from Camera.WorldToViewportPoint) and draws the outer ring's
+        /// shrink-to-target scale purely as a function of
+        /// <paramref name="remaining01"/> (1 = window just opened, 0 = about
+        /// to expire) -- a stateless redraw, safe to call every frame.
+        /// </summary>
+        public void SetTimingRing(Vector2 viewportPos, float remaining01)
+        {
+            if (_timingRingRoot == null)
+            {
+                return;
+            }
+
+            _timingRingRoot.anchorMin = viewportPos;
+            _timingRingRoot.anchorMax = viewportPos;
+            _timingRingRoot.anchoredPosition = Vector2.zero;
+
+            var clamped = Mathf.Clamp01(remaining01);
+            if (_timingRingOuter != null)
+            {
+                var outerScale = Mathf.Lerp(1f, TimingRingOuterMaxScale, clamped);
+                _timingRingOuter.localScale = new Vector3(outerScale, outerScale, 1f);
+            }
+
+            // "Overlapping now" strongly highlighted by fading both rings to
+            // solid white -- deliberately NOT a blink (a single one-way color
+            // lerp, not a repeating flash) so it stays inside the child-safe
+            // no-flicker rule while still reading as "this is the moment".
+            var closeToNow = clamped <= TimingRingCloseThreshold01;
+            if (_timingRingInnerImage != null)
+            {
+                _timingRingInnerImage.color = closeToNow ? new Color(1f, 1f, 1f, 1f) : TimingRingInnerBaseColor;
+            }
+            if (_timingRingOuterImage != null)
+            {
+                _timingRingOuterImage.color = closeToNow ? new Color(1f, 1f, 1f, 1f) : TimingRingOuterBaseColor;
+            }
+        }
+
+        // ── hook-hit confirm effect (module B) ──────────────────────────
+
+        /// <summary>
+        /// Plays a ~0.7s local "ヒット！" burst at <paramref name="viewportPos"/>:
+        /// a quick ring pop, a popping/holding/fading label, and eight
+        /// radiating droplets. Entirely local to the HUD canvas -- no
+        /// full-screen flash or camera shake. Safe to call again mid-effect
+        /// (restarts from the top).
+        /// </summary>
+        public void PlayHookHitFx(Vector2 viewportPos)
+        {
+            if (_hookHitFxRoot == null)
+            {
+                return;
+            }
+
+            if (_hookHitRoutine != null)
+            {
+                StopCoroutine(_hookHitRoutine);
+                _hookHitRoutine = null;
+            }
+
+            _hookHitFxRoot.anchorMin = viewportPos;
+            _hookHitFxRoot.anchorMax = viewportPos;
+            _hookHitFxRoot.anchoredPosition = Vector2.zero;
+            _hookHitFxRoot.gameObject.SetActive(true);
+            _hookHitRoutine = StartCoroutine(AnimateHookHitFx());
+        }
+
         // ── construction ────────────────────────────────────────────────
 
         private void BuildChildren(Transform canvasTransform)
@@ -246,6 +406,8 @@ namespace Pono.KawaGlint.UI
             BuildRendaWrap(canvasTransform);
             BuildCatchBanner(canvasTransform);
             BuildEscapeBanner(canvasTransform);
+            BuildTimingRing(canvasTransform);
+            BuildHookHitFx(canvasTransform);
 
             var flyLayerRect = KawaGlintUiFactory.CreateRect("FlyWordLayer", canvasTransform);
             KawaGlintUiFactory.Fill(flyLayerRect);
@@ -353,6 +515,217 @@ namespace Pono.KawaGlint.UI
             KawaGlintUiFactory.Fill(text.rectTransform);
 
             _escapeBanner.SetActive(false);
+        }
+
+        /// <summary>
+        /// TimingRing / TimingRingOuter / TimingRingInner -- GameObject names
+        /// are a PlayMode-test contract (see class doc). Inner is built first
+        /// (fixed-size target ring) and Outer second, so Outer -- the ring
+        /// that visibly shrinks down onto Inner -- renders on top of it.
+        /// </summary>
+        private void BuildTimingRing(Transform canvasTransform)
+        {
+            var rootRect = KawaGlintUiFactory.CreateRect("TimingRing", canvasTransform);
+            rootRect.anchorMin = new Vector2(0.5f, 0.5f);
+            rootRect.anchorMax = new Vector2(0.5f, 0.5f);
+            rootRect.pivot = new Vector2(0.5f, 0.5f);
+            rootRect.sizeDelta = Vector2.zero;
+            rootRect.anchoredPosition = Vector2.zero;
+            _timingRingRoot = rootRect;
+
+            var innerImage = KawaGlintUiFactory.CreateRing("TimingRingInner", rootRect, TimingRingInnerBaseColor);
+            var innerRect = innerImage.rectTransform;
+            innerRect.anchorMin = new Vector2(0.5f, 0.5f);
+            innerRect.anchorMax = new Vector2(0.5f, 0.5f);
+            innerRect.pivot = new Vector2(0.5f, 0.5f);
+            innerRect.sizeDelta = new Vector2(TimingRingBaseSizeCanvasUnits, TimingRingBaseSizeCanvasUnits);
+            innerRect.anchoredPosition = Vector2.zero;
+            _timingRingInner = innerRect;
+            _timingRingInnerImage = innerImage;
+
+            var outerImage = KawaGlintUiFactory.CreateRing("TimingRingOuter", rootRect, TimingRingOuterBaseColor);
+            var outerRect = outerImage.rectTransform;
+            outerRect.anchorMin = new Vector2(0.5f, 0.5f);
+            outerRect.anchorMax = new Vector2(0.5f, 0.5f);
+            outerRect.pivot = new Vector2(0.5f, 0.5f);
+            outerRect.sizeDelta = new Vector2(TimingRingBaseSizeCanvasUnits, TimingRingBaseSizeCanvasUnits);
+            outerRect.anchoredPosition = Vector2.zero;
+            _timingRingOuter = outerRect;
+            _timingRingOuterImage = outerImage;
+
+            _timingRingRoot.gameObject.SetActive(false);
+        }
+
+        /// <summary>
+        /// HookHitFx / HookHitLabel -- GameObject names are a PlayMode-test
+        /// contract (see class doc). Built once and reused every hook.
+        /// </summary>
+        private void BuildHookHitFx(Transform canvasTransform)
+        {
+            var rootRect = KawaGlintUiFactory.CreateRect("HookHitFx", canvasTransform);
+            rootRect.anchorMin = new Vector2(0.5f, 0.5f);
+            rootRect.anchorMax = new Vector2(0.5f, 0.5f);
+            rootRect.pivot = new Vector2(0.5f, 0.5f);
+            rootRect.sizeDelta = Vector2.zero;
+            rootRect.anchoredPosition = Vector2.zero;
+            _hookHitFxRoot = rootRect;
+
+            var burstImage = KawaGlintUiFactory.CreateRing("HookHitBurstRing", rootRect, HookHitColor);
+            var burstRect = burstImage.rectTransform;
+            burstRect.anchorMin = new Vector2(0.5f, 0.5f);
+            burstRect.anchorMax = new Vector2(0.5f, 0.5f);
+            burstRect.pivot = new Vector2(0.5f, 0.5f);
+            burstRect.sizeDelta = new Vector2(TimingRingBaseSizeCanvasUnits, TimingRingBaseSizeCanvasUnits);
+            burstRect.anchoredPosition = Vector2.zero;
+            _hookHitBurstImage = burstImage;
+
+            _hookHitDots = new Image[HookHitDropletCount];
+            for (var i = 0; i < HookHitDropletCount; i++)
+            {
+                var dotImage = KawaGlintUiFactory.CreateDot("HookHitDot" + i, rootRect, Color.white);
+                var dotRect = dotImage.rectTransform;
+                dotRect.anchorMin = new Vector2(0.5f, 0.5f);
+                dotRect.anchorMax = new Vector2(0.5f, 0.5f);
+                dotRect.pivot = new Vector2(0.5f, 0.5f);
+                dotRect.sizeDelta = new Vector2(HookHitDropletSizeCanvasUnits, HookHitDropletSizeCanvasUnits);
+                dotRect.anchoredPosition = Vector2.zero;
+                _hookHitDots[i] = dotImage;
+            }
+
+            _hookHitLabel = KawaGlintUiFactory.CreateText(
+                "HookHitLabel", rootRect, HookHitLabelText, HookHitLabelFontSize, TextAnchor.MiddleCenter, HookHitColor);
+            var labelRect = _hookHitLabel.rectTransform;
+            labelRect.anchorMin = new Vector2(0.5f, 0.5f);
+            labelRect.anchorMax = new Vector2(0.5f, 0.5f);
+            labelRect.pivot = new Vector2(0.5f, 0.5f);
+            labelRect.anchoredPosition = Vector2.zero;
+            labelRect.sizeDelta = new Vector2(640f, 160f);
+
+            _hookHitFxRoot.gameObject.SetActive(false);
+        }
+
+        private IEnumerator AnimateHookHitFx()
+        {
+            ResetHookHitFxVisualState();
+
+            var elapsed = 0f;
+            while (elapsed < HookHitTotalDurationSeconds)
+            {
+                elapsed += Time.deltaTime;
+                ApplyHookHitBurst(elapsed);
+                ApplyHookHitDroplets(elapsed);
+                ApplyHookHitLabel(elapsed);
+                yield return null;
+            }
+
+            _hookHitRoutine = null;
+            if (_hookHitFxRoot != null)
+            {
+                _hookHitFxRoot.gameObject.SetActive(false);
+            }
+        }
+
+        private void ResetHookHitFxVisualState()
+        {
+            if (_hookHitBurstImage != null)
+            {
+                _hookHitBurstImage.rectTransform.localScale = new Vector3(HookHitBurstStartScale, HookHitBurstStartScale, 1f);
+                var burstColor = HookHitColor;
+                burstColor.a = HookHitBurstStartAlpha;
+                _hookHitBurstImage.color = burstColor;
+            }
+
+            if (_hookHitDots != null)
+            {
+                for (var i = 0; i < _hookHitDots.Length; i++)
+                {
+                    if (_hookHitDots[i] == null)
+                    {
+                        continue;
+                    }
+                    _hookHitDots[i].rectTransform.anchoredPosition = Vector2.zero;
+                    var dotColor = _hookHitDots[i].color;
+                    dotColor.a = 1f;
+                    _hookHitDots[i].color = dotColor;
+                }
+            }
+
+            if (_hookHitLabel != null)
+            {
+                _hookHitLabel.rectTransform.localScale = new Vector3(HookHitLabelPopStartScale, HookHitLabelPopStartScale, 1f);
+                var labelColor = HookHitColor;
+                labelColor.a = 1f;
+                _hookHitLabel.color = labelColor;
+            }
+        }
+
+        private void ApplyHookHitBurst(float elapsed)
+        {
+            if (_hookHitBurstImage == null)
+            {
+                return;
+            }
+            var t01 = Mathf.Clamp01(elapsed / HookHitBurstDurationSeconds);
+            var scale = Mathf.Lerp(HookHitBurstStartScale, HookHitBurstMaxScale, t01);
+            _hookHitBurstImage.rectTransform.localScale = new Vector3(scale, scale, 1f);
+            var color = _hookHitBurstImage.color;
+            color.a = Mathf.Lerp(HookHitBurstStartAlpha, 0f, t01);
+            _hookHitBurstImage.color = color;
+        }
+
+        private void ApplyHookHitDroplets(float elapsed)
+        {
+            if (_hookHitDots == null)
+            {
+                return;
+            }
+            var t01 = Mathf.Clamp01(elapsed / HookHitDropletDurationSeconds);
+            var radius = Mathf.Lerp(0f, HookHitDropletMaxRadiusCanvasUnits, t01);
+            var alpha = 1f - t01;
+            for (var i = 0; i < _hookHitDots.Length; i++)
+            {
+                if (_hookHitDots[i] == null)
+                {
+                    continue;
+                }
+                var angle = i * (360f / _hookHitDots.Length) * Mathf.Deg2Rad;
+                var offset = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+                _hookHitDots[i].rectTransform.anchoredPosition = offset;
+                var color = _hookHitDots[i].color;
+                color.a = alpha;
+                _hookHitDots[i].color = color;
+            }
+        }
+
+        private void ApplyHookHitLabel(float elapsed)
+        {
+            if (_hookHitLabel == null)
+            {
+                return;
+            }
+
+            float scale;
+            var alpha = 1f;
+            if (elapsed < HookHitLabelPopDurationSeconds)
+            {
+                var popT = elapsed / HookHitLabelPopDurationSeconds;
+                scale = Mathf.Lerp(HookHitLabelPopStartScale, 1f, popT);
+            }
+            else if (elapsed < HookHitLabelPopDurationSeconds + HookHitLabelHoldSeconds)
+            {
+                scale = 1f;
+            }
+            else
+            {
+                scale = 1f;
+                var fadeT = (elapsed - HookHitLabelPopDurationSeconds - HookHitLabelHoldSeconds) / HookHitLabelFadeDurationSeconds;
+                alpha = Mathf.Lerp(1f, 0f, Mathf.Clamp01(fadeT));
+            }
+
+            _hookHitLabel.rectTransform.localScale = new Vector3(scale, scale, 1f);
+            var color = _hookHitLabel.color;
+            color.a = alpha;
+            _hookHitLabel.color = color;
         }
 
         private IEnumerator AnimateFlyWord(Text word)

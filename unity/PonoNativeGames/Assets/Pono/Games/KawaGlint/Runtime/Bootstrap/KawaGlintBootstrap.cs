@@ -24,7 +24,8 @@ namespace Pono.KawaGlint.Bootstrap
             Refraction,
             Surface,
             Actors,
-            Bloom
+            Bloom,
+            Caustics
         }
 
         // Contract constants shared with KawaGlintStageBuilder/KawaSurfaceBand/KawaGlintActorsBuilder
@@ -33,9 +34,22 @@ namespace Pono.KawaGlint.Bootstrap
         private const int SurfaceSortingOrder = 30;
         private const float SurfaceIntensity = 1.0f;
 
+        // Sorting order 16 sits between the underwater content (riverbed 10 / plants 12 / fish
+        // shadows 14) and the shallower layers (motes 18 / surface band 30 / shore 40) in the
+        // stage's shared sorting-order contract (see KawaGlintStageBuilder) - caustics read as
+        // light patterns cast onto the riverbed/plants/fish, above them but below the motes drifting
+        // through the water column. It is deliberately additive so it is fine for it to render "over"
+        // the fish silhouettes too (the later refraction post-pass wobbles this quad's underwater
+        // content again for free, exactly like AquaCausticsSurface is wobbled by AquaLumina's
+        // distortion pass - the physically plausible "light passes through water, then the whole
+        // scene refracts together" layering order).
+        private const int CausticsSortingOrder = 16;
+        private const float CausticsIntensity = 0.5f;
+
         private Camera _camera;
         private KawaStageInfo _stage;
         private KawaSurfaceBand _surface;
+        private KawaCausticsSurface _caustics;
         private KawaGlintActorsController _actors;
         private Volume _volume;
         private KawaGlintGameController _gameController;
@@ -80,6 +94,19 @@ namespace Pono.KawaGlint.Bootstrap
                 _stage.ShoreRightEdgeWorldX,
                 SurfaceSortingOrder,
                 SurfaceIntensity);
+
+            // KawaCausticsSurface.Create is a graceful no-op (returns null) when its shader is
+            // missing/unsupported - every caller here (SetEffectEnabled/IsEffectAvailable) already
+            // tolerates a null _caustics. The rect covers the underwater column only (WaterWorldRect's
+            // yMin up to the waterline itself, not the 5%-expanded yMax which pokes above it) so the
+            // caustics fade coordinate (see KawaCaustics.shader's vertical fade) lines up with the
+            // actual water surface rather than the slightly-taller full-screen-pass rect.
+            var causticsRect = new Rect(
+                _stage.WaterWorldRect.xMin,
+                _stage.WaterWorldRect.yMin,
+                _stage.WaterWorldRect.width,
+                _stage.WaterlineWorldY - _stage.WaterWorldRect.yMin);
+            _caustics = KawaCausticsSurface.Create(transform, causticsRect, CausticsSortingOrder, CausticsIntensity);
 
             _actors = KawaGlintActorsBuilder.Build(transform, _stage.WaterWorldRect, _stage.WaterlineWorldY, _stage.RodTipWorldPosition);
 
@@ -131,6 +158,12 @@ namespace Pono.KawaGlint.Bootstrap
                         _actors.gameObject.SetActive(enabled);
                     }
                     break;
+                case KawaEffect.Caustics:
+                    if (_caustics != null)
+                    {
+                        _caustics.gameObject.SetActive(enabled);
+                    }
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(effect), effect, null);
             }
@@ -149,6 +182,8 @@ namespace Pono.KawaGlint.Bootstrap
                     return _surface != null;
                 case KawaEffect.Actors:
                     return _actors != null;
+                case KawaEffect.Caustics:
+                    return _caustics != null;
                 default:
                     return false;
             }

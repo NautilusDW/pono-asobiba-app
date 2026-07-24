@@ -73,6 +73,12 @@ namespace Pono.KawaGlint.Rendering
         private const float TwitchFrequency = 18f;
         private const float TwitchAmplitude = 0.05f;
 
+        // SetTwitchIntensity clamp range -- keeps even the strongest nibble
+        // burst a gentle jitter (never more than 1.5x the base amplitude,
+        // per the "no exaggerated/scary motion for 3-7yo" contract).
+        private const float MinTwitchIntensity = 0.5f;
+        private const float MaxTwitchIntensity = 1.5f;
+
         // BiteSink ("本あたり"): the float visibly sinks below its floating
         // rest height.
         private const float BiteSinkOffsetWorld = 0.25f;
@@ -97,6 +103,8 @@ namespace Pono.KawaGlint.Rendering
 
         private float _escapePopStartY;
         private float _escapePopElapsed;
+
+        private float _twitchIntensity = 1f;
 
         /// <summary>Current presentation state (Hidden/Flying/Floating/Twitch/BiteSink/EscapePop).</summary>
         public KawaGlintBobberState VisualState { get; private set; } = KawaGlintBobberState.Floating;
@@ -138,6 +146,7 @@ namespace Pono.KawaGlint.Rendering
             _halfHeightWorld = halfHeightWorld;
             _y = waterlineWorldY;
             _velocity = 0f;
+            _twitchIntensity = 1f;
             _renderer = GetComponent<SpriteRenderer>();
             transform.position = new Vector3(_x, _y, 0f);
             ApplyVisibility();
@@ -157,6 +166,19 @@ namespace Pono.KawaGlint.Rendering
                 _escapePopStartY = _y;
             }
             ApplyVisibility();
+        }
+
+        /// <summary>
+        /// Scales the amplitude of the next (or current) <see cref="KawaGlintBobberState.Twitch"/>
+        /// jitter -- driven per-nibble-burst by the game controller from
+        /// <see cref="KawaGlintPreBitePlan.NibbleIntensity01"/> so stronger
+        /// nibbles read as a visibly bigger tug. Clamped to
+        /// [<see cref="MinTwitchIntensity"/>, <see cref="MaxTwitchIntensity"/>]
+        /// so even the strongest nibble stays a gentle jitter, never a jolt.
+        /// </summary>
+        public void SetTwitchIntensity(float scale)
+        {
+            _twitchIntensity = Mathf.Clamp(scale, MinTwitchIntensity, MaxTwitchIntensity);
         }
 
         /// <summary>
@@ -251,7 +273,7 @@ namespace Pono.KawaGlint.Rendering
         private void UpdateTwitch(float time)
         {
             var wave = KawaWave.Height(_x, time);
-            var jitter = Mathf.Sin(time * TwitchFrequency) * TwitchAmplitude;
+            var jitter = Mathf.Sin(time * TwitchFrequency) * TwitchAmplitude * _twitchIntensity;
             var targetY = _waterlineY + wave + jitter;
             _y = Mathf.SmoothDamp(_y, targetY, ref _velocity, SmoothTime);
             ApplyWaveTiltedPosition(time);

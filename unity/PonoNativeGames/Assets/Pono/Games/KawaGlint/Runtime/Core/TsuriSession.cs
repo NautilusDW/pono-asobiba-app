@@ -25,6 +25,13 @@ namespace Pono.KawaGlint.Core
         public List<TsuriCaughtEntry> CaughtLog = new List<TsuriCaughtEntry>();
 
         /// <summary>
+        /// v2 (2026-07-24) 新設: Renda フェーズに入ってからの経過秒数の累積
+        /// (タップの有無に関わらず加算、TapHook/自動フッキング/Cast で 0 に
+        /// リセット)。 TsuriTuning.RendaHelpAfterSec ベースの時間おたすけ判定に使う。
+        /// </summary>
+        public float RendaElapsedSec = 0f;
+
+        /// <summary>
         /// core.js の cloneSession() と同じ深い複製。 リスト/辞書は新インスタンスを
         /// 生成する (呼び出し側の state を絶対に mutate しないため)。 TsuriSpecies
         /// 参照そのものは共有してよい (魚マスターデータは不変)。
@@ -44,7 +51,8 @@ namespace Pono.KawaGlint.Core
                 PityBySpecies = new Dictionary<string, float>(PityBySpecies),
                 SessionSeenIds = new List<string>(SessionSeenIds),
                 FloorHeldSec = FloorHeldSec,
-                CaughtLog = new List<TsuriCaughtEntry>(CaughtLog)
+                CaughtLog = new List<TsuriCaughtEntry>(CaughtLog),
+                RendaElapsedSec = RendaElapsedSec
             };
             return clone;
         }

@@ -44,6 +44,10 @@ namespace Pono.KawaGlint.Gameplay
         private static readonly string[] RendaFlyWords = { "いいぞ！", "そのちょうし！", "もうすこし！" };
 
         private const float RendaStuckFloorPct = 30.5f;
+        // World-space Y offset above the waterline where the timing ring is
+        // drawn (module B) -- roughly above the bobber's resting height so it
+        // reads as "guiding the bobber" without covering it.
+        private const float TimingRingWorldYOffset = 0.9f;
         private const float ShoreTapMarginWorld = 0.8f;
         private const float CastMinMarginWorld = 1.2f;
         private const float CastMaxMarginWorld = 0.8f;
@@ -64,10 +68,20 @@ namespace Pono.KawaGlint.Gameplay
         private bool _configured;
         private float _targetX;
         private float _waitTotalSec;
-        private bool _preBiteShown;
+        private KawaGlintPreBitePlan _preBitePlan;
+        private bool _nibbleActive;
         private int _rendaCombo;
         private int _flyWordIndex;
         private Coroutine _readyRoutine;
+
+        // Timing-ring UI state (module B, item 2). _biteWindowTotalSec is
+        // captured once at Bite entry and never touched again during that
+        // bite -- BiteWindowRemaining01 is then a pure function of the live
+        // session's BiteWindowRemainingSec against that fixed total, so it
+        // stays exactly in sync even when pity/assist stretch the window
+        // (2.0s..4.8s+) without any per-mode special-casing here.
+        private float _biteWindowTotalSec;
+        private Vector2 _lastRingViewport;
 
         /// <summary>Current session phase (test/inspection surface).</summary>
         public TsuriPhase Phase => _session != null ? _session.Phase : TsuriPhase.Idle;
@@ -82,6 +96,17 @@ namespace Pono.KawaGlint.Gameplay
         public string CurrentSpeciesId => _session != null ? _session.SpeciesId : null;
 
         public int ConsecutiveMisses => _session != null ? _session.ConsecutiveMisses : 0;
+
+        /// <summary>
+        /// 1 = the bite window just opened, 0 = it is about to expire; 0
+        /// outside Phase==Bite. Purely a visualization surface for the
+        /// timing-ring UI (module B) -- TsuriCore.TapHook's own success/fail
+        /// logic never reads this and is unaffected by it.
+        /// </summary>
+        public float BiteWindowRemaining01 =>
+            _session != null && _session.Phase == TsuriPhase.Bite && _biteWindowTotalSec > 0f
+                ? Mathf.Clamp01(_session.BiteWindowRemainingSec / _biteWindowTotalSec)
+                : 0f;
 
         public void Configure(
             KawaGlintActorsController actors,
@@ -171,6 +196,9 @@ namespace Pono.KawaGlint.Gameplay
                 case TsuriPhase.Wait:
                     UpdateWaitSteadyState();
                     break;
+                case TsuriPhase.Bite:
+                    UpdateTimingRing();
+                    break;
                 case TsuriPhase.Renda:
                     _hud.SetRendaGauge(_session.GaugePct);
                     var stuckAtFloor = _session.FloorHeldSec >= FloorHeldStuckSec && _session.GaugePct <= RendaStuckFloorPct;
@@ -181,24 +209,51 @@ namespace Pono.KawaGlint.Gameplay
 
         private void UpdateWaitSteadyState()
         {
-            if (_waitTotalSec > 0f)
+            var elapsed = _waitTotalSec - Mathf.Max(0f, _session.WaitRemainingSec);
+            if (_waitTotalSec > 0f && _preBitePlan != null)
             {
-                var progress = 1f - Mathf.Max(0f, _session.WaitRemainingSec) / _waitTotalSec;
-                _actors.SetTargetFishApproach(Mathf.Clamp01(progress), _targetX);
+                _actors.SetTargetFishApproach(_preBitePlan.ApproachDisplayProgress(elapsed), _targetX);
             }
 
-            if (_actors.Bobber.VisualState == KawaGlintBobberState.Floating)
+            var state = _actors.Bobber.VisualState;
+            if (state == KawaGlintBobberState.Floating)
             {
                 _actors.SetRingsVisible(true);
             }
 
-            if (!_preBiteShown && _session.WaitRemainingSec <= 1f && _session.WaitRemainingSec > 0f
-                && _actors.Bobber.VisualState == KawaGlintBobberState.Floating)
+            // Only Floating/Twitch bobber states are "on the water" and thus
+            // eligible to nibble -- guards against the (normally impossible,
+            // since bursts only start at 35% of the wait while flight is a
+            // fixed 0.45s) case of a burst window overlapping the cast's
+            // Flying arc.
+            var onWater = state == KawaGlintBobberState.Floating || state == KawaGlintBobberState.Twitch;
+            var idx = onWater && _preBitePlan != null ? _preBitePlan.CurrentNibbleIndex(elapsed) : -1;
+            var nibbling = idx >= 0;
+            if (nibbling != _nibbleActive)
             {
-                _preBiteShown = true;
-                _actors.Bobber.SetVisualState(KawaGlintBobberState.Twitch);
-                _hud.SetPhaseWord(PhaseWordPreBite);
-                _hud.SetNarration(NarrationPreBite);
+                if (nibbling)
+                {
+                    // Re-shown at the start of every burst (not just the
+                    // first) so a 2nd/3rd nibble in the same cast still reads
+                    // as "something's here" rather than leaving stale text
+                    // up from burst 1.
+                    _actors.Bobber.SetTwitchIntensity(_preBitePlan.NibbleIntensity01(idx));
+                    _actors.Bobber.SetVisualState(KawaGlintBobberState.Twitch);
+                    _hud.SetPhaseWord(PhaseWordPreBite);
+                    _hud.SetNarration(NarrationPreBite);
+                }
+                else
+                {
+                    // Between bursts (and after the last one, before the
+                    // quiet tail) the fish has visibly drifted back --
+                    // revert the phase word/narration to the plain "waiting"
+                    // text so it doesn't linger through a quiet gap where
+                    // nothing is happening on screen.
+                    _actors.Bobber.SetVisualState(KawaGlintBobberState.Floating);
+                    _hud.SetPhaseWord(PhaseWordWait);
+                    _hud.SetNarration(NarrationWait);
+                }
+                _nibbleActive = nibbling;
             }
         }
 
@@ -253,7 +308,12 @@ namespace Pono.KawaGlint.Gameplay
             TsuriKawaTuning.NextWaitSecRange(_session.ConsecutiveMisses, out var waitMin, out var waitMax);
             _session = TsuriCore.Cast(_session, waitMin, waitMax, _random);
             _waitTotalSec = _session.WaitRemainingSec;
-            _preBiteShown = false;
+            // Random consumption order note: Cast() above already consumed
+            // whatever PickSpecies needed, so the plan's own random draws
+            // happen strictly after species selection -- the plan can never
+            // perturb which fish gets picked.
+            _preBitePlan = KawaGlintPreBitePlan.Create(_random, _waitTotalSec);
+            _nibbleActive = false;
 
             var species = TsuriFishData.GetSpeciesById(_session.SpeciesId);
             _actors.ShowTargetFish(SpeciesWorldLength(species));
@@ -309,10 +369,66 @@ namespace Pono.KawaGlint.Gameplay
             _actors.SetTargetFishApproach(1f, _targetX);
             _hud.SetPhaseWord(PhaseWordBite);
             _hud.SetNarration(NarrationBite);
+
+            // Captured once here and held fixed for the whole bite window
+            // (see BiteWindowRemaining01) -- guarded against a stray 0
+            // BiteWindowRemainingSec so the ring math never divides by zero.
+            _biteWindowTotalSec = Mathf.Max(_session.BiteWindowRemainingSec, 0.01f);
+            _hud.ShowTimingRing();
+            UpdateTimingRing();
+        }
+
+        /// <summary>
+        /// Computes the current viewport position of the bobber for the
+        /// timing ring / hit-confirm FX. Stateless -- callers decide whether
+        /// to cache the result in _lastRingViewport. Falls back to the last
+        /// cached value if the camera/actors/bobber aren't ready.
+        /// </summary>
+        private Vector2 ComputeRingViewport()
+        {
+            if (_camera == null || _actors == null || _actors.Bobber == null)
+            {
+                return _lastRingViewport;
+            }
+            var worldPos = new Vector3(_actors.Bobber.CenterWorldX, _stage.WaterlineWorldY + TimingRingWorldYOffset, 0f);
+            var viewport = _camera.WorldToViewportPoint(worldPos);
+            return new Vector2(viewport.x, viewport.y);
+        }
+
+        /// <summary>
+        /// Drives the timing-ring UI purely from the live session + the
+        /// fixed total captured in EnterBiteUi -- a stateless per-frame
+        /// redraw, safe to call every Bite-phase tick.
+        /// </summary>
+        private void UpdateTimingRing()
+        {
+            if (_camera == null || _actors == null || _actors.Bobber == null)
+            {
+                return;
+            }
+            _lastRingViewport = ComputeRingViewport();
+            _hud.SetTimingRing(_lastRingViewport, BiteWindowRemaining01);
         }
 
         private void EnterRendaUi()
         {
+            // Runs on both paths into Renda: a player's successful hooking
+            // tap (HandleBiteTap) and the tick()-driven auto-hook after 3
+            // consecutive misses (HandlePhaseTransition, Wait -> Renda direct)
+            // -- so the hit-confirm effect plays either way, per design.
+            //
+            // The auto-hook path never goes through EnterBiteUi/UpdateTimingRing,
+            // so _lastRingViewport can be stale from a previous cast (a
+            // different world-X the player tapped for cast N-1). Recompute it
+            // here from the *current* bobber position every time, so the
+            // hit-confirm FX always lands on the live bobber regardless of
+            // which path led into Renda.
+            _hud.HideTimingRing();
+            _lastRingViewport = ComputeRingViewport();
+            _hud.PlayHookHitFx(_lastRingViewport);
+            _actors.GetComponentInChildren<KawaGlintSplashEffect>(true)?.Play(
+                new Vector3(_actors.Bobber.CenterWorldX, _stage.WaterlineWorldY, 0f));
+
             _actors.Bobber.SetVisualState(KawaGlintBobberState.Hidden);
             _actors.SetTargetFishThrash(true);
             _actors.SetFishingLineTension(true);
@@ -328,6 +444,7 @@ namespace Pono.KawaGlint.Gameplay
 
         private void EnterEscapedUi()
         {
+            _hud.HideTimingRing();
             _hud.HideRenda();
             _actors.Bobber.SetVisualState(KawaGlintBobberState.EscapePop);
             _actors.SetTargetFishThrash(false);
@@ -343,6 +460,7 @@ namespace Pono.KawaGlint.Gameplay
 
         private void OnLanded(bool helped)
         {
+            _hud.HideTimingRing();
             _hud.HideRenda();
             _actors.Bobber.SetVisualState(KawaGlintBobberState.Hidden);
             _actors.HideTargetFish();

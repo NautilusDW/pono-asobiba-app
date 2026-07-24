@@ -29,9 +29,20 @@ namespace Pono.KawaGlint.UI
         };
 
         private const int DotTextureSize = 64;
+        private const int RingTextureSize = 256;
+
+        // Normalized (0..1, matching LoadDotSprite's distance/radius convention
+        // where 1.0 touches the middle of each texture edge) outer/inner radii
+        // of the procedural annulus used by the timing-ring UI (module B).
+        // Radius 0.5 leaves generous padding for the outer ring's up-to-2.8x
+        // scale animation to never clip against the texture bounds.
+        private const float RingOuterRadiusNorm = 0.5f;
+        private const float RingInnerRadiusNorm = 0.38f;
+        private const float RingAntiAliasWidthNorm = 0.02f;
 
         private static Font _cachedFont;
         private static Sprite _cachedDotSprite;
+        private static Sprite _cachedRingSprite;
 
         public static RectTransform CreateRect(string name, Transform parent)
         {
@@ -57,6 +68,24 @@ namespace Pono.KawaGlint.UI
             var rect = CreateRect(name, parent);
             var image = rect.gameObject.AddComponent<Image>();
             image.sprite = LoadDotSprite();
+            image.color = color;
+            image.raycastTarget = false;
+            image.preserveAspect = true;
+            return image;
+        }
+
+        /// <summary>
+        /// A procedural annulus (ring) sprite used by the bite-window timing
+        /// guide (module B): a static target ring plus a shrinking outer
+        /// ring, both instances of this same shared sprite recolored/rescaled
+        /// per-caller. Purely a visual guide -- never used to judge tap
+        /// precision (see KawaGlintHud/KawaGlintGameController contract).
+        /// </summary>
+        public static Image CreateRing(string name, Transform parent, Color color)
+        {
+            var rect = CreateRect(name, parent);
+            var image = rect.gameObject.AddComponent<Image>();
+            image.sprite = LoadRingSprite();
             image.color = color;
             image.raycastTarget = false;
             image.preserveAspect = true;
@@ -167,6 +196,67 @@ namespace Pono.KawaGlint.UI
                 SpriteMeshType.FullRect);
             _cachedDotSprite.name = "KawaGlint HUD Dot Sprite";
             return _cachedDotSprite;
+        }
+
+        private static Sprite LoadRingSprite()
+        {
+            if (_cachedRingSprite != null)
+            {
+                return _cachedRingSprite;
+            }
+
+            const int size = RingTextureSize;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, mipChain: false, linear: false)
+            {
+                name = "KawaGlint HUD Ring",
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp,
+                hideFlags = HideFlags.DontSave
+            };
+            var pixels = new Color32[size * size];
+            var center = (size - 1) * 0.5f;
+            var radius = center;
+            for (var y = 0; y < size; y++)
+            {
+                var dy = y - center;
+                var rowStart = y * size;
+                for (var x = 0; x < size; x++)
+                {
+                    var dx = x - center;
+                    var distanceNorm = Mathf.Sqrt(dx * dx + dy * dy) / radius;
+
+                    // Outside the outer radius fades to transparent; inside the
+                    // inner radius also fades to transparent -- their product
+                    // leaves only the annular band between them opaque, with a
+                    // smoothstep-antialiased edge on both sides (mirrors the
+                    // GLSL smoothstep(edge0, edge1, x) convention, not
+                    // Mathf.SmoothStep's differently-shaped from/to overload).
+                    var outerAlpha = 1f - SmoothStep01(
+                        RingOuterRadiusNorm - RingAntiAliasWidthNorm, RingOuterRadiusNorm, distanceNorm);
+                    var innerAlpha = SmoothStep01(
+                        RingInnerRadiusNorm - RingAntiAliasWidthNorm, RingInnerRadiusNorm, distanceNorm);
+                    var alpha = outerAlpha * innerAlpha;
+                    pixels[rowStart + x] = new Color(1f, 1f, 1f, alpha);
+                }
+            }
+            texture.SetPixels32(pixels);
+            texture.Apply(false, false);
+
+            _cachedRingSprite = Sprite.Create(
+                texture,
+                new Rect(0f, 0f, size, size),
+                new Vector2(0.5f, 0.5f),
+                100f,
+                0,
+                SpriteMeshType.FullRect);
+            _cachedRingSprite.name = "KawaGlint HUD Ring Sprite";
+            return _cachedRingSprite;
+        }
+
+        private static float SmoothStep01(float edge0, float edge1, float x)
+        {
+            var t = Mathf.Clamp01((x - edge0) / (edge1 - edge0));
+            return t * t * (3f - 2f * t);
         }
     }
 }

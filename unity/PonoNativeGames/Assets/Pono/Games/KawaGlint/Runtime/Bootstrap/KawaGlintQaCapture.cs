@@ -35,6 +35,7 @@ namespace Pono.KawaGlint.Bootstrap
         private bool _surfaceEnabled;
         private bool _actorsEnabled;
         private bool _bloomEnabled;
+        private bool _causticsEnabled;
 
         public static void AttachIfRequested(GameObject host, KawaGlintBootstrap bootstrap)
         {
@@ -107,23 +108,34 @@ namespace Pono.KawaGlint.Bootstrap
                     _surfaceEnabled = false;
                     _actorsEnabled = false;
                     _bloomEnabled = false;
+                    _causticsEnabled = false;
                     break;
                 case "refraction":
                     _refractionEnabled = true;
                     _surfaceEnabled = false;
                     _actorsEnabled = false;
                     _bloomEnabled = false;
+                    _causticsEnabled = false;
                     break;
                 case "surface":
                     _surfaceEnabled = true;
                     _bloomEnabled = true;
                     _refractionEnabled = false;
                     _actorsEnabled = false;
+                    _causticsEnabled = false;
                     break;
                 case "actors":
                     _actorsEnabled = true;
                     _refractionEnabled = false;
                     _surfaceEnabled = false;
+                    _bloomEnabled = false;
+                    _causticsEnabled = false;
+                    break;
+                case "caustics":
+                    _causticsEnabled = true;
+                    _refractionEnabled = false;
+                    _surfaceEnabled = false;
+                    _actorsEnabled = false;
                     _bloomEnabled = false;
                     break;
                 case "full":
@@ -132,6 +144,7 @@ namespace Pono.KawaGlint.Bootstrap
                     _surfaceEnabled = true;
                     _actorsEnabled = true;
                     _bloomEnabled = true;
+                    _causticsEnabled = true;
                     break;
             }
 
@@ -144,6 +157,7 @@ namespace Pono.KawaGlint.Bootstrap
             _bootstrap.SetEffectEnabled(KawaGlintBootstrap.KawaEffect.Surface, _surfaceEnabled);
             _bootstrap.SetEffectEnabled(KawaGlintBootstrap.KawaEffect.Actors, _actorsEnabled);
             _bootstrap.SetEffectEnabled(KawaGlintBootstrap.KawaEffect.Bloom, _bloomEnabled);
+            _bootstrap.SetEffectEnabled(KawaGlintBootstrap.KawaEffect.Caustics, _causticsEnabled);
         }
 
         private void WriteSidecar(float averageFrameMs)
@@ -158,6 +172,7 @@ namespace Pono.KawaGlint.Bootstrap
                 $"surface={EffectStateLabel(KawaGlintBootstrap.KawaEffect.Surface, _surfaceEnabled)}",
                 $"actors={EffectStateLabel(KawaGlintBootstrap.KawaEffect.Actors, _actorsEnabled)}",
                 $"bloom={EffectStateLabel(KawaGlintBootstrap.KawaEffect.Bloom, _bloomEnabled)}",
+                $"caustics={EffectStateLabel(KawaGlintBootstrap.KawaEffect.Caustics, _causticsEnabled)}",
                 $"avgFrameMs={averageFrameMs.ToString("0.000", CultureInfo.InvariantCulture)}"
             };
             File.WriteAllLines(sidecarPath, lines);
