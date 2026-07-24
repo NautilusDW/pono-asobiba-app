@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#bdeeff">
+<title>まちがいさがしランド</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="viewport">
+  <div id="app">
+    <div id="scene-root"></div>
+  </div>
+</div>
+
+<div id="orientation-guide">
+  <div class="rotate-icon">📱↻</div>
+  <div class="orientation-text">よこにしてね</div>
+</div>
+
+<!-- ステージデータ（別エージェント生成・存在しない場合あり。engineは未定義でも動作する） -->
+<script src="data/stages.js"></script>
+
+<script src="js/audio.js"></script>
+<script src="js/speech.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/game.js"></script>
+<script src="js/scenes.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
