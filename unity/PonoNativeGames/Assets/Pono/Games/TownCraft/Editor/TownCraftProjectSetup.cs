@@ -17,25 +17,7 @@ namespace Pono.TownCraft.Editor
         [MenuItem("Pono/TownCraft/Rebuild Scene")]
         public static void RebuildScene()
         {
-            ConfigureSprites();
-            EnsureFolder("Assets/Pono/Games/TownCraft/Scenes");
-            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-
-            var cameraObject = new GameObject("Main Camera");
-            cameraObject.tag = "MainCamera";
-            var camera = cameraObject.AddComponent<Camera>();
-            camera.orthographic = true;
-            camera.orthographicSize = 7.2f;
-            camera.backgroundColor = new Color(0.72f, 0.88f, 0.98f);
-            cameraObject.transform.position = new Vector3(8.5f, 5.5f, -10f);
-
-            var bootstrap = new GameObject("TownCraftBootstrap");
-            bootstrap.AddComponent<TownCraftBootstrap>();
-
-            EditorSceneManager.SaveScene(scene, ScenePath);
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
-            Debug.Log("[TownCraft] Scene rebuilt.");
+            TownCraftTilemapSetup.RebuildWorkspace();
         }
 
         [MenuItem("Pono/TownCraft/Verify")]
@@ -49,6 +31,9 @@ namespace Pono.TownCraft.Editor
                 errors += RequireAsset<Sprite>($"{ResourceRoot}/Tiles/{tile}.png");
             foreach (var prop in new[] { "tree_round", "streetlamp_green", "fence_straight", "vegetable_share_stand" })
                 errors += RequireAsset<Sprite>($"{ResourceRoot}/Props/{prop}.png");
+            errors += RequireAsset<UnityEngine.Tilemaps.TileBase>(TownCraftTilemapSetup.RoadRulePath);
+            errors += RequireAsset<UnityEngine.Tilemaps.TileBase>(TownCraftTilemapSetup.WaterRulePath);
+            errors += RequireAsset<GameObject>(TownCraftTilemapSetup.PalettePath);
             if (TownCraftCatalog.Houses.Length != 15)
             {
                 Debug.LogError($"Expected 15 houses, got {TownCraftCatalog.Houses.Length}.");

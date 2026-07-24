@@ -2,7 +2,9 @@
   "name": "Pono.TownCraft.Tests.EditMode",
   "rootNamespace": "Pono.TownCraft.Tests.EditMode",
   "references": [
-    "Pono.TownCraft.Runtime"
+    "Pono.TownCraft.Runtime",
+    "Pono.TownCraft.Editor",
+    "Unity.2D.Tilemap.Extras"
   ],
   "includePlatforms": [
     "Editor"

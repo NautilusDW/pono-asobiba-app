@@ -2,7 +2,9 @@
   "name": "Pono.TownCraft.Editor",
   "rootNamespace": "Pono.TownCraft.Editor",
   "references": [
-    "Pono.TownCraft.Runtime"
+    "Pono.TownCraft.Runtime",
+    "Unity.2D.Tilemap.Editor",
+    "Unity.2D.Tilemap.Extras"
   ],
   "includePlatforms": [
     "Editor"

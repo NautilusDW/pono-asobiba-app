@@ -81,12 +81,39 @@ SpriteCook生成物はメタデータ上は4×4 atlasだが、実ファイルが
 
 ## Unity上の操作
 
-- `じめん / みち / かわ / たかく / ひくく / けす`
-- `しょくぶつ / みちのそば / さく / おうち`
-- 家の種類送り、テーマ切替、保存
-- `おへや` と `ずかん` は遷移接続口
+TownCraftの正本は、Play中の独自クリックUIではなくUnity標準Tilemap編集環境とする。
 
-子ども向け画面文言は漢字を使わず、かな表記にしている。
+1. Unityメニュー `Pono > TownCraft > Town Builder` を開く
+2. `編集シーンを開く` を押す
+3. 専用ウィンドウで編集対象レイヤーを選ぶ
+4. `Window > 2D > Tile Palette` の `TownCraft_Master` から素材を選ぶ
+5. Sceneビューの白いグリッドを1マスずつ塗る
+
+Playボタンは町を編集するためには押さない。Sceneビューで直接編集し、通常のUnityシーン保存を使う。
+
+### レイヤー
+
+- `Ground`: 草・土・石
+- `Elevation`: 崖・段差
+- `Road`: 道路Rule Tile
+- `Water`: 川・池Rule Tile
+- `Buildings`: 15種類の「わたしのおうち」とその他建物
+- `Roadside`: 街灯・ベンチ・掲示板・おすそわけ台
+- `Vegetation`: 木・花・低木・岩
+- `Boundary`: 柵・門
+- `Waterside`: 橋・桟橋・水辺設備
+
+異なる用途は必ず別Tilemapへ塗る。これにより、街灯が建物枠を占有したり、柵が道路データと混ざることを防ぐ。
+
+### 自動生成されるUnity資産
+
+- `Content/TileAssets/`: 通常Tile 34点と道路・川Rule Tile
+- `Content/Palettes/TownCraft_Master.prefab`: Tile Palette用マスターパレット
+- `Scenes/92_TownCraft.unity`: `Grid`と9用途別Tilemapを持つ編集シーン
+
+`Pono > TownCraft > 1. Rebuild Tilemap Workspace` で、素材定義からこれらを再生成できる。
+
+子ども向け実行画面の文言は漢字を使わず、かな表記にする。Unity Editor専用の開発者向け名称は英語レイヤー名を許可する。
 
 ## 素材規格
 
