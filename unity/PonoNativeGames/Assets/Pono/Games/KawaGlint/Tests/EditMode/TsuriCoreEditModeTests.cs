@@ -480,8 +480,11 @@ namespace Pono.KawaGlint.Tests.EditMode
         {
             TsuriKawaTuning.NextWaitSecRange(0, out var min, out var max);
 
-            Assert.That(min, Is.EqualTo(2f).Within(Tolerance));
-            Assert.That(max, Is.EqualTo(5f).Within(Tolerance));
+            // v2 (2026-07-24, batch:kawaglint-multi-chance-prebite): 6f/10f への延長
+            // (複数回チャンス前あたりの尺を確保するため)。 このテストの意図
+            // (misses==0ならbase rangeを使う)自体は不変。
+            Assert.That(min, Is.EqualTo(6f).Within(Tolerance));
+            Assert.That(max, Is.EqualTo(10f).Within(Tolerance));
         }
 
         [Test]
@@ -489,8 +492,10 @@ namespace Pono.KawaGlint.Tests.EditMode
         {
             TsuriKawaTuning.NextWaitSecRange(1, out var min, out var max);
 
-            Assert.That(min, Is.EqualTo(1f).Within(Tolerance));
-            Assert.That(max, Is.EqualTo(2.5f).Within(Tolerance));
+            // v2 (2026-07-24, batch:kawaglint-multi-chance-prebite): 3f/5f へ
+            // (base rangeの50%という比率関係は維持)。
+            Assert.That(min, Is.EqualTo(3f).Within(Tolerance));
+            Assert.That(max, Is.EqualTo(5f).Within(Tolerance));
         }
 
         [Test]

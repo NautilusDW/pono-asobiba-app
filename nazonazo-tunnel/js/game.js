@@ -1048,6 +1048,10 @@ function openZukan(){
 let level=0,stg=0,loop=0,unlockedLoop=0,cleared=[],qSeg=0,qList=[],cur=null,missInQ=0,stageMiss=0,totalStars=0;
 let worldX=0,vel=0,target=0,pending=null,driving=false,swapReady=false,swapped=false,coverEl=null,dropEl=null,transitCover=null;
 let tunnels=[],playing=false,cars=[],helpItems=[],rareCount=0,rareEl=null,rareSpawned=false,rareSpawnTimer=0;
+// townDock専用の本物の駅ゲート配列。onPick等の通常クイズフローが読む tunnels とは意図的に
+// 分離する(townDock は tunnels を一切読まない設計を維持するため)。buildWorld() で
+// isTownDockStage() 用に生成し、resetTownDockGame() 等でワールド再構築のたびにクリアする。
+let townDockGates=[];
 let journeyScore=0,highScore=0,stageScore=0,stageScoreBreakdown=emptyStageScoreBreakdown(),stageClearScoreGranted=false,stageCompletionHandled=false;
 let tunnelFriendCandidates=[],tunnelFriendsFound=0,tunnelFriendTotalFound=0,tunnelFriendRewardGranted=false,tunnelFriendPerfectScoreGranted=false,tunnelFriendGameActive=false,tunnelFriendStartWorldX=0;
 let pendingBranchChoice=null,branchGateActive=false,branchGateTimer=0;
@@ -1127,12 +1131,10 @@ const TOWN_DOCK_LINES=Object.freeze({
  success:"ぴたっと とまれたね!",
  allClear:"みんな のせられたね！まちが あかるくなったよ"
 });
-// ---- 見た目専用の定数・データ (presentation only) ----
-// 下記は syncTownDockPresentation()/resolveTownDockSuccess() の描画・乗車演出でのみ参照し、
-// tickTownDockGame の物理演算・成否判定式には一切使わない (見た目の実写化に伴う追加)。
-const TOWN_DOCK_APPROACH_ALIGN_VW=52; // 本物の機関車(#veh, left:28vw+幅)の手前あたり。駅看板がここに重なった時が「到着」に見える画面位置
-const TOWN_DOCK_APPROACH_SCALE_VW=1.35; // pos 1ユニットあたりの見た目移動量(vw)。駅ごとに zoneCenter が違っても、
- // pos===bounds.center の瞬間は必ず同じ画面位置(ALIGN_VW)に駅が重なるよう、中心からの相対オフセットで計算する
+// ---- 見た目専用のデータ (presentation only) ----
+// 下記は resolveTownDockSuccess() の乗車演出でのみ参照し、tickTownDockGame の物理演算・
+// 成否判定式には一切使わない。v3: 駅接近の見た目は本物の worldX スクロール+本物の
+// .tun.station ゲート(buildWorld)に一本化したため、独自のvw換算定数は不要になった。
 const TOWN_DOCK_PASSENGERS=Object.freeze([
  Object.freeze({e:"👵",t:"むらの おばあさん"}),
  Object.freeze({e:"👴",t:"むらの おじいさん"}),
@@ -1495,7 +1497,7 @@ const dinoCraneCargoStatus=$("dinoCraneCargoStatus"),dinoCraneSwing=$("dinoCrane
 const dinoWaterGame=$("dinoWaterGame"),dinoWaterDinos=$("dinoWaterDinos"),dinoWaterSuccessScene=$("dinoWaterSuccessScene"),dinoWaterGrid=$("dinoWaterGrid"),dinoWaterBudget=$("dinoWaterBudget"),dinoWaterHint=$("dinoWaterHint"),dinoWaterContinue=$("dinoWaterContinue"),dinoWaterBriefing=$("dinoWaterBriefing"),dinoWaterStart=$("dinoWaterStart");
 const dinoWaterDifficultyButtons=[...document.querySelectorAll("[data-water-difficulty]")];
 const dinoBossGame=$("dinoBossGame"),dinoBossTrex=$("dinoBossTrex"),dinoBossTug=$("dinoBossTug"),dinoBossAction=$("dinoBossAction"),dinoBossRetry=$("dinoBossRetry"),dinoBossTrainHp=$("dinoBossTrainHp"),dinoBossTrexHp=$("dinoBossTrexHp"),dinoBossWater=$("dinoBossWater");
-const townDockLayer=$("townDockLayer"),townDockTitle=$("townDockTitle"),townDockProgress=$("townDockProgress"),townDockGuide=$("townDockGuide"),townDockApproachLayer=$("townDockApproachLayer"),townDockApproach=$("townDockApproach"),townDockStationMarker=$("townDockStationMarker"),townDockControls=$("townDockControls"),townDockThrottle=$("townDockThrottle");
+const townDockLayer=$("townDockLayer"),townDockTitle=$("townDockTitle"),townDockProgress=$("townDockProgress"),townDockGuide=$("townDockGuide"),townDockControls=$("townDockControls"),townDockThrottle=$("townDockThrottle");
 const spaceChaseLayer=$("spaceChaseLayer"),spaceChaseGuide=$("spaceChaseGuide"),spaceChaseTitle=$("spaceChaseTitle"),spaceChaseBoostMeter=$("spaceChaseBoostMeter"),spaceChaseFinalMeter=$("spaceChaseFinalMeter"),spaceChaseRoundText=$("spaceChaseRoundText"),spaceChaseBoostButton=$("spaceChaseBoostButton"),spaceChaseRouteMap=$("spaceChaseRouteMap"),spaceChaseRoutePaths=$("spaceChaseRoutePaths"),spaceChaseJunctions=$("spaceChaseJunctions"),spaceChaseBoostItemsLayer=$("spaceChaseBoostItems"),spaceChaseRouteChoices=$("spaceChaseRouteChoices"),spaceChaseCinematic=$("spaceChaseCinematic"),spaceChaseCinematicText=$("spaceChaseCinematicText"),spaceChaseRescuePanel=$("spaceChaseRescuePanel"),spaceChaseRescuePlayfield=$("spaceChaseRescuePlayfield"),spaceChaseRescueTitle=$("spaceChaseRescueTitle"),spaceChaseRescueGuide=$("spaceChaseRescueGuide"),spaceChaseRescueProgress=$("spaceChaseRescueProgress"),spaceChaseRescueRing=$("spaceChaseRescueRing"),spaceChaseRescueStar=$("spaceChaseRescueStar"),spaceChaseRescueTether=$("spaceChaseRescueTether"),spaceChaseTailGates=$("spaceChaseTailGates"),spaceChaseSealTargets=$("spaceChaseSealTargets"),spaceChaseTimingPulse=$("spaceChaseTimingPulse"),spaceChaseConstellation=$("spaceChaseConstellation"),spaceChaseRescueMashButton=$("spaceChaseRescueMashButton");
 const spaceChaseRescueGates=spaceChaseTailGates?[...spaceChaseTailGates.querySelectorAll("[data-rescue-gate]")]:[];
 const spaceChaseRescueLocks=spaceChaseSealTargets?[...spaceChaseSealTargets.querySelectorAll("[data-rescue-lock]")]:[];
@@ -2509,7 +2511,7 @@ function applySkin(weatherReady){
 function buildWorld(keepCover){
  world.innerHTML="";
  if(keepCover&&transitCover)world.appendChild(transitCover);
- tunnels=[];
+ tunnels=[];townDockGates=[];
  const o=origin(stg),st=STAGES[stg],P=palOf(stg);
  if(!isDinoAdventureStage(st)&&!isTownDockStage(st))for(let i=0;i<QN;i++){
  const t=document.createElement("div");t.className="tun";
@@ -2569,6 +2571,31 @@ function buildWorld(keepCover){
     bindTap(b,()=>onRunEvent(b,ev));
     world.appendChild(b);
    }
+  }
+ }else if(isTownDockStage(st)){
+  // v3: townDock 用の最小分岐。既存5駅ループの .tun.station 生成パターン(station-art/
+  // station-name/sign)をそのまま流用し、駅ゲート本体だけを TOWN_DOCK_STATION_COUNT(3)個
+  // 生成する。クイズ専用の道中イベント/背景装飾/出題データ由来の待ち人はコピーしない。生成したゲートは
+  // 既存の tunnels ではなく専用の townDockGates に積む(onPick 等の通常クイズフローは
+  // townDock では一切経由しないため、tunnels は空のままで良い)。
+  for(let i=0;i<TOWN_DOCK_STATION_COUNT;i++){
+   const t=document.createElement("div");t.className="tun";
+   const stationStage=hasStationArt(st);
+   t.classList.add(st.id+"-gate");
+   if(stationStage)t.classList.add("station",st.id+"-station");
+   t.style.left=tunX(o,i)+"vw";
+   t.innerHTML=stationStage
+    ? '<div class="station-art"></div><div class="station-name">えき</div><div class="sign">？</div>'
+    : '<div class="mount" style="background:'+P.mount+'"></div><div class="sign">？</div><div class="hole"><div class="door l"></div><div class="door r"></div></div>';
+   if(stationStage){
+    const art=t.querySelector(".station-art");
+    if(art)art.style.backgroundImage=bgUrl(st.assets.station);
+   }
+   const hp=document.createElement("div");hp.className="station-helper town-dock-station-helper";
+   const figure=document.createElement("div");figure.className="town-dock-station-helper-figure";
+   hp.appendChild(figure);
+   t.appendChild(hp);
+   world.appendChild(t);townDockGates.push(t);
   }
  }
  if(!isMainlineFinalStg(stg)){
@@ -7630,22 +7657,21 @@ function handleTownDockKeyUp(event){
  const key=event.key;
  if(key===" "||key==="Enter"){event.preventDefault();if(townDockState.keyDirection)townDockState.keyDirection=0;updateTownDockThrottlePresentation();}
 }
+// v3: state.pos (0〜TOWN_DOCK_TRACK_LEN の抽象スカラー) を、本物の worldX 座標系における
+// 「この駅への接近開始地点」からのオフセットとしてそのまま解釈する変換。stops(origin(stg),i)
+// は既存の全ステージが共有する「車両の画面固定位置と本物のゲートが重なる」オフセットその
+// ものなので、pos===zoneCenter の瞬間に worldX===stops(...) と一致するよう逆算するだけで、
+// TOWN_DOCK_STATIONS の zoneCenter/zoneWidth など既存の数値には一切触れない。
+function townDockApproachStartX(stationIndex){
+ return stops(origin(stg),stationIndex)-TOWN_DOCK_STATIONS[stationIndex].zoneCenter;
+}
 function syncTownDockPresentation(){
- // 見た目の実写化: 抽象ゲージ(旧 townDockTrack/Zone/Knob)は廃止し、本物の駅看板+待ち人が
- // 画面固定位置の本物の機関車(#veh)へ近づいてくる形で pos/bounds(state.pos, bounds.start/
- // center/end)を「読むだけ」で描画する。ここで読む値は tickTownDockGame が既に計算した
- // ものそのままで、この関数からは一切書き換えない (成否判定式・タイミングには無関係)。
- const state=townDockState,station=currentTownDockStation(),bounds=townDockZoneBounds(station);
- if(townDockApproach)townDockApproach.setAttribute("aria-valuenow",String(Math.round(state.pos)));
- if(townDockStationMarker){
-  const offsetFromCenter=bounds.center-state.pos; // + : 駅はまだ手前(右)、- : 行きすぎて左へ通過
-  const screenLeftVw=TOWN_DOCK_APPROACH_ALIGN_VW+offsetFromCenter*TOWN_DOCK_APPROACH_SCALE_VW;
-  townDockStationMarker.style.left=screenLeftVw.toFixed(2)+"vw";
-  const nearZone=state.pos>=bounds.start&&state.pos<=bounds.end;
-  townDockStationMarker.classList.toggle("is-near",nearZone);
-  townDockStationMarker.classList.toggle("is-blink",state.attempts>=1&&state.phase==="run");
-  townDockStationMarker.classList.toggle("is-settled",state.armed&&Math.abs(state.vel)<=TOWN_DOCK_SETTLE_VEL);
- }
+ // 見た目は本物の worldX スクロール+本物の .tun.station ゲート(buildWorld 内、
+ // isTownDockStage() 分岐で生成)にすべて委ねている。worldX への書き込みは
+ // tickTownDockGame 本体で行うため、ここでは追加のヒント演出(1回目失敗時の点滅)を
+ // 「今アプローチ中の本物のゲート」へ反映するだけ。state の読み取りのみ、書き込みはしない。
+ const state=townDockState,gate=townDockGates[state.stationIndex];
+ if(gate)gate.classList.toggle("is-blink",state.attempts>=1&&state.phase==="run");
 }
 function focusTownDockThrottleNextFrame(){
  const epoch=townDockState.epoch;
@@ -7716,7 +7742,6 @@ function completeTownDockStage(){
  state.completionCount++;state.phase="complete";state.transitionCount++;
  clearTownDockPointers();
  if(townDockLayer){townDockLayer.hidden=true;townDockLayer.setAttribute("aria-hidden","true");townDockLayer.dataset.phase="complete";}
- if(townDockApproachLayer){townDockApproachLayer.hidden=true;townDockApproachLayer.setAttribute("aria-hidden","true");}
  document.body.classList.remove("town-dock-active");
  completeCurrentStage(origin(stg));
 }
@@ -7730,12 +7755,17 @@ function resolveTownDockSuccess(){
  updateTownDockThrottlePresentation();
  addScore(TOWN_DOCK_STATION_SCORE,"townDock");
  sndFan();setDriverMood("cheer");
- // 本物の乗車演出: CSS図形の村人/光る窓の代役ではなく、他ステージと同じ本物の
- // boardPassenger() を呼ぶ。駅看板の位置(townDockStationMarker)から本物の客車(#cars)へ
- // 弧を描いて飛び、着席する。stationEl側に .station-helper img が無い場合は
- // boardPassenger 自身が 50vw/30vh の既定位置へ安全にフォールバックする。
+ // 本物の乗車演出: 他ステージと同じ本物の boardPassenger() を呼ぶ。今クリアした本物の
+ // 駅ゲート(townDockGates[state.stationIndex]、buildWorld の isTownDockStage() 分岐で
+ // 生成)の待ち人から、本物の客車(#cars)へ弧を描いて飛び、着席する。クイズ正解時と同じ
+ // 「ゲートが開く(.open、？→○)」演出も既存CSSのままそのまま流用する。
+ const gate=townDockGates[state.stationIndex];
  const passenger=TOWN_DOCK_PASSENGERS[state.stationIndex]||TOWN_DOCK_PASSENGERS[TOWN_DOCK_PASSENGERS.length-1];
- boardPassenger(passenger,null,townDockStationMarker);
+ boardPassenger(passenger,null,gate);
+ if(gate){
+  gate.classList.add("open");
+  const sg=gate.querySelector(".sign");if(sg)sg.textContent="○";
+ }
  state.stationIndex++;
  drawDots();
  showStamp(TOWN_DOCK_LINES.success,"clear");
@@ -7744,7 +7774,15 @@ function resolveTownDockSuccess(){
  townDockTimeout(()=>{
   if(!isTownDockStage()||!playing)return;
   if(isLast)finishTownDockAllClear();
-  else beginTownDockStation(state.stationIndex);
+  else{
+   // 次の駅の接近開始地点まで、瞬間移動ではなく既存の共有巡航(driving=true)で自然に運ぶ
+   // (2駅間の実距離GAP=430vwに対しローカル接近距離は最大100vwしかなく、pos=0への直接
+   // リセットだけでは350vw超のワープになってしまうため)。到達すると既存のgloopが
+   // driving=falseへ戻し、pending="townDock"を検知してshowTownDockStop()が呼ばれる
+   // (showTownDockStop は townDockState.stationIndex を見るので 0 決め打ちではなく
+   // 次の駅からそのまま再開する)。
+   sndGo();target=townDockApproachStartX(state.stationIndex);pending="townDock";driving=true;
+  }
  },isLast?TOWN_DOCK_BOARD_DELAY_MS:(TOWN_DOCK_BOARD_DELAY_MS+TOWN_DOCK_NEXT_STATION_DELAY_MS));
 }
 function reconcileTownDockPointers(){
@@ -7782,6 +7820,12 @@ function tickTownDockGame(now,dt){
  if(nextPos<=0){nextPos=0;if(state.vel<0)state.vel=0;}
  if(nextPos>=TOWN_DOCK_TRACK_LEN){nextPos=TOWN_DOCK_TRACK_LEN;if(state.vel>0)state.vel=0;}
  state.pos=nextPos;
+ // v3: ローカルpos値の「画面への書き込み先」を本物のworldXへ橋渡しするだけの1行。
+ // pos/vel の値・計算式そのものは変更しておらず、この直後の armed/settled/undershoot/
+ // overshoot 判定はすべて従来どおり state.pos/state.vel を見て行う(worldX を見ない)。
+ // render() 側は既存の world.style.transform=translate3d(-worldX,...) が毎フレーム無条件で
+ // 走るので、ここに書くだけで本物の背景スクロール・本物の駅ゲートの接近が自動的に反映される。
+ worldX=townDockApproachStartX(state.stationIndex)+state.pos;
  // armed: 駅開始/リトライ直後は pos=0,vel=0 で「静止=settled」を満たしてしまうため、
  // 実際に位置が動く(=一度でも加速が起きた)までは成否判定そのものを行わない。
  // これが無いと、プレイヤーがまだ一度もレバーへ触れていない最初のフレームで
@@ -7803,13 +7847,17 @@ function showTownDockStop(){
  if(!isTownDockStage()||!playing)return;
  clearRareEvent();quiz.classList.remove("show");
  if(townDockLayer){townDockLayer.hidden=false;townDockLayer.setAttribute("aria-hidden","false");townDockLayer.dataset.phase="run";}
- if(townDockApproachLayer){townDockApproachLayer.hidden=false;townDockApproachLayer.setAttribute("aria-hidden","false");}
  document.body.classList.add("town-dock-active");
- beginTownDockStation(0);
+ // 最初の到着(stationIndex===0)にも、resolveTownDockSuccess の駅間巡航が戻ってくる
+ // 2駅目・3駅目にも共通の入口。townDockState.stationIndex を見るので 0 決め打ちではない。
+ beginTownDockStation(townDockState.stationIndex);
 }
 function startTownDockGame(){
  resetTownDockGame();
- worldX=origin(stg);target=stops(origin(stg),0);pending="townDock";driving=true;playing=true;swapReady=false;swapped=false;
+ // 最初の自動巡航は「1駅目そのもの」ではなく「1駅目への接近開始地点」までにする。
+ // ここで一旦止まり(driving=falseになる)、そこから先はプレイヤーのホールド操作で
+ // tickTownDockGame が worldX を直接進める。
+ worldX=origin(stg);target=townDockApproachStartX(0);pending="townDock";driving=true;playing=true;swapReady=false;swapped=false;
 }
 function blurTownDockControl(){
  const active=document.activeElement;
@@ -7835,9 +7883,8 @@ function resetTownDockGame(){
  if(old&&old.heldPointers)for(const pointerId of old.heldPointers.keys()){try{townDockThrottle&&townDockThrottle.releasePointerCapture(pointerId);}catch(_){}}
  townDockState=createTownDockState();townDockState.epoch=nextEpoch;
  if(townDockLayer){townDockLayer.hidden=true;townDockLayer.setAttribute("aria-hidden","true");townDockLayer.dataset.phase="idle";}
- if(townDockApproachLayer){townDockApproachLayer.hidden=true;townDockApproachLayer.setAttribute("aria-hidden","true");}
  if(townDockThrottle){townDockThrottle.disabled=false;townDockThrottle.classList.remove("is-held","is-waiting");}
- if(townDockStationMarker)townDockStationMarker.classList.remove("is-near","is-blink","is-settled");
+ townDockGates.forEach(gate=>gate.classList.remove("is-blink"));
  document.body.classList.remove("town-dock-active","town-dock-bright");
 }
 // TEMP DEBUG (to be removed once the zero-input infinite-fail-loop report is diagnosed):

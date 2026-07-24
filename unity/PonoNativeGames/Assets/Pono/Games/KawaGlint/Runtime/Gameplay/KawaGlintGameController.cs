@@ -69,7 +69,21 @@ namespace Pono.KawaGlint.Gameplay
         private float _targetX;
         private float _waitTotalSec;
         private KawaGlintPreBitePlan _preBitePlan;
-        private bool _nibbleActive;
+
+        // Multi-chance pre-bite (batch:kawaglint-multi-chance-prebite):
+        // -1 == no event active; otherwise the index of the currently active
+        // Shallow/Deep event from _preBitePlan (see UpdateWaitSteadyState).
+        // Replaces the old single-flavor _nibbleActive bool now that a Wait
+        // period can contain both Shallow (no-op tap) and Deep (hookable tap)
+        // events.
+        private int _activeEventIndex = -1;
+        private KawaGlintPreBiteEventKind _activeEventKind;
+
+        // QA/test override for IsDeepHookWindowOpen -- see DebugForceDeepWindow.
+        // Never mutated by _preBitePlan itself; purely an additional "OR"
+        // condition the controller checks alongside the plan's own schedule.
+        private float _debugDeepUntilElapsed;
+
         private int _rendaCombo;
         private int _flyWordIndex;
         private Coroutine _readyRoutine;
@@ -107,6 +121,40 @@ namespace Pono.KawaGlint.Gameplay
             _session != null && _session.Phase == TsuriPhase.Bite && _biteWindowTotalSec > 0f
                 ? Mathf.Clamp01(_session.BiteWindowRemainingSec / _biteWindowTotalSec)
                 : 0f;
+
+        /// <summary>Seconds elapsed since the current cast's Wait began (0 at Cast, _waitTotalSec at natural expiry). Shared by UpdateWaitSteadyState and IsDeepHookWindowOpen/HookFromDeepWindow so both read the exact same clock.</summary>
+        private float WaitElapsedSec => _waitTotalSec - Mathf.Max(0f, _session.WaitRemainingSec);
+
+        /// <summary>
+        /// True while a "深い引き" (グイン) pre-bite event's hooking window is
+        /// currently open -- or within its trailing grace period -- for the
+        /// live Wait session (or while a PlayMode test's <see cref="DebugForceDeepWindow"/>
+        /// override is active). Test/inspection surface as well as the
+        /// production gate <see cref="HandleTap"/> reads before calling
+        /// <see cref="HookFromDeepWindow"/>. TsuriCore itself has no notion
+        /// of this -- it is entirely a Gameplay-layer presentation query on
+        /// top of the unmodified Wait phase.
+        /// </summary>
+        public bool IsDeepHookWindowOpen
+        {
+            get
+            {
+                if (_session == null || _session.Phase != TsuriPhase.Wait || _actors == null || _actors.Bobber == null)
+                {
+                    return false;
+                }
+                var state = _actors.Bobber.VisualState;
+                var onWater = state == KawaGlintBobberState.Floating
+                    || state == KawaGlintBobberState.Twitch
+                    || state == KawaGlintBobberState.BiteSink;
+                if (!onWater)
+                {
+                    return false;
+                }
+                var elapsed = WaitElapsedSec;
+                return (_preBitePlan != null && _preBitePlan.IsDeepWindowOpen(elapsed)) || _debugDeepUntilElapsed > elapsed;
+            }
+        }
 
         public void Configure(
             KawaGlintActorsController actors,
@@ -209,17 +257,17 @@ namespace Pono.KawaGlint.Gameplay
 
         private void UpdateWaitSteadyState()
         {
-            var elapsed = _waitTotalSec - Mathf.Max(0f, _session.WaitRemainingSec);
+            var elapsed = WaitElapsedSec;
             if (_waitTotalSec > 0f && _preBitePlan != null)
             {
                 // ApproachDisplayProgress alone is the plain travel curve
                 // (0 -> 1, reaching 1 at ArrivalSec and staying there);
-                // NibbleOffset is the separate, purely local peck
-                // oscillation that only ever activates at/after ArrivalSec.
-                // Composing them here (rather than inside the plan) keeps
-                // the "travel" and "nibble at the hook" concerns visibly
-                // distinct all the way out to the actor.
-                var progress = _preBitePlan.ApproachDisplayProgress(elapsed) + _preBitePlan.NibbleOffset(elapsed);
+                // MotionOffset is the separate, purely local peck/lunge
+                // oscillation (Shallow pecks + Deep lunges) that only ever
+                // activates at/after ArrivalSec. Composing them here (rather
+                // than inside the plan) keeps the "travel" and "event at the
+                // hook" concerns visibly distinct all the way out to the actor.
+                var progress = _preBitePlan.ApproachDisplayProgress(elapsed) + _preBitePlan.MotionOffset(elapsed);
                 _actors.SetTargetFishApproach(progress, _targetX);
             }
 
@@ -229,39 +277,68 @@ namespace Pono.KawaGlint.Gameplay
                 _actors.SetRingsVisible(true);
             }
 
-            // Only Floating/Twitch bobber states are "on the water" and thus
-            // eligible to nibble -- guards against the (normally impossible,
-            // since bursts only start once the fish has arrived at
-            // ArrivalSec, well after flight's fixed 0.45s) case of a burst
-            // window overlapping the cast's Flying arc.
-            var onWater = state == KawaGlintBobberState.Floating || state == KawaGlintBobberState.Twitch;
-            var idx = onWater && _preBitePlan != null ? _preBitePlan.CurrentNibbleIndex(elapsed) : -1;
-            var nibbling = idx >= 0;
-            if (nibbling != _nibbleActive)
+            // Floating/Twitch/BiteSink bobber states are all "on the water"
+            // and thus eligible for a pre-bite event -- guards against the
+            // (normally impossible, since events only start once the fish
+            // has arrived at ArrivalSec, well after flight's fixed 0.45s)
+            // case of an event window overlapping the cast's Flying arc.
+            var onWater = state == KawaGlintBobberState.Floating
+                || state == KawaGlintBobberState.Twitch
+                || state == KawaGlintBobberState.BiteSink;
+            var idx = onWater && _preBitePlan != null ? _preBitePlan.CurrentEventIndex(elapsed) : -1;
+
+            if (idx != _activeEventIndex)
             {
-                if (nibbling)
+                if (idx >= 0)
                 {
-                    // Re-shown at the start of every burst (not just the
-                    // first) so a 2nd/3rd nibble in the same cast still reads
-                    // as "something's here" rather than leaving stale text
-                    // up from burst 1.
-                    _actors.Bobber.SetTwitchIntensity(_preBitePlan.NibbleIntensity01(idx));
-                    _actors.Bobber.SetVisualState(KawaGlintBobberState.Twitch);
-                    _hud.SetPhaseWord(PhaseWordPreBite);
-                    _hud.SetNarration(NarrationPreBite);
+                    _activeEventKind = _preBitePlan.EventKindAt(idx);
+                    if (_activeEventKind == KawaGlintPreBiteEventKind.Deep)
+                    {
+                        // "グイン" -- a big, distinct pull. Same visual state
+                        // and phase word/narration as the terminal Bite phase
+                        // (item 4 of the spec: the player should read this
+                        // exactly like "the real bite", just possibly one of
+                        // several chances this cast).
+                        _actors.Bobber.SetVisualState(KawaGlintBobberState.BiteSink);
+                        _hud.ShowTimingRing();
+                        _hud.SetPhaseWord(PhaseWordBite);
+                        _hud.SetNarration(NarrationBite);
+                    }
+                    else
+                    {
+                        // "ちょんちょん" -- re-shown at the start of every
+                        // Shallow burst (not just the first) so a 2nd/3rd
+                        // peck in the same cast still reads as "something's
+                        // here" rather than leaving stale text up from an
+                        // earlier burst. Tapping during this does nothing
+                        // (HandleTap's Wait branch below).
+                        _actors.Bobber.SetTwitchIntensity(_preBitePlan.EventIntensity01(idx));
+                        _actors.Bobber.SetVisualState(KawaGlintBobberState.Twitch);
+                        _hud.SetPhaseWord(PhaseWordPreBite);
+                        _hud.SetNarration(NarrationPreBite);
+                    }
                 }
                 else
                 {
-                    // Between bursts (and after the last one, before the
-                    // quiet tail) the fish has visibly drifted back --
-                    // revert the phase word/narration to the plain "waiting"
-                    // text so it doesn't linger through a quiet gap where
-                    // nothing is happening on screen.
+                    // Between events (a Deep window closing -- missed or not,
+                    // no penalty either way -- or the gap between two events)
+                    // the fish has visibly drifted back -- revert to the
+                    // plain "waiting" presentation so nothing lingers on
+                    // screen from the event that just ended. misses/pity are
+                    // never touched here; only TsuriCore's own Bite->Escaped
+                    // path (the terminal bite at Wait's natural expiry) can
+                    // affect those.
+                    _hud.HideTimingRing();
                     _actors.Bobber.SetVisualState(KawaGlintBobberState.Floating);
                     _hud.SetPhaseWord(PhaseWordWait);
                     _hud.SetNarration(NarrationWait);
                 }
-                _nibbleActive = nibbling;
+                _activeEventIndex = idx;
+            }
+
+            if (_activeEventIndex >= 0 && _activeEventKind == KawaGlintPreBiteEventKind.Deep)
+            {
+                _hud.SetTimingRing(ComputeRingViewport(), _preBitePlan.DeepWindowRemaining01(elapsed));
             }
         }
 
@@ -281,7 +358,14 @@ namespace Pono.KawaGlint.Gameplay
                     HandleCastTap(uv);
                     break;
                 case TsuriPhase.Wait:
-                    _hud.SpawnFlyWord(FlyWordWait, false);
+                    if (IsDeepHookWindowOpen)
+                    {
+                        HookFromDeepWindow();
+                    }
+                    else
+                    {
+                        _hud.SpawnFlyWord(FlyWordWait, false);
+                    }
                     break;
                 case TsuriPhase.Bite:
                     HandleBiteTap();
@@ -321,7 +405,8 @@ namespace Pono.KawaGlint.Gameplay
             // happen strictly after species selection -- the plan can never
             // perturb which fish gets picked.
             _preBitePlan = KawaGlintPreBitePlan.Create(_random, _waitTotalSec);
-            _nibbleActive = false;
+            _activeEventIndex = -1;
+            _debugDeepUntilElapsed = 0f;
 
             var species = TsuriFishData.GetSpeciesById(_session.SpeciesId);
             _actors.ShowTargetFish(SpeciesWorldLength(species));
@@ -337,6 +422,30 @@ namespace Pono.KawaGlint.Gameplay
         private void HandleBiteTap()
         {
             _session = TsuriCore.TapHook(_session);
+            if (_session.Phase == TsuriPhase.Renda)
+            {
+                EnterRendaUi();
+            }
+        }
+
+        /// <summary>
+        /// Hooks the fish from a Deep pre-bite event's window, mid-Wait.
+        /// Deliberately does not reimplement any of TsuriCore's Wait->Bite /
+        /// Bite->Renda accounting (gauge reset, pity, ConsecutiveMisses,
+        /// auto-hook after 3 misses) -- it fast-forwards the *existing*
+        /// legal transition by zeroing WaitRemainingSec (the exact same
+        /// state-owner mutate pattern <see cref="DebugSkipWait"/> already
+        /// uses) and then calling straight through Tick/TapHook, so every
+        /// one of those rules runs verbatim from the unmodified Core.
+        /// </summary>
+        private void HookFromDeepWindow()
+        {
+            _session.WaitRemainingSec = 0f;
+            _session = TsuriCore.Tick(_session, 0f, TsuriGearMods.Neutral, NowMs());
+            if (_session.Phase == TsuriPhase.Bite)
+            {
+                _session = TsuriCore.TapHook(_session);
+            }
             if (_session.Phase == TsuriPhase.Renda)
             {
                 EnterRendaUi();
@@ -373,6 +482,13 @@ namespace Pono.KawaGlint.Gameplay
 
         private void EnterBiteUi()
         {
+            // Guards against a stale ring/BiteSink presentation state left
+            // over from a mid-Wait Deep event -- this is the terminal Bite
+            // reached via Wait's own natural expiry (TsuriCore.Tick), a
+            // separate path from HookFromDeepWindow.
+            _activeEventIndex = -1;
+            _debugDeepUntilElapsed = 0f;
+
             _actors.Bobber.SetVisualState(KawaGlintBobberState.BiteSink);
             _actors.SetTargetFishApproach(1f, _targetX);
             _hud.SetPhaseWord(PhaseWordBite);
@@ -420,6 +536,12 @@ namespace Pono.KawaGlint.Gameplay
 
         private void EnterRendaUi()
         {
+            // Guards against a stale ring/BiteSink presentation state left
+            // over from a mid-Wait Deep event that just hooked (HookFromDeepWindow)
+            // or from the 3-consecutive-misses auto-hook (Wait -> Renda direct).
+            _activeEventIndex = -1;
+            _debugDeepUntilElapsed = 0f;
+
             // Runs on both paths into Renda: a player's successful hooking
             // tap (HandleBiteTap) and the tick()-driven auto-hook after 3
             // consecutive misses (HandlePhaseTransition, Wait -> Renda direct)
@@ -452,6 +574,9 @@ namespace Pono.KawaGlint.Gameplay
 
         private void EnterEscapedUi()
         {
+            _activeEventIndex = -1;
+            _debugDeepUntilElapsed = 0f;
+
             _hud.HideTimingRing();
             _hud.HideRenda();
             _actors.Bobber.SetVisualState(KawaGlintBobberState.EscapePop);
@@ -529,6 +654,23 @@ namespace Pono.KawaGlint.Gameplay
             if (_session.Phase == TsuriPhase.Wait)
             {
                 _session.WaitRemainingSec = 0f;
+            }
+        }
+
+        /// <summary>
+        /// Test/QA hook: forces this Wait's Deep hooking window to read as
+        /// open (<see cref="IsDeepHookWindowOpen"/>) for <paramref name="durationSec"/>
+        /// seconds starting now (only while Phase==Wait; no-op otherwise).
+        /// Purely a controller-side override -- <see cref="_preBitePlan"/>
+        /// itself is never touched -- so PlayMode tests can deterministically
+        /// exercise a deep-hook tap without waiting on the plan's randomized
+        /// schedule (which may place zero Deep events on a given cast).
+        /// </summary>
+        public void DebugForceDeepWindow(float durationSec = 2.2f)
+        {
+            if (_session.Phase == TsuriPhase.Wait)
+            {
+                _debugDeepUntilElapsed = WaitElapsedSec + durationSec;
             }
         }
 

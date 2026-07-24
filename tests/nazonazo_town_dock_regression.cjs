@@ -98,28 +98,22 @@ function check(condition, message) {
 }
 
 // ---- DOM contract ----
-// v2 visual redesign (presentation layer only, per user feedback that the abstract gauge felt
-// disconnected from the real train): the abstract .town-dock-track/-zone/-knob gauge and the
-// CSS-shape villager/window-lights are gone, replaced by a real station-approach scene that sits
-// behind the game's real locomotive (#veh) and real passenger cars (#cars), which are no longer
-// hidden during town-dock. The physics/state-machine ids below (progress/guide/controls/throttle)
-// are unchanged from the prior round.
-for (const id of [
-  "townDockLayer", "townDockTitle", "townDockProgress", "townDockGuide", "townDockApproachLayer",
-  "townDockApproach", "townDockStationMarker", "townDockControls", "townDockThrottle"
-]) {
+// v3 redesign: the v2 bespoke "#townDockApproachLayer" scrolling layer (itself a replacement for
+// the v1 abstract gauge) is *also* gone now -- per user feedback, inventing any parallel visual
+// system was the wrong move. v3 reuses the exact same real world/#veh/#cars/.tun.station machinery
+// every other stage already uses: townDockState.pos is now written straight into the shared
+// worldX, and buildWorld() grows a small isTownDockStage() branch that emits 3 real .tun.station
+// gates (see below). Only the HUD ids (progress/guide/controls/throttle) remain from prior rounds.
+for (const id of ["townDockLayer", "townDockTitle", "townDockProgress", "townDockGuide", "townDockControls", "townDockThrottle"]) {
   check((html.match(new RegExp(`id=["']${id}["']`, "g")) || []).length === 1, `DOM id ${id} must exist exactly once`);
 }
 check(/<section id="townDockLayer" data-phase="idle"[^>]*hidden>/.test(html), "town dock layer must start idle and hidden");
-check(/<div id="townDockApproachLayer"[^>]*hidden>/.test(html), "town dock approach layer must start hidden");
 check(/<button id="townDockThrottle" type="button"/.test(html), "townDockThrottle must be a real button");
-check(/id="townDockApproach"[^>]*role="meter"[^>]*aria-valuemin="0"[^>]*aria-valuemax="100"/.test(html), "approach-distance meter accessibility contract missing (replaces the old visible gauge bar with an aria-only meter)");
 check(/id="townDockProgress" role="status" aria-live="polite"/.test(html), "progress status readout missing");
 check(/id="townDockGuide" role="status" aria-live="polite"/.test(html), "guide status readout missing");
 check(!/id="townDockRetry"/.test(html), "retry must happen automatically in place, not via an explicit retry button");
-check(!/town-dock-track|town-dock-zone|town-dock-knob|town-dock-villager|town-dock-windows/.test(html) && !/town-dock-track|town-dock-zone\{|town-dock-knob|town-dock-villager|town-dock-windows/.test(css),
-  "the old abstract gauge/CSS-villager classes must be fully removed from both HTML and CSS");
-check(/town_station_checkpoint_20260703\.webp/.test(css), "the real town station checkpoint art (ASSETS.town.station) must back the approach scene, not a new commissioned asset");
+check(!/townDockApproachLayer|townDockStationMarker|town-dock-track|town-dock-zone|town-dock-knob|town-dock-villager|town-dock-windows|town-dock-approach-layer|town-dock-station-marker|town-dock-station-art\{|town-dock-station-bubble/.test(html + css),
+  "neither the v1 abstract gauge nor the v2 bespoke approach-layer/marker may survive in HTML or CSS -- v3 must render through the real world/#veh/.tun.station machinery only");
 
 // ---- STAGES entry: town must declare the custom mechanic ----
 const townLineMatch = /^.*\{id:"town",.*$/m.exec(game);
@@ -132,6 +126,20 @@ check(/\bfunction isTownDockStage\(/.test(game), "isTownDockStage() guard helper
 check(/isDinoAdventureStage\(st\)\|\|isTownDockStage\(st\)\)\{qList=\[\];return;\}/.test(game), "buildQList must skip the per-question quiz list for town");
 check(/isDinoAdventureStage\(st\)&&!isTownDockStage\(st\)\)for\(let i=0;i<QN;i\+\+\)/.test(game), "buildWorld must skip building the per-question tun gates for town");
 check(/town\?TOWN_DOCK_STATION_COUNT:QN/.test(game) && /town\?townDockState\.stationIndex:qSeg/.test(game), "drawDots must show 3 town-dock station dots instead of QN quiz dots");
+
+// ---- v3: buildWorld must generate 3 REAL .tun.station gates for town, reusing the exact same
+// DOM/asset pattern every other stage's station checkpoints use (not a bespoke element) ----
+const buildWorldFn = extractFunction(game, "buildWorld");
+check(/\}else if\(isTownDockStage\(st\)\)\{/.test(buildWorldFn), "buildWorld needs a dedicated isTownDockStage() branch alongside the existing QN-gate loop");
+const townDockGateBranch = buildWorldFn.slice(buildWorldFn.indexOf("}else if(isTownDockStage(st)){"), buildWorldFn.indexOf("if(!isMainlineFinalStg(stg)){"));
+check(/for\(let i=0;i<TOWN_DOCK_STATION_COUNT;i\+\+\)/.test(townDockGateBranch), "must generate exactly TOWN_DOCK_STATION_COUNT (3) gates, not QN (5)");
+check(/class="station-art"/.test(townDockGateBranch) && /bgUrl\(st\.assets\.station\)/.test(townDockGateBranch), "must reuse the exact same .station-art + ASSETS.town.station pattern as every other stage's checkpoints, not a new asset");
+check(/t\.style\.left=tunX\(o,i\)\+"vw"/.test(townDockGateBranch), "gates must sit at the real tunX(o,i) world position, same formula as every other stage");
+check(/hp\.className="station-helper town-dock-station-helper"/.test(townDockGateBranch), "must include a waiting-villager element using the same .station-helper visual grammar as the classic town quiz flow");
+check(/townDockGates\.push\(t\)/.test(townDockGateBranch), "town-dock gates must be pushed to the dedicated townDockGates array");
+check(!/tunnels\.push/.test(townDockGateBranch), "town-dock gates must NOT be pushed into the shared tunnels[] array (onPick's classic quiz flow reads tunnels; townDock must stay fully decoupled from it)");
+check(!/RUN_EVENTS|qList\[i\]\.helper|decor/.test(townDockGateBranch), "the minimal town-dock gate branch must not copy the quiz-only RUN_EVENTS/decor/qList[i].helper machinery from the QN loop");
+check(/townDockGates=\[\]/.test(buildWorldFn), "townDockGates must be reset alongside tunnels on every buildWorld() call");
 
 // ---- pending dispatcher wiring: single "townDock" pending value, not per-question "quiz" ----
 check(/p===\"townDock\"\)showTownDockStop\(\);/.test(game), "gloop dispatcher missing the townDock branch");
@@ -153,7 +161,7 @@ check(/townDockThrottle\.addEventListener\(\"pointerdown\",beginTownDockHoldPoin
 // Same three event types, same "release on any of the three" contract, just a different (equally
 // valid) array order so the two mechanics' wiring stay textually distinguishable.
 check(/for\(const type of \[\"pointercancel\",\"pointerup\",\"lostpointercapture\"\]\)townDockThrottle\.addEventListener\(type,endTownDockHoldPointer\)/.test(game), "throttle release must be bound to pointerup+pointercancel+lostpointercapture together (iOS hold-drag gotcha)");
-check(!/townDockStationMarker\.addEventListener\(["']pointer|handleTownDockPointerMove|moveTownDockKnobTo|moveTownDockStationMarkerTo/.test(game), "there must be no direct station-marker-drag control; it is presentation only, driven purely by reading state.pos");
+check(!/townDockGates\[[^\]]*\]\.addEventListener\(["']pointer|handleTownDockPointerMove|moveTownDockKnobTo|moveTownDockStationMarkerTo/.test(game), "there must be no direct drag control on the real gates; approach is driven purely by writing worldX from state.pos in tickTownDockGame");
 
 // ---- keyboard fallback shares held-direction state with pointer holding ----
 const townDockHeldFunctions = [
@@ -232,7 +240,8 @@ check(/if\(state\.heldPointers\.size\)reconcileTownDockPointers\(\);/.test(tickF
 // Per user feedback the visuals didn't read as connected to the real train. Station clear must now
 // drive the game's own real passenger system (boardPassenger -> #cars), not a bespoke stand-in.
 check(!/body\.town-dock-active #veh,body\.town-dock-active #cars\{visibility:hidden!important\}/.test(css), "the real locomotive/cars must stay visible during town-dock (previously force-hidden)");
-check(/boardPassenger\(passenger,null,townDockStationMarker\)/.test(dedicated), "station clear must call the game's real boardPassenger() (arc-flight + seat in #cars), not a bespoke CSS villager");
+check(/boardPassenger\(passenger,null,gate\)/.test(dedicated), "station clear must call the game's real boardPassenger() (arc-flight + seat in #cars) using the just-cleared REAL gate as the flight-origin element, not a bespoke CSS villager");
+check(/gate\.classList\.add\("open"\)/.test(dedicated), "the cleared real gate should get the same .open treatment (door opens, sign flips to ○) every other stage's stations already use on a correct answer");
 const passengers = extractArray(game, "TOWN_DOCK_PASSENGERS");
 check(passengers.length === numericConstant(game, "TOWN_DOCK_STATION_COUNT"), "must have exactly one simple passenger object per station");
 passengers.forEach((p, i) => check(typeof p.e === "string" && p.e.length > 0 && typeof p.t === "string" && p.t.length > 0, `passenger ${i} needs an emoji (e) and hiragana/katakana label (t) so boardPassenger's createQuizArt fallback and zukan registration both work`));
@@ -247,23 +256,44 @@ check(/allClear:"みんな のせられたね！まちが あかるくなった�
 
 // ---- CSS contract ----
 check(/#townDockLayer\{/.test(css), "town dock layer CSS missing");
-check(/#townDockApproachLayer\{/.test(css) && /\.town-dock-station-marker\{/.test(css) && /\.town-dock-station-art\{/.test(css), "real station-approach scene CSS missing");
+check(/\.town-dock-station-helper-figure\{/.test(css), "the CSS-shape waiting-villager figure (no new image asset) inside the real .station-helper must exist");
+check(/\.tun\.is-blink\{/.test(css), "hint-tier-1 blink must target the real gate element directly (no bespoke marker to blink anymore)");
 check(/#townDockThrottle\{/.test(css), "throttle button CSS missing");
-check(/@media \(prefers-reduced-motion:reduce\)\{[\s\S]*\.town-dock-station-marker\{transition:none!important\}/.test(css), "reduced-motion override for the station-approach marker missing");
-// #townDockApproachLayer must render behind the real train (#veh/#cars z-index:7), never in front,
-// so the "station approaches the fixed train" illusion reads correctly.
-const approachLayerZ = /#townDockApproachLayer\{[^}]*z-index:(\d+)/.exec(css);
-const vehZ = /#veh\{[^}]*z-index:(\d+)/.exec(css);
-check(!!approachLayerZ && !!vehZ && Number(approachLayerZ[1]) < Number(vehZ[1]), "the approach-scene layer's z-index must be lower than #veh's so the real locomotive renders in front of the approaching station");
+check(/@media \(prefers-reduced-motion:reduce\)\{[\s\S]*\.tun\.is-blink\{animation:none!important/.test(css), "reduced-motion override for the real gate's blink missing");
+// body.town-dock-active must no longer hide #veh/#cars (checked above in the DOM contract via the
+// exact old rule text), and there must be no separate z-index-layered approach scene anymore --
+// the real .tun.station gates live inside #world itself and inherit its stacking/scroll for free.
+check(!/#townDockApproachLayer/.test(css), "no separate approach-layer stacking context should exist in v3");
 
 // ---- regression guard: the visual redesign must be presentation-only ----
-// syncTownDockPresentation() may READ state.pos/vel/attempts/assist/armed/phase and the station's
-// zone bounds to decide what to draw, but it must never WRITE to any of the physics/judgment
-// fields -- that would blur the line between "presentation" and "the state machine three reviews
-// already stabilized."
+// syncTownDockPresentation() may READ townDockState fields to decide what to draw, but it must
+// never WRITE to any of the physics/judgment fields -- that would blur the line between
+// "presentation" and "the state machine three reviews already stabilized."
 const presentationFn = extractFunction(game, "syncTownDockPresentation");
 check(!/state\.(pos|vel|armed|attempts|assist|phase|stationIndex|oscPhase)\s*=(?!=)/.test(presentationFn), "syncTownDockPresentation must only read townDockState, never assign to its physics/judgment fields");
-check(/bounds\.center-state\.pos/.test(presentationFn), "the station marker's screen position must be derived from bounds.center/state.pos (read-only), matching the untouched zone math tickTownDockGame already computes");
+
+// ---- v3 core: townDockApproachStartX bridges the untouched local pos scale onto the real worldX
+// coordinate system, and tickTownDockGame writes worldX (NOT a bespoke marker position) ----
+check(/function townDockApproachStartX\(stationIndex\)\{/.test(game), "townDockApproachStartX bridge function missing");
+const approachStartXFn = extractFunction(game, "townDockApproachStartX");
+check(/return stops\(origin\(stg\),stationIndex\)-TOWN_DOCK_STATIONS\[stationIndex\]\.zoneCenter;/.test(approachStartXFn), "townDockApproachStartX must equal stops(origin(stg),i)-zoneCenter[i] -- the same real per-gate stop offset every other stage uses, minus the untouched zoneCenter so pos===zoneCenter lines up exactly with the real gate");
+check(/worldX=townDockApproachStartX\(state\.stationIndex\)\+state\.pos;/.test(tickFn), "tickTownDockGame must write the real worldX (position bridge) right after computing state.pos, so the existing unconditional render()'s world.style.transform picks it up for free -- no bespoke rendering code needed");
+// The worldX write must sit strictly AFTER the untouched physics (state.pos=nextPos) and BEFORE
+// the untouched armed/settled/undershoot/overshoot judgment, proving it's a bridge, not a rewrite.
+const tickPosIdx = tickFn.indexOf("state.pos=nextPos;");
+const tickWorldXIdx = tickFn.indexOf("worldX=townDockApproachStartX(state.stationIndex)+state.pos;");
+const tickArmedIdx = tickFn.indexOf("if(state.pos>0)state.armed=true;");
+check(tickPosIdx >= 0 && tickWorldXIdx > tickPosIdx && tickArmedIdx > tickWorldXIdx, "worldX bridge must be written after the physics update and before the untouched armed/judgment logic, changing nothing about the judgment itself");
+check(!/driving\s*=\s*true/.test(tickFn) && !/driving\s*=\s*false/.test(tickFn), "tickTownDockGame must never touch `driving` itself -- the shared cruise (driving=true) and the local per-frame worldX write are mutually exclusive by construction (phase!=='run' gates the whole function), and must stay that way");
+
+// ---- v3: the initial cruise now stops at the approach START (not the first gate itself) ----
+check(/target=townDockApproachStartX\(0\);pending="townDock";driving=true;/.test(extractFunction(game, "startTownDockGame")), 'startTownDockGame must cruise to townDockApproachStartX(0) (where the player then takes over), not directly to the first station stop');
+
+// ---- v3: station-to-station transition bridges via the existing shared cruise, not a pos-reset
+// teleport (GAP=430vw between real gates vs. at most 100vw of local approach distance -- a direct
+// reset would visibly teleport worldX by 300+vw) ----
+check(/target=townDockApproachStartX\(state\.stationIndex\);pending="townDock";driving=true;/.test(successFn), "resolveTownDockSuccess must hand the non-last transition off to the shared cruise (driving=true) toward the next station's approach start, not jump state.pos to 0 directly under an unrelated worldX");
+check(/townDockState\.stationIndex/.test(extractFunction(game, "showTownDockStop")), "showTownDockStop must resume at townDockState.stationIndex (not a hardcoded 0), since the shared-cruise bridge reuses this same dispatch for station 2 and 3 too");
 
 // ---- station config sanity (small hardcoded array; no vm pure-logic harness needed) ----
 const stations = extractArray(game, "TOWN_DOCK_STATIONS");

@@ -1,5 +1,22 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2376: なぞなぞトレイン町面「ぴたっと停車」を、独自の接近レイヤー(#townDockApproachLayer、
+// v2375で新設)ごと廃止し、本物のworldXスクロール+本物の.tun.station駅ゲートへ全面移行。
+// buildWorld()にisTownDockStage()専用の最小分岐を追加し、既存の5駅ループと同じ
+// .station-art/ASSETS.town.station/.station-helperパターンで3駅ぶんの本物のゲートを
+// townDockGates配列(既存のtunnelsとは分離)へ生成。tickTownDockGame は
+// townDockState.pos の物理演算(加減速・armed/settled/undershoot/overshoot判定式は
+// 一切不変)の直後に worldX=townDockApproachStartX(state.stationIndex)+state.pos を
+// 書き込むだけの橋渡しを追加し、既存の無条件render()のworld.style.transformが自動的に
+// 本物の背景・駅ゲートを動かす。最初の自動巡航の目標地点をstops(...)そのものから
+// 「接近開始地点」townDockApproachStartX(0)に変更(=以前は駅そのものまで自動走行して
+// いたが、正しくは接近開始地点でプレイヤー操作前に一旦停止する)。駅間移動もpos直接
+// リセットだと実距離GAP=430vwに対しローカル接近距離が最大100vwしかなく300vw超の
+// テレポートになるため、既存の共有巡航(driving=true)を1駅ぶん再利用する橋渡し区間を
+// 追加。駅クリア時のboardPassenger()呼び出し先を本物のゲートの待ち人へ差し替え、
+// クイズ正解時と同じ「ゲートが開く」演出も流用。tickTownDockGame は driving を一切
+// 触らない(共有巡航とローカル物理はphase!=='run'ガードで排他)。play.html
+// PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2376)。
 // v2375: なぞなぞトレイン町面「ぴたっと停車」の見た目(プレゼンテーション層)のみを
 // 実写化。ユーザーから「抽象的すぎてリンクしていない」との評価を受け、抽象ゲージ
 // (.town-dock-track/-zone/-knob、CSS図形の村人、光る窓3つ)を全廃。代わりに
@@ -1045,7 +1062,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2375;
+const CACHE_VERSION = 2376;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

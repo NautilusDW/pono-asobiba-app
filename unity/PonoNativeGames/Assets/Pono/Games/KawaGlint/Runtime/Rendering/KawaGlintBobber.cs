@@ -67,21 +67,31 @@ namespace Pono.KawaGlint.Rendering
         // through the air rather than sliding along a straight line.
         private const float ArcHeightWorld = 1.2f;
 
-        // Twitch ("前あたり"): a small, fast jitter layered on top of the
-        // Floating target Y -- distinct in frequency from any of the three
-        // ambient wave components in KawaWave.
+        // Twitch ("前あたり" / Shallow event): a fast jitter layered on top of
+        // the Floating target Y -- distinct in frequency from any of the
+        // three ambient wave components in KawaWave. Applied AFTER the
+        // SmoothDamp smoothing below (see UpdateTwitch), not baked into the
+        // SmoothDamp target, so SmoothTime's own damping never eats half the
+        // amplitude -- that under-damping was the original root cause of the
+        // "the bobber barely moves" bug report (jitter used to be folded
+        // into the SmoothDamp target and lost ~half its amplitude to the
+        // 0.08s smoothing before ever reaching the screen).
         private const float TwitchFrequency = 18f;
-        private const float TwitchAmplitude = 0.05f;
+        private const float TwitchAmplitude = 0.12f;
 
-        // SetTwitchIntensity clamp range -- keeps even the strongest nibble
-        // burst a gentle jitter (never more than 1.5x the base amplitude,
-        // per the "no exaggerated/scary motion for 3-7yo" contract).
+        // SetTwitchIntensity clamp range -- keeps even the strongest Shallow
+        // burst clearly visible but never a violent jolt (never more than
+        // 1.5x the base amplitude, per the "no exaggerated/scary motion for
+        // 3-7yo" contract).
         private const float MinTwitchIntensity = 0.5f;
         private const float MaxTwitchIntensity = 1.5f;
 
-        // BiteSink ("本あたり"): the float visibly sinks below its floating
-        // rest height.
-        private const float BiteSinkOffsetWorld = 0.25f;
+        // BiteSink ("本あたり" / Deep event): the float visibly sinks well
+        // below its floating rest height -- deliberately several times
+        // TwitchAmplitude so "just a little wiggle" (Shallow) and "a big
+        // pull" (Deep) are unmistakably different at a glance, even to a
+        // 3-7yo audience.
+        private const float BiteSinkOffsetWorld = 0.55f;
 
         // EscapePop: a brief upward pop above the waterline before the
         // caller hides the bobber (fish got away).
@@ -93,6 +103,13 @@ namespace Pono.KawaGlint.Rendering
         private float _halfHeightWorld;
         private float _y;
         private float _velocity;
+
+        // The Twitch jitter is layered on top of _y (the SmoothDamp'd
+        // target) rather than folded into _y itself, so it is never eaten by
+        // SmoothDamp's own damping (see TwitchAmplitude). _renderY is what
+        // actually gets written to transform.position/TopWorldY every frame;
+        // outside of Twitch it is always exactly equal to _y.
+        private float _renderY;
 
         private SpriteRenderer _renderer;
 
@@ -129,8 +146,15 @@ namespace Pono.KawaGlint.Rendering
         /// </summary>
         public float CenterWorldX => _x;
 
-        /// <summary>Current world-space Y of the top edge of the bobber sprite -- the fishing line's endpoint.</summary>
-        public float TopWorldY => _y + _halfHeightWorld;
+        /// <summary>
+        /// Current world-space Y of the top edge of the bobber sprite -- the
+        /// fishing line's endpoint. Tracks <c>_renderY</c> (the actually
+        /// rendered Y, including any Twitch jitter) rather than the
+        /// SmoothDamp target alone, so the fishing line visibly follows the
+        /// ちょんちょん jitter instead of staying glued to the un-jittered
+        /// target.
+        /// </summary>
+        public float TopWorldY => _renderY + _halfHeightWorld;
 
         /// <summary>
         /// Sets the bobber's initial rest X, the waterline it rides, and half
@@ -145,10 +169,11 @@ namespace Pono.KawaGlint.Rendering
             _waterlineY = waterlineWorldY;
             _halfHeightWorld = halfHeightWorld;
             _y = waterlineWorldY;
+            _renderY = _y;
             _velocity = 0f;
             _twitchIntensity = 1f;
             _renderer = GetComponent<SpriteRenderer>();
-            transform.position = new Vector3(_x, _y, 0f);
+            transform.position = new Vector3(_x, _renderY, 0f);
             ApplyVisibility();
         }
 
@@ -163,18 +188,22 @@ namespace Pono.KawaGlint.Rendering
             if (state == KawaGlintBobberState.EscapePop)
             {
                 _escapePopElapsed = 0f;
-                _escapePopStartY = _y;
+                // Starts from the visually rendered Y (including any live
+                // Twitch jitter), not the un-jittered _y target, so the pop
+                // never snaps by the jitter's amplitude on the first frame.
+                _escapePopStartY = _renderY;
             }
             ApplyVisibility();
         }
 
         /// <summary>
         /// Scales the amplitude of the next (or current) <see cref="KawaGlintBobberState.Twitch"/>
-        /// jitter -- driven per-nibble-burst by the game controller from
-        /// <see cref="KawaGlintPreBitePlan.NibbleIntensity01"/> so stronger
-        /// nibbles read as a visibly bigger tug. Clamped to
+        /// jitter -- driven per-Shallow-burst by the game controller from
+        /// <see cref="KawaGlintPreBitePlan.EventIntensity01"/> so stronger
+        /// bursts read as a visibly bigger tug. Clamped to
         /// [<see cref="MinTwitchIntensity"/>, <see cref="MaxTwitchIntensity"/>]
-        /// so even the strongest nibble stays a gentle jitter, never a jolt.
+        /// so even the strongest Shallow burst stays clearly visible but
+        /// never a jolt.
         /// </summary>
         public void SetTwitchIntensity(float scale)
         {
@@ -200,7 +229,8 @@ namespace Pono.KawaGlint.Rendering
             {
                 _x = targetWorldX;
                 _y = _waterlineY;
-                transform.SetPositionAndRotation(new Vector3(_x, _y, 0f), Quaternion.identity);
+                _renderY = _y;
+                transform.SetPositionAndRotation(new Vector3(_x, _renderY, 0f), Quaternion.identity);
                 SetVisualState(KawaGlintBobberState.Floating);
                 RaiseLanded();
                 return;
@@ -208,7 +238,8 @@ namespace Pono.KawaGlint.Rendering
 
             _x = fromWorld.x;
             _y = fromWorld.y;
-            transform.SetPositionAndRotation(new Vector3(_x, _y, 0f), Quaternion.identity);
+            _renderY = _y;
+            transform.SetPositionAndRotation(new Vector3(_x, _renderY, 0f), Quaternion.identity);
             SetVisualState(KawaGlintBobberState.Flying);
         }
 
@@ -246,17 +277,19 @@ namespace Pono.KawaGlint.Rendering
             var straightY = Mathf.Lerp(_flightFromWorld.y, _waterlineY, t);
             var arcBump = ArcHeightWorld * 4f * t * (1f - t);
             _y = straightY + arcBump;
+            _renderY = _y;
 
             var direction = Mathf.Sign(_flightTargetX - _flightFromWorld.x);
             var tilt = direction * FlyingTiltDegrees;
-            transform.SetPositionAndRotation(new Vector3(_x, _y, 0f), Quaternion.Euler(0f, 0f, tilt));
+            transform.SetPositionAndRotation(new Vector3(_x, _renderY, 0f), Quaternion.Euler(0f, 0f, tilt));
 
             if (t >= 1f)
             {
                 _x = _flightTargetX;
                 _y = _waterlineY;
+                _renderY = _y;
                 _velocity = 0f;
-                transform.SetPositionAndRotation(new Vector3(_x, _y, 0f), Quaternion.identity);
+                transform.SetPositionAndRotation(new Vector3(_x, _renderY, 0f), Quaternion.identity);
                 SetVisualState(KawaGlintBobberState.Floating);
                 RaiseLanded();
             }
@@ -267,15 +300,24 @@ namespace Pono.KawaGlint.Rendering
             var wave = KawaWave.Height(_x, time);
             var targetY = _waterlineY + wave;
             _y = Mathf.SmoothDamp(_y, targetY, ref _velocity, SmoothTime);
+            _renderY = _y;
             ApplyWaveTiltedPosition(time);
         }
 
         private void UpdateTwitch(float time)
         {
+            // The SmoothDamp target below is the plain wave height -- no
+            // jitter baked in -- so SmoothTime's damping never eats the
+            // jitter's amplitude. The jitter is instead added to _renderY
+            // AFTER smoothing, every frame, so it always reads at its full
+            // configured amplitude regardless of how quickly _y is
+            // converging onto the wave.
             var wave = KawaWave.Height(_x, time);
-            var jitter = Mathf.Sin(time * TwitchFrequency) * TwitchAmplitude * _twitchIntensity;
-            var targetY = _waterlineY + wave + jitter;
+            var targetY = _waterlineY + wave;
             _y = Mathf.SmoothDamp(_y, targetY, ref _velocity, SmoothTime);
+
+            var jitter = Mathf.Sin(time * TwitchFrequency) * TwitchAmplitude * _twitchIntensity;
+            _renderY = _y + jitter;
             ApplyWaveTiltedPosition(time);
         }
 
@@ -284,6 +326,7 @@ namespace Pono.KawaGlint.Rendering
             var wave = KawaWave.Height(_x, time);
             var targetY = _waterlineY + wave - BiteSinkOffsetWorld;
             _y = Mathf.SmoothDamp(_y, targetY, ref _velocity, BiteSinkSmoothTime);
+            _renderY = _y;
             ApplyWaveTiltedPosition(time);
         }
 
@@ -292,6 +335,7 @@ namespace Pono.KawaGlint.Rendering
             _escapePopElapsed += Time.deltaTime;
             var t = EscapePopDurationSeconds > 0f ? Mathf.Clamp01(_escapePopElapsed / EscapePopDurationSeconds) : 1f;
             _y = Mathf.Lerp(_escapePopStartY, _waterlineY + EscapePopOffsetWorld, t);
+            _renderY = _y;
             ApplyWaveTiltedPosition(time);
 
             if (_escapePopElapsed >= EscapePopDurationSeconds)
@@ -300,6 +344,10 @@ namespace Pono.KawaGlint.Rendering
             }
         }
 
+        // Reads _renderY (set by every caller above, immediately before this
+        // is invoked) rather than _y directly, so the Twitch jitter added on
+        // top of _y in UpdateTwitch is reflected in the actual transform
+        // position, not just tracked internally.
         private void ApplyWaveTiltedPosition(float time)
         {
             var slope = KawaWave.Slope(_x, time);
@@ -308,7 +356,7 @@ namespace Pono.KawaGlint.Rendering
                 -MaxTiltDegrees,
                 MaxTiltDegrees);
 
-            transform.SetPositionAndRotation(new Vector3(_x, _y, 0f), Quaternion.Euler(0f, 0f, tilt));
+            transform.SetPositionAndRotation(new Vector3(_x, _renderY, 0f), Quaternion.Euler(0f, 0f, tilt));
         }
 
         private void ApplyVisibility()
