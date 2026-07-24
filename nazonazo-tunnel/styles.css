@@ -433,12 +433,6 @@ body.tunnel-interior #jungleHabitatBack{display:none!important}
 .decor.jungle-decor{bottom:17.3vh;filter:drop-shadow(0 4px 0 rgba(35,55,25,.14))}
 .decor.number-decor{bottom:14vh;filter:drop-shadow(0 4px 0 rgba(92,70,135,.13))}
 .decor.future-decor{bottom:14vh;filter:drop-shadow(0 4px 0 rgba(45,72,80,.13))}
-/* town: ぴたっと停車の駅接近シーン。#veh/#cars(z-index:7)より低いz-indexに置き、
-   本物の機関車/客車の "手前を横切らず奥から近づいてくる" 層関係にする。
-   #townDockLayer(HUD/操作、z-index:18)とは別レイヤーにして、機関車より上に
-   出したいボタン類と、機関車より下に置きたい背景シーンを共存させている。 */
-#townDockApproachLayer{position:absolute;inset:0;z-index:5;overflow:hidden;pointer-events:none}
-#townDockApproachLayer[hidden]{display:none!important}
 #cars{position:absolute;bottom:6.5vh;left:0;right:0;z-index:7;pointer-events:none}
 body.st-space #cars{bottom:26.3vh}
 .car{position:absolute;bottom:0;width:8vw;height:7.4vw;max-width:96px;max-height:90px;
