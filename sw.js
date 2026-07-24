@@ -1,5 +1,11 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2386: まちがいさがしのジャングルとよるのおへやを、局所レタッチの継ぎ足しではなく
+// GPT Image 2の一貫した場面として再生成。ジャングルは自然な一株のバナナ、段状羽対
+// 大きな一枚羽、自然な巻き尾対開いたS字尾へ更新。よるのおへやは横長対正方形の枕全体、
+// 同位置で反転する月、立ち耳対垂れ耳、短い鼻対巻き鼻へ更新し、303px表示に合わせて
+// 当たり判定を再配置した。ゲーム個別画像はnetwork-first配信のためCRITICAL_ASSETSには
+// 追加しない。play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2386)。
 // v2385: ひょっこりハイタッチで寝ている動物へ触れた時、画面中央に大きな
 // 「×／ねてるよ」を1秒表示し、触れた寝姿・月・穴だけを明るく反応させる。
 // 成功音とは逆向きの柔らかい下降2音へ変更し、出現終了間際・連打案内への切替・
@@ -1153,7 +1159,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2385;
+const CACHE_VERSION = 2386;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
