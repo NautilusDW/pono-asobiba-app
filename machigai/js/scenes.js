@@ -37,6 +37,11 @@
     window.MSL.Main.goto(name, params);
   }
 
+  function completionNarrationText() {
+    var catalog = window.MACHIGAI_NARRATION;
+    return (catalog && catalog.completionText) || 'ぜんぶ みつけた！すごい！';
+  }
+
   function getStageStatus(id) {
     var status = window.MSL.Main.stageStatus || {};
     if (Object.prototype.hasOwnProperty.call(status, id)) return status[id];
@@ -488,6 +493,14 @@
     var timers = [];
     var listeners = [];
     var completed = false;
+    var destroyed = false;
+    var transitioned = false;
+
+    Speech.preload(
+      stage.differences.map(function (diff) {
+        return diff.label;
+      }).concat([completionNarrationText()])
+    );
 
     function on(elm, type, fn) {
       elm.addEventListener(type, fn);
@@ -546,7 +559,7 @@
       markBothPanels(result.diff);
       FX.sparkle(tapPanel.el, tapPx.x, tapPx.y);
       FX.wordPopup(container, result.diff.label);
-      Speech.speak(result.diff.label);
+      var narrationDone = Speech.speak(result.diff.label);
       hintBtn.classList.remove('glowing');
       starsRow.setFilled(session.state.foundCount);
 
@@ -558,14 +571,33 @@
         }, 150);
         timers.push(t);
         FX.confetti(container, 110);
-        var t2 = window.setTimeout(function () {
+        var minimumDelayElapsed = false;
+        var narrationFinished = false;
+
+        function openClearWhenReady() {
+          if (
+            destroyed
+            || transitioned
+            || !minimumDelayElapsed
+            || !narrationFinished
+          ) return;
+          transitioned = true;
           goto('clear', {
             stageId: stage.id,
             stars: session.computeStars(),
             hintCount: session.state.hintCount
           });
+        }
+
+        var t2 = window.setTimeout(function () {
+          minimumDelayElapsed = true;
+          openClearWhenReady();
         }, 1400);
         timers.push(t2);
+        narrationDone.then(function () {
+          narrationFinished = true;
+          openClearWhenReady();
+        });
       }
     }
 
@@ -621,6 +653,7 @@
 
     return {
       destroy: function () {
+        destroyed = true;
         Audio.stopBGM();
         Speech.cancel();
         timers.forEach(window.clearTimeout);
@@ -644,6 +677,9 @@
     var stage = Game.getStageById(stageId);
     var timers = [];
     var listeners = [];
+    var completionText = completionNarrationText();
+
+    Speech.preload([completionText]);
 
     function on(elm, type, fn) {
       elm.addEventListener(type, fn);
@@ -688,7 +724,7 @@
     }
 
     var speakTimer = window.setTimeout(function () {
-      Speech.speak('ぜんぶ みつけた！すごい！');
+      Speech.speak(completionText);
     }, 280 * stars + 200);
     timers.push(speakTimer);
 
