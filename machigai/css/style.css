@@ -310,6 +310,14 @@ body.is-portrait #viewport {
   z-index: 3;
 }
 
+.title-home {
+  position: absolute;
+  left: 36px;
+  bottom: 36px;
+  z-index: 3;
+  font-size: 40px;
+}
+
 .title-ready-badge {
   position: absolute;
   top: 36px;

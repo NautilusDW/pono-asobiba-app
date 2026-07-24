@@ -1118,15 +1118,26 @@ const TOWN_DOCK_STATIONS=Object.freeze([
  Object.freeze({zoneCenter:56,zoneWidth:16,cruiseSpeed:46,oscAmplitude:4.8,oscPeriodMs:5200})
 ]);
 const TOWN_DOCK_LINES=Object.freeze({
- intro:["ればーを おしつづけて すすもう。はなすと ゆっくり とまるよ","こんどは とまる わくが せまいよ","わくが ゆっくり うごくよ！"],
+ intro:["ればーを おしつづけて すすもう。はなすと ゆっくり とまるよ","こんどは ぴったり とまるのが むずかしいよ","とまる ばしょが すこし うごくよ！"],
  undershoot:"もう すこし まえで とまろう",
  overshoot:"すこし はやすぎたかな",
- blink:"わくが みえたら とまろう",
- widen:"わくが ひろがったよ！",
+ blink:"えきが ちかづいたら とまろう",
+ widen:"とまりやすく なったよ！",
  assist:"すこし てつだうね",
  success:"ぴたっと とまれたね!",
  allClear:"みんな のせられたね！まちが あかるくなったよ"
 });
+// ---- 見た目専用の定数・データ (presentation only) ----
+// 下記は syncTownDockPresentation()/resolveTownDockSuccess() の描画・乗車演出でのみ参照し、
+// tickTownDockGame の物理演算・成否判定式には一切使わない (見た目の実写化に伴う追加)。
+const TOWN_DOCK_APPROACH_ALIGN_VW=52; // 本物の機関車(#veh, left:28vw+幅)の手前あたり。駅看板がここに重なった時が「到着」に見える画面位置
+const TOWN_DOCK_APPROACH_SCALE_VW=1.35; // pos 1ユニットあたりの見た目移動量(vw)。駅ごとに zoneCenter が違っても、
+ // pos===bounds.center の瞬間は必ず同じ画面位置(ALIGN_VW)に駅が重なるよう、中心からの相対オフセットで計算する
+const TOWN_DOCK_PASSENGERS=Object.freeze([
+ Object.freeze({e:"👵",t:"むらの おばあさん"}),
+ Object.freeze({e:"👴",t:"むらの おじいさん"}),
+ Object.freeze({e:"👧",t:"むらの こども"})
+]);
 function createTownDockState(){
  return {
   epoch:0,phase:"idle",stationIndex:0,attempts:0,assist:false,armed:false,
@@ -1484,7 +1495,7 @@ const dinoCraneCargoStatus=$("dinoCraneCargoStatus"),dinoCraneSwing=$("dinoCrane
 const dinoWaterGame=$("dinoWaterGame"),dinoWaterDinos=$("dinoWaterDinos"),dinoWaterSuccessScene=$("dinoWaterSuccessScene"),dinoWaterGrid=$("dinoWaterGrid"),dinoWaterBudget=$("dinoWaterBudget"),dinoWaterHint=$("dinoWaterHint"),dinoWaterContinue=$("dinoWaterContinue"),dinoWaterBriefing=$("dinoWaterBriefing"),dinoWaterStart=$("dinoWaterStart");
 const dinoWaterDifficultyButtons=[...document.querySelectorAll("[data-water-difficulty]")];
 const dinoBossGame=$("dinoBossGame"),dinoBossTrex=$("dinoBossTrex"),dinoBossTug=$("dinoBossTug"),dinoBossAction=$("dinoBossAction"),dinoBossRetry=$("dinoBossRetry"),dinoBossTrainHp=$("dinoBossTrainHp"),dinoBossTrexHp=$("dinoBossTrexHp"),dinoBossWater=$("dinoBossWater");
-const townDockLayer=$("townDockLayer"),townDockTitle=$("townDockTitle"),townDockProgress=$("townDockProgress"),townDockGuide=$("townDockGuide"),townDockTrack=$("townDockTrack"),townDockZone=$("townDockZone"),townDockKnob=$("townDockKnob"),townDockWindows=$("townDockWindows"),townDockVillager=$("townDockVillager"),townDockControls=$("townDockControls"),townDockThrottle=$("townDockThrottle");
+const townDockLayer=$("townDockLayer"),townDockTitle=$("townDockTitle"),townDockProgress=$("townDockProgress"),townDockGuide=$("townDockGuide"),townDockApproachLayer=$("townDockApproachLayer"),townDockApproach=$("townDockApproach"),townDockStationMarker=$("townDockStationMarker"),townDockControls=$("townDockControls"),townDockThrottle=$("townDockThrottle");
 const spaceChaseLayer=$("spaceChaseLayer"),spaceChaseGuide=$("spaceChaseGuide"),spaceChaseTitle=$("spaceChaseTitle"),spaceChaseBoostMeter=$("spaceChaseBoostMeter"),spaceChaseFinalMeter=$("spaceChaseFinalMeter"),spaceChaseRoundText=$("spaceChaseRoundText"),spaceChaseBoostButton=$("spaceChaseBoostButton"),spaceChaseRouteMap=$("spaceChaseRouteMap"),spaceChaseRoutePaths=$("spaceChaseRoutePaths"),spaceChaseJunctions=$("spaceChaseJunctions"),spaceChaseBoostItemsLayer=$("spaceChaseBoostItems"),spaceChaseRouteChoices=$("spaceChaseRouteChoices"),spaceChaseCinematic=$("spaceChaseCinematic"),spaceChaseCinematicText=$("spaceChaseCinematicText"),spaceChaseRescuePanel=$("spaceChaseRescuePanel"),spaceChaseRescuePlayfield=$("spaceChaseRescuePlayfield"),spaceChaseRescueTitle=$("spaceChaseRescueTitle"),spaceChaseRescueGuide=$("spaceChaseRescueGuide"),spaceChaseRescueProgress=$("spaceChaseRescueProgress"),spaceChaseRescueRing=$("spaceChaseRescueRing"),spaceChaseRescueStar=$("spaceChaseRescueStar"),spaceChaseRescueTether=$("spaceChaseRescueTether"),spaceChaseTailGates=$("spaceChaseTailGates"),spaceChaseSealTargets=$("spaceChaseSealTargets"),spaceChaseTimingPulse=$("spaceChaseTimingPulse"),spaceChaseConstellation=$("spaceChaseConstellation"),spaceChaseRescueMashButton=$("spaceChaseRescueMashButton");
 const spaceChaseRescueGates=spaceChaseTailGates?[...spaceChaseTailGates.querySelectorAll("[data-rescue-gate]")]:[];
 const spaceChaseRescueLocks=spaceChaseSealTargets?[...spaceChaseSealTargets.querySelectorAll("[data-rescue-lock]")]:[];
@@ -7566,16 +7577,6 @@ function townDockTimeout(fn,ms){
  townDockState.timers.add(id);
  return id;
 }
-function townDockWindowElements(){return townDockWindows?[...townDockWindows.querySelectorAll("i")]:[];}
-function syncTownDockWindows(){
- const boarded=townDockState.stationIndex;
- townDockWindowElements().forEach((el,index)=>el.classList.toggle("is-lit",index<boarded));
- // dino のクレーンの「のこり◯かい (残機)」表示と混同されないよう明示: これは無制限リトライの
- // townDock に存在しない残機ではなく、乗せた むらびとの人数 (窓の明かり) を表す。
- if(townDockWindows)townDockWindows.setAttribute("aria-label","のせた むらびと "+boarded+" / "+TOWN_DOCK_STATION_COUNT);
-}
-function showTownDockVillagerWaiting(){if(townDockVillager)townDockVillager.classList.remove("is-boarded");}
-function showTownDockVillagerBoarded(){if(townDockVillager)townDockVillager.classList.add("is-boarded");}
 function townDockHeld(){
  const state=townDockState;
  return state.heldPointers.size>0||state.keyDirection!==0;
@@ -7585,12 +7586,20 @@ function townDockInputAllowed(){
 }
 function updateTownDockThrottlePresentation(){
  if(!townDockThrottle)return;
- townDockThrottle.classList.toggle("is-held",townDockHeld());
+ const held=townDockHeld();
+ townDockThrottle.classList.toggle("is-held",held);
  // 実DOM disabled は絶対に立てない: Pointer Events 仕様上、キャプチャ中の要素が
  // disabled になると実装は暗黙に pointer capture を解放する (=lostpointercapture が
  // 勝手に発火する)。駅切り替わり/リトライの一時停止中も指を離さず押し続けている
  // プレイヤーの保持を継続させたいので、見た目のみ is-waiting クラスで表現する。
  townDockThrottle.classList.toggle("is-waiting",!townDockInputAllowed());
+ // 本物の機関車(#veh)/客車(#cars): ホールド中は既存の #veh.go 演出(車輪回転・煙)を
+ // そのまま流用して「実際に動いている」感を出す。物理演算(pos/vel)には一切影響しない、
+ // 見た目だけの反映。isTownDockStage() 以外では絶対に触れない。
+ if(isTownDockStage()&&veh){
+  veh.classList.toggle("go",held);veh.classList.toggle("idle",!held);
+  if(carsEl)carsEl.classList.toggle("go",held);
+ }
 }
 function clearTownDockPointers(){
  const state=townDockState;
@@ -7622,17 +7631,21 @@ function handleTownDockKeyUp(event){
  if(key===" "||key==="Enter"){event.preventDefault();if(townDockState.keyDirection)townDockState.keyDirection=0;updateTownDockThrottlePresentation();}
 }
 function syncTownDockPresentation(){
+ // 見た目の実写化: 抽象ゲージ(旧 townDockTrack/Zone/Knob)は廃止し、本物の駅看板+待ち人が
+ // 画面固定位置の本物の機関車(#veh)へ近づいてくる形で pos/bounds(state.pos, bounds.start/
+ // center/end)を「読むだけ」で描画する。ここで読む値は tickTownDockGame が既に計算した
+ // ものそのままで、この関数からは一切書き換えない (成否判定式・タイミングには無関係)。
  const state=townDockState,station=currentTownDockStation(),bounds=townDockZoneBounds(station);
- if(townDockTrack){
-  townDockTrack.style.setProperty("--town-dock-pos",state.pos.toFixed(2));
-  townDockTrack.setAttribute("aria-valuenow",String(Math.round(state.pos)));
+ if(townDockApproach)townDockApproach.setAttribute("aria-valuenow",String(Math.round(state.pos)));
+ if(townDockStationMarker){
+  const offsetFromCenter=bounds.center-state.pos; // + : 駅はまだ手前(右)、- : 行きすぎて左へ通過
+  const screenLeftVw=TOWN_DOCK_APPROACH_ALIGN_VW+offsetFromCenter*TOWN_DOCK_APPROACH_SCALE_VW;
+  townDockStationMarker.style.left=screenLeftVw.toFixed(2)+"vw";
+  const nearZone=state.pos>=bounds.start&&state.pos<=bounds.end;
+  townDockStationMarker.classList.toggle("is-near",nearZone);
+  townDockStationMarker.classList.toggle("is-blink",state.attempts>=1&&state.phase==="run");
+  townDockStationMarker.classList.toggle("is-settled",state.armed&&Math.abs(state.vel)<=TOWN_DOCK_SETTLE_VEL);
  }
- if(townDockZone){
-  townDockZone.style.left=bounds.start.toFixed(2)+"%";
-  townDockZone.style.width=bounds.width.toFixed(2)+"%";
-  townDockZone.classList.toggle("is-blink",state.attempts>=1&&state.phase==="run");
- }
- if(townDockKnob)townDockKnob.classList.toggle("is-settled",state.armed&&Math.abs(state.vel)<=TOWN_DOCK_SETTLE_VEL);
 }
 function focusTownDockThrottleNextFrame(){
  const epoch=townDockState.epoch;
@@ -7646,7 +7659,6 @@ function beginTownDockStation(index){
  state.stationIndex=index;state.attempts=0;state.assist=false;state.pos=0;state.vel=0;state.oscPhase=0;state.armed=false;
  state.phase="run";
  if(townDockLayer)townDockLayer.dataset.phase="run";
- showTownDockVillagerWaiting();
  if(townDockProgress)townDockProgress.textContent="えき "+(index+1)+" / "+TOWN_DOCK_STATION_COUNT;
  townDockSetGuide(TOWN_DOCK_LINES.intro[Math.min(index,TOWN_DOCK_LINES.intro.length-1)]);
  syncTownDockPresentation();
@@ -7704,6 +7716,7 @@ function completeTownDockStage(){
  state.completionCount++;state.phase="complete";state.transitionCount++;
  clearTownDockPointers();
  if(townDockLayer){townDockLayer.hidden=true;townDockLayer.setAttribute("aria-hidden","true");townDockLayer.dataset.phase="complete";}
+ if(townDockApproachLayer){townDockApproachLayer.hidden=true;townDockApproachLayer.setAttribute("aria-hidden","true");}
  document.body.classList.remove("town-dock-active");
  completeCurrentStage(origin(stg));
 }
@@ -7717,9 +7730,13 @@ function resolveTownDockSuccess(){
  updateTownDockThrottlePresentation();
  addScore(TOWN_DOCK_STATION_SCORE,"townDock");
  sndFan();setDriverMood("cheer");
- showTownDockVillagerBoarded();
+ // 本物の乗車演出: CSS図形の村人/光る窓の代役ではなく、他ステージと同じ本物の
+ // boardPassenger() を呼ぶ。駅看板の位置(townDockStationMarker)から本物の客車(#cars)へ
+ // 弧を描いて飛び、着席する。stationEl側に .station-helper img が無い場合は
+ // boardPassenger 自身が 50vw/30vh の既定位置へ安全にフォールバックする。
+ const passenger=TOWN_DOCK_PASSENGERS[state.stationIndex]||TOWN_DOCK_PASSENGERS[TOWN_DOCK_PASSENGERS.length-1];
+ boardPassenger(passenger,null,townDockStationMarker);
  state.stationIndex++;
- syncTownDockWindows();
  drawDots();
  showStamp(TOWN_DOCK_LINES.success,"clear");
  townDockSetGuide(TOWN_DOCK_LINES.success);
@@ -7786,8 +7803,8 @@ function showTownDockStop(){
  if(!isTownDockStage()||!playing)return;
  clearRareEvent();quiz.classList.remove("show");
  if(townDockLayer){townDockLayer.hidden=false;townDockLayer.setAttribute("aria-hidden","false");townDockLayer.dataset.phase="run";}
+ if(townDockApproachLayer){townDockApproachLayer.hidden=false;townDockApproachLayer.setAttribute("aria-hidden","false");}
  document.body.classList.add("town-dock-active");
- syncTownDockWindows();
  beginTownDockStation(0);
 }
 function startTownDockGame(){
@@ -7818,11 +7835,9 @@ function resetTownDockGame(){
  if(old&&old.heldPointers)for(const pointerId of old.heldPointers.keys()){try{townDockThrottle&&townDockThrottle.releasePointerCapture(pointerId);}catch(_){}}
  townDockState=createTownDockState();townDockState.epoch=nextEpoch;
  if(townDockLayer){townDockLayer.hidden=true;townDockLayer.setAttribute("aria-hidden","true");townDockLayer.dataset.phase="idle";}
+ if(townDockApproachLayer){townDockApproachLayer.hidden=true;townDockApproachLayer.setAttribute("aria-hidden","true");}
  if(townDockThrottle){townDockThrottle.disabled=false;townDockThrottle.classList.remove("is-held","is-waiting");}
- if(townDockVillager)townDockVillager.classList.remove("is-boarded");
- if(townDockZone)townDockZone.classList.remove("is-blink");
- if(townDockKnob)townDockKnob.classList.remove("is-settled");
- syncTownDockWindows();
+ if(townDockStationMarker)townDockStationMarker.classList.remove("is-near","is-blink","is-settled");
  document.body.classList.remove("town-dock-active","town-dock-bright");
 }
 // TEMP DEBUG (to be removed once the zero-input infinite-fail-loop report is diagnosed):

@@ -98,18 +98,28 @@ function check(condition, message) {
 }
 
 // ---- DOM contract ----
+// v2 visual redesign (presentation layer only, per user feedback that the abstract gauge felt
+// disconnected from the real train): the abstract .town-dock-track/-zone/-knob gauge and the
+// CSS-shape villager/window-lights are gone, replaced by a real station-approach scene that sits
+// behind the game's real locomotive (#veh) and real passenger cars (#cars), which are no longer
+// hidden during town-dock. The physics/state-machine ids below (progress/guide/controls/throttle)
+// are unchanged from the prior round.
 for (const id of [
-  "townDockLayer", "townDockTitle", "townDockProgress", "townDockGuide", "townDockTrack",
-  "townDockZone", "townDockKnob", "townDockWindows", "townDockVillager", "townDockControls", "townDockThrottle"
+  "townDockLayer", "townDockTitle", "townDockProgress", "townDockGuide", "townDockApproachLayer",
+  "townDockApproach", "townDockStationMarker", "townDockControls", "townDockThrottle"
 ]) {
   check((html.match(new RegExp(`id=["']${id}["']`, "g")) || []).length === 1, `DOM id ${id} must exist exactly once`);
 }
 check(/<section id="townDockLayer" data-phase="idle"[^>]*hidden>/.test(html), "town dock layer must start idle and hidden");
+check(/<div id="townDockApproachLayer"[^>]*hidden>/.test(html), "town dock approach layer must start hidden");
 check(/<button id="townDockThrottle" type="button"/.test(html), "townDockThrottle must be a real button");
-check(/id="townDockTrack"[^>]*role="meter"[^>]*aria-valuemin="0"[^>]*aria-valuemax="100"/.test(html), "track meter accessibility contract missing");
+check(/id="townDockApproach"[^>]*role="meter"[^>]*aria-valuemin="0"[^>]*aria-valuemax="100"/.test(html), "approach-distance meter accessibility contract missing (replaces the old visible gauge bar with an aria-only meter)");
 check(/id="townDockProgress" role="status" aria-live="polite"/.test(html), "progress status readout missing");
 check(/id="townDockGuide" role="status" aria-live="polite"/.test(html), "guide status readout missing");
 check(!/id="townDockRetry"/.test(html), "retry must happen automatically in place, not via an explicit retry button");
+check(!/town-dock-track|town-dock-zone|town-dock-knob|town-dock-villager|town-dock-windows/.test(html) && !/town-dock-track|town-dock-zone\{|town-dock-knob|town-dock-villager|town-dock-windows/.test(css),
+  "the old abstract gauge/CSS-villager classes must be fully removed from both HTML and CSS");
+check(/town_station_checkpoint_20260703\.webp/.test(css), "the real town station checkpoint art (ASSETS.town.station) must back the approach scene, not a new commissioned asset");
 
 // ---- STAGES entry: town must declare the custom mechanic ----
 const townLineMatch = /^.*\{id:"town",.*$/m.exec(game);
@@ -143,7 +153,7 @@ check(/townDockThrottle\.addEventListener\(\"pointerdown\",beginTownDockHoldPoin
 // Same three event types, same "release on any of the three" contract, just a different (equally
 // valid) array order so the two mechanics' wiring stay textually distinguishable.
 check(/for\(const type of \[\"pointercancel\",\"pointerup\",\"lostpointercapture\"\]\)townDockThrottle\.addEventListener\(type,endTownDockHoldPointer\)/.test(game), "throttle release must be bound to pointerup+pointercancel+lostpointercapture together (iOS hold-drag gotcha)");
-check(!/townDockKnob\.addEventListener\(["']pointer|handleTownDockPointerMove|moveTownDockKnobTo/.test(game), "there must be no direct knob-drag control; the knob is presentation only");
+check(!/townDockStationMarker\.addEventListener\(["']pointer|handleTownDockPointerMove|moveTownDockKnobTo|moveTownDockStationMarkerTo/.test(game), "there must be no direct station-marker-drag control; it is presentation only, driven purely by reading state.pos");
 
 // ---- keyboard fallback shares held-direction state with pointer holding ----
 const townDockHeldFunctions = [
@@ -218,11 +228,16 @@ check(/hasPointerCapture/.test(reconcileFn), "must reconcile heldPointers agains
 check(/state\.heldPointers\.delete\(pointerId\)/.test(reconcileFn), "must actually remove a pointerId once the browser confirms it is no longer captured");
 check(/if\(state\.heldPointers\.size\)reconcileTownDockPointers\(\);/.test(tickFn), "tickTownDockGame must reconcile stale pointer capture every frame before computing held");
 
-// ---- regression guard: the "■■■" boarded-villager window lights must not read as a dino-style
-// life/chances counter (townDock has unlimited retries, only escalating hints) ----
-check(/id="townDockWindows"[^>]*role="img"[^>]*aria-label="のせた むらびと/.test(html), "townDockWindows needs an unambiguous aria-label so it cannot be mistaken for a limited-chances indicator");
-check(/townDockWindows\.setAttribute\("aria-label","のせた むらびと/.test(extractFunction(game, "syncTownDockWindows")), "the window-lights aria-label must update live as villagers board");
-check(!/dinoCraneChances|"のこり\s*"\+/.test(extractFunction(game, "syncTownDockWindows")), "townDock's window-light indicator must not borrow dino's remaining-chances copy/logic");
+// ---- regression guard: real boarding must replace the old CSS-shape villager/window-lights ----
+// Per user feedback the visuals didn't read as connected to the real train. Station clear must now
+// drive the game's own real passenger system (boardPassenger -> #cars), not a bespoke stand-in.
+check(!/body\.town-dock-active #veh,body\.town-dock-active #cars\{visibility:hidden!important\}/.test(css), "the real locomotive/cars must stay visible during town-dock (previously force-hidden)");
+check(/boardPassenger\(passenger,null,townDockStationMarker\)/.test(dedicated), "station clear must call the game's real boardPassenger() (arc-flight + seat in #cars), not a bespoke CSS villager");
+const passengers = extractArray(game, "TOWN_DOCK_PASSENGERS");
+check(passengers.length === numericConstant(game, "TOWN_DOCK_STATION_COUNT"), "must have exactly one simple passenger object per station");
+passengers.forEach((p, i) => check(typeof p.e === "string" && p.e.length > 0 && typeof p.t === "string" && p.t.length > 0, `passenger ${i} needs an emoji (e) and hiragana/katakana label (t) so boardPassenger's createQuizArt fallback and zukan registration both work`));
+check(new Set(passengers.map(p => p.e)).size === passengers.length, "the 3 town-dock passengers should be visually distinct");
+check(/veh\.classList\.toggle\("go",held\);veh\.classList\.toggle\("idle",!held\)/.test(extractFunction(game, "updateTownDockThrottlePresentation")), "holding the throttle must toggle the real #veh.go/.idle classes (real wheel-spin/smoke), not a new abstract indicator");
 
 // ---- hiragana/katakana voice lines exist and are wired into the guide/stamp feedback ----
 check(/undershoot:"もう すこし まえで とまろう"/.test(game), "undershoot hint copy missing/changed");
@@ -232,9 +247,23 @@ check(/allClear:"みんな のせられたね！まちが あかるくなった�
 
 // ---- CSS contract ----
 check(/#townDockLayer\{/.test(css), "town dock layer CSS missing");
-check(/\.town-dock-track\{/.test(css) && /\.town-dock-zone\{/.test(css) && /\.town-dock-knob\{/.test(css), "town dock gauge CSS missing");
+check(/#townDockApproachLayer\{/.test(css) && /\.town-dock-station-marker\{/.test(css) && /\.town-dock-station-art\{/.test(css), "real station-approach scene CSS missing");
 check(/#townDockThrottle\{/.test(css), "throttle button CSS missing");
-check(/@media \(prefers-reduced-motion:reduce\)\{[\s\S]*\.town-dock-villager,\.town-dock-windows i,\.town-dock-knob,\.town-dock-zone\{transition:none!important\}/.test(css), "reduced-motion override for town dock missing");
+check(/@media \(prefers-reduced-motion:reduce\)\{[\s\S]*\.town-dock-station-marker\{transition:none!important\}/.test(css), "reduced-motion override for the station-approach marker missing");
+// #townDockApproachLayer must render behind the real train (#veh/#cars z-index:7), never in front,
+// so the "station approaches the fixed train" illusion reads correctly.
+const approachLayerZ = /#townDockApproachLayer\{[^}]*z-index:(\d+)/.exec(css);
+const vehZ = /#veh\{[^}]*z-index:(\d+)/.exec(css);
+check(!!approachLayerZ && !!vehZ && Number(approachLayerZ[1]) < Number(vehZ[1]), "the approach-scene layer's z-index must be lower than #veh's so the real locomotive renders in front of the approaching station");
+
+// ---- regression guard: the visual redesign must be presentation-only ----
+// syncTownDockPresentation() may READ state.pos/vel/attempts/assist/armed/phase and the station's
+// zone bounds to decide what to draw, but it must never WRITE to any of the physics/judgment
+// fields -- that would blur the line between "presentation" and "the state machine three reviews
+// already stabilized."
+const presentationFn = extractFunction(game, "syncTownDockPresentation");
+check(!/state\.(pos|vel|armed|attempts|assist|phase|stationIndex|oscPhase)\s*=(?!=)/.test(presentationFn), "syncTownDockPresentation must only read townDockState, never assign to its physics/judgment fields");
+check(/bounds\.center-state\.pos/.test(presentationFn), "the station marker's screen position must be derived from bounds.center/state.pos (read-only), matching the untouched zone math tickTownDockGame already computes");
 
 // ---- station config sanity (small hardcoded array; no vm pure-logic harness needed) ----
 const stations = extractArray(game, "TOWN_DOCK_STATIONS");

@@ -65,6 +65,53 @@ MonoBehaviour:
   components:
   - {fileID: 6649199159621185779}
   - {fileID: -450443076713819029}
+  - {fileID: 3365196220659972385}
+--- !u!114 &3365196220659972385
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3fb0b9fcf44074a338438f9caf0db462, type: 3}
+  m_Name: KawaGodRayVolume
+  m_EditorClassIdentifier: Pono.KawaGlint.Rendering::Pono.KawaGlint.Rendering.KawaGodRayVolume
+  active: 1
+  intensity:
+    m_OverrideState: 1
+    m_Value: 0.55
+  density:
+    m_OverrideState: 1
+    m_Value: 0.94
+  decay:
+    m_OverrideState: 1
+    m_Value: 0.93
+  sampleCount:
+    m_OverrideState: 1
+    m_Value: 56
+  lightViewportPosition:
+    m_OverrideState: 1
+    m_Value: {x: 0.82, y: 0.9}
+  waterlineViewportY:
+    m_OverrideState: 1
+    m_Value: 0.66
+  threshold:
+    m_OverrideState: 1
+    m_Value: 0.62
+  beamNoiseStrength:
+    m_OverrideState: 1
+    m_Value: 0.45
+  seedRadius:
+    m_OverrideState: 1
+    m_Value: 0.35
+  depthReach:
+    m_OverrideState: 1
+    m_Value: 0.45
+  tint:
+    m_OverrideState: 1
+    m_Value: {r: 1, g: 0.94, b: 0.78, a: 1}
 --- !u!114 &6649199159621185779
 MonoBehaviour:
   m_ObjectHideFlags: 3

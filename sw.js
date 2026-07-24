@@ -1,5 +1,24 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2375: なぞなぞトレイン町面「ぴたっと停車」の見た目(プレゼンテーション層)のみを
+// 実写化。ユーザーから「抽象的すぎてリンクしていない」との評価を受け、抽象ゲージ
+// (.town-dock-track/-zone/-knob、CSS図形の村人、光る窓3つ)を全廃。代わりに
+// body.town-dock-active中も#veh(本物の機関車)/#cars(本物の客車)を隠さず常時表示し、
+// 新設した#townDockApproachLayer(z-index:5、#veh/#cars(7)より奥)に町駅チェックポイント
+// 絵(ASSETS.town.station)+CSS村人+吹き出しを配置。townDockState.pos/armed/vel等を
+// 読むだけで駅看板の画面左右位置(syncTownDockPresentation内、駅ごとのzoneCenterを
+// 画面上の同じ位置(TOWN_DOCK_APPROACH_ALIGN_VW)に正規化)・#vehのgo/idleクラス
+// (ホールド中は本物の車輪回転・煙演出)を描画するだけの変更で、tickTownDockGame の
+// 物理演算・armed/settled/undershoot/overshoot判定式・リトライ/ヒントtierのタイミング・
+// reconcileTownDockPointers・ポインタ配線は一切変更していない。駅クリア時は本物の
+// boardPassenger()を呼び、村人が実際に弧を描いて#carsの座席へ飛んで着席するようにした
+// (TOWN_DOCK_PASSENGERS 3体、zukan登録も既存フローと同様に発生)。play.html
+// PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2375)。
+// v2374: 新ゲーム「まちがいさがし」(machigai/) を machigai-sagashi から移植・追加。
+// play.html の GAMES 配列と APP_TITLE_MENU_IDS に id: 'machigai' を登録
+// (comingSoon:true, debugPlayable:true, tier:'app')。ゲーム個別ファイルは
+// network-first配信のためCRITICAL_ASSETSには追加しない。play.html
+// PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2374)。
 // v2373: ひょっこりハイタッチで、見えている動物画像と下側マスク線から
 // 10〜18pxの補助タップ領域を作り、ボタン矩形より上の顔・耳・手も正しい穴へ
 // 判定するよう修正。こもれび／どんぐり左上の隠れ場所を背景の地面へ移し、
@@ -1026,7 +1045,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2373;
+const CACHE_VERSION = 2375;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

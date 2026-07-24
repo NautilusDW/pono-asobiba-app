@@ -25,7 +25,8 @@ namespace Pono.KawaGlint.Bootstrap
             Surface,
             Actors,
             Bloom,
-            Caustics
+            Caustics,
+            GodRays
         }
 
         // Contract constants shared with KawaGlintStageBuilder/KawaSurfaceBand/KawaGlintActorsBuilder
@@ -122,6 +123,17 @@ namespace Pono.KawaGlint.Bootstrap
                 refraction.waterlineViewportY.Override(viewportY);
             }
 
+            // Same Volume.profile-runtime-copy pattern as the KawaRefractionVolume block above
+            // (never mutates the project asset). The sun is position-fixed (only a scale pulse,
+            // see KawaGlintStageBuilder.BuildSunGlow/RegisterSun), so a one-time Awake override is
+            // sufficient - no per-frame sync is required (see DESIGN.md §2.3).
+            if (_volume != null && _volume.profile != null && _volume.profile.TryGet(out KawaGodRayVolume godRays))
+            {
+                var waterlineViewportY = _camera.WorldToViewportPoint(new Vector3(0f, _stage.WaterlineWorldY, 0f)).y;
+                godRays.waterlineViewportY.Override(waterlineViewportY);
+                godRays.lightViewportPosition.Override(_stage.SunViewportPosition);
+            }
+
             if (_actors != null)
             {
                 var hud = KawaGlintHud.Build(transform);
@@ -164,6 +176,9 @@ namespace Pono.KawaGlint.Bootstrap
                         _caustics.gameObject.SetActive(enabled);
                     }
                     break;
+                case KawaEffect.GodRays:
+                    SetComponentActive<KawaGodRayVolume>(enabled);
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(effect), effect, null);
             }
@@ -184,6 +199,8 @@ namespace Pono.KawaGlint.Bootstrap
                     return _actors != null;
                 case KawaEffect.Caustics:
                     return _caustics != null;
+                case KawaEffect.GodRays:
+                    return HasComponent<KawaGodRayVolume>();
                 default:
                     return false;
             }

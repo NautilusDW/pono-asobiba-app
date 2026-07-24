@@ -36,6 +36,7 @@ namespace Pono.KawaGlint.Bootstrap
         private bool _actorsEnabled;
         private bool _bloomEnabled;
         private bool _causticsEnabled;
+        private bool _godRaysEnabled;
 
         public static void AttachIfRequested(GameObject host, KawaGlintBootstrap bootstrap)
         {
@@ -109,6 +110,7 @@ namespace Pono.KawaGlint.Bootstrap
                     _actorsEnabled = false;
                     _bloomEnabled = false;
                     _causticsEnabled = false;
+                    _godRaysEnabled = false;
                     break;
                 case "refraction":
                     _refractionEnabled = true;
@@ -116,6 +118,7 @@ namespace Pono.KawaGlint.Bootstrap
                     _actorsEnabled = false;
                     _bloomEnabled = false;
                     _causticsEnabled = false;
+                    _godRaysEnabled = false;
                     break;
                 case "surface":
                     _surfaceEnabled = true;
@@ -123,6 +126,7 @@ namespace Pono.KawaGlint.Bootstrap
                     _refractionEnabled = false;
                     _actorsEnabled = false;
                     _causticsEnabled = false;
+                    _godRaysEnabled = false;
                     break;
                 case "actors":
                     _actorsEnabled = true;
@@ -130,6 +134,7 @@ namespace Pono.KawaGlint.Bootstrap
                     _surfaceEnabled = false;
                     _bloomEnabled = false;
                     _causticsEnabled = false;
+                    _godRaysEnabled = false;
                     break;
                 case "caustics":
                     _causticsEnabled = true;
@@ -137,6 +142,17 @@ namespace Pono.KawaGlint.Bootstrap
                     _surfaceEnabled = false;
                     _actorsEnabled = false;
                     _bloomEnabled = false;
+                    _godRaysEnabled = false;
+                    break;
+                case "godrays":
+                    // Mirrors AquaLumina's own "godrays" QA mode (god rays + bloom only) - bloom
+                    // stays on because the ray composite feeds into it (see DESIGN.md §8.4).
+                    _godRaysEnabled = true;
+                    _bloomEnabled = true;
+                    _refractionEnabled = false;
+                    _surfaceEnabled = false;
+                    _actorsEnabled = false;
+                    _causticsEnabled = false;
                     break;
                 case "full":
                 default:
@@ -145,6 +161,7 @@ namespace Pono.KawaGlint.Bootstrap
                     _actorsEnabled = true;
                     _bloomEnabled = true;
                     _causticsEnabled = true;
+                    _godRaysEnabled = true;
                     break;
             }
 
@@ -158,6 +175,7 @@ namespace Pono.KawaGlint.Bootstrap
             _bootstrap.SetEffectEnabled(KawaGlintBootstrap.KawaEffect.Actors, _actorsEnabled);
             _bootstrap.SetEffectEnabled(KawaGlintBootstrap.KawaEffect.Bloom, _bloomEnabled);
             _bootstrap.SetEffectEnabled(KawaGlintBootstrap.KawaEffect.Caustics, _causticsEnabled);
+            _bootstrap.SetEffectEnabled(KawaGlintBootstrap.KawaEffect.GodRays, _godRaysEnabled);
         }
 
         private void WriteSidecar(float averageFrameMs)
@@ -173,6 +191,7 @@ namespace Pono.KawaGlint.Bootstrap
                 $"actors={EffectStateLabel(KawaGlintBootstrap.KawaEffect.Actors, _actorsEnabled)}",
                 $"bloom={EffectStateLabel(KawaGlintBootstrap.KawaEffect.Bloom, _bloomEnabled)}",
                 $"caustics={EffectStateLabel(KawaGlintBootstrap.KawaEffect.Caustics, _causticsEnabled)}",
+                $"godrays={EffectStateLabel(KawaGlintBootstrap.KawaEffect.GodRays, _godRaysEnabled)}",
                 $"avgFrameMs={averageFrameMs.ToString("0.000", CultureInfo.InvariantCulture)}"
             };
             File.WriteAllLines(sidecarPath, lines);

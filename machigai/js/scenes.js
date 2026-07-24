@@ -247,6 +247,11 @@
     container.appendChild(muteBtn);
     bindMuteToggle(muteBtn);
 
+    // ポノのあそびば ハブへ戻る導線（タイトル画面のみ。ゲーム中/選択画面の
+    // ⌂ ボタンは既存どおり select 画面へ戻る挙動のまま変更しない）。
+    var homeBtn = el('button', 'msl-btn round home title-home', '🏠');
+    container.appendChild(homeBtn);
+
     function onPlay(evt) {
       evt.preventDefault();
       Audio.resume();
@@ -255,9 +260,17 @@
     }
     playBtn.addEventListener('pointerdown', onPlay);
 
+    function onHome(evt) {
+      evt.preventDefault();
+      Audio.playTap();
+      window.location.href = '../play.html';
+    }
+    homeBtn.addEventListener('pointerdown', onHome);
+
     return {
       destroy: function () {
         playBtn.removeEventListener('pointerdown', onPlay);
+        homeBtn.removeEventListener('pointerdown', onHome);
       }
     };
   }

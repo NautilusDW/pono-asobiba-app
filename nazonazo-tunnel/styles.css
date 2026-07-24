@@ -433,6 +433,12 @@ body.tunnel-interior #jungleHabitatBack{display:none!important}
 .decor.jungle-decor{bottom:17.3vh;filter:drop-shadow(0 4px 0 rgba(35,55,25,.14))}
 .decor.number-decor{bottom:14vh;filter:drop-shadow(0 4px 0 rgba(92,70,135,.13))}
 .decor.future-decor{bottom:14vh;filter:drop-shadow(0 4px 0 rgba(45,72,80,.13))}
+/* town: ぴたっと停車の駅接近シーン。#veh/#cars(z-index:7)より低いz-indexに置き、
+   本物の機関車/客車の "手前を横切らず奥から近づいてくる" 層関係にする。
+   #townDockLayer(HUD/操作、z-index:18)とは別レイヤーにして、機関車より上に
+   出したいボタン類と、機関車より下に置きたい背景シーンを共存させている。 */
+#townDockApproachLayer{position:absolute;inset:0;z-index:5;overflow:hidden;pointer-events:none}
+#townDockApproachLayer[hidden]{display:none!important}
 #cars{position:absolute;bottom:6.5vh;left:0;right:0;z-index:7;pointer-events:none}
 body.st-space #cars{bottom:26.3vh}
 .car{position:absolute;bottom:0;width:8vw;height:7.4vw;max-width:96px;max-height:90px;
@@ -1522,7 +1528,6 @@ body.dino-boss-active.st-dino:not(.tunnel-interior) .branch-world-life.is-trex{o
   background:linear-gradient(180deg,rgba(255,240,205,.10),rgba(255,214,158,.18));isolation:isolate}
 #townDockLayer[hidden]{display:none!important}
 body.town-dock-active #dots{opacity:0;visibility:hidden}
-body.town-dock-active #veh,body.town-dock-active #cars{visibility:hidden!important}
 .town-dock-board{position:absolute;inset:0;overflow:hidden}
 .town-dock-header{position:absolute;left:max(10px,env(safe-area-inset-left));right:max(68px,calc(10px + env(safe-area-inset-right)));top:max(7px,env(safe-area-inset-top));z-index:8;
   display:flex;align-items:center;justify-content:space-between;gap:8px;pointer-events:none}
@@ -1531,20 +1536,20 @@ body.town-dock-active #veh,body.town-dock-active #cars{visibility:hidden!importa
 #townDockProgress{padding:5px 12px;border-radius:999px;font-size:clamp(12px,2vw,17px);font-weight:1000;white-space:nowrap}
 #townDockGuide{position:absolute;left:50%;top:calc(max(7px,env(safe-area-inset-top)) + 49px);z-index:9;min-width:min(76vw,520px);max-width:88vw;
   transform:translateX(-50%);padding:5px 13px;border-radius:16px;text-align:center;font-size:clamp(14px,2.5vw,20px);font-weight:1000;line-height:1.18;pointer-events:none}
-.town-dock-scene{position:absolute;left:50%;top:clamp(90px,24vh,150px);z-index:5;width:min(80vw,520px);transform:translateX(-50%);display:flex;align-items:center;justify-content:space-between;gap:10px;pointer-events:none}
-.town-dock-villager{width:clamp(40px,9vw,64px);height:clamp(52px,11vw,80px);position:relative;opacity:1;transform:translateY(0) scale(1);transition:opacity .5s ease,transform .5s ease}
-.town-dock-villager::before{content:"";position:absolute;left:50%;top:0;width:58%;aspect-ratio:1;transform:translateX(-50%);border-radius:50%;background:#ffd9ad;box-shadow:0 2px 0 rgba(140,90,40,.2)}
-.town-dock-villager::after{content:"";position:absolute;left:50%;bottom:0;width:100%;height:64%;transform:translateX(-50%);border-radius:40% 40% 18% 18%;background:#e8834f;box-shadow:0 2px 0 rgba(140,90,40,.2)}
-.town-dock-villager.is-boarded{opacity:0;transform:translateY(-10px) scale(.7)}
-.town-dock-windows{display:flex;gap:8px}
-.town-dock-windows i{display:block;width:clamp(16px,3vw,26px);height:clamp(16px,3vw,26px);border-radius:6px;background:#5a4630;box-shadow:inset 0 0 0 2px rgba(255,255,255,.4);transition:background .4s ease,box-shadow .4s ease}
-.town-dock-windows i.is-lit{background:#ffe58a;box-shadow:inset 0 0 0 2px rgba(255,255,255,.7),0 0 12px rgba(255,224,120,.85)}
-.town-dock-track{--town-dock-pos:0;position:absolute;left:50%;top:clamp(150px,40vh,280px);z-index:6;width:min(84vw,620px);height:34px;transform:translateX(-50%);
-  border:4px solid rgba(255,255,255,.92);border-radius:999px;background:linear-gradient(90deg,#e8834f,#c76438);box-shadow:0 4px 0 rgba(90,58,28,.28);overflow:hidden}
-.town-dock-zone{position:absolute;top:0;bottom:0;left:32%;width:36%;background:rgba(114,217,136,.92);box-shadow:inset 0 0 0 2px rgba(255,255,255,.6);transition:left .12s ease,width .12s ease}
-.town-dock-zone.is-blink{animation:townDockZoneBlink 1s ease-in-out infinite}
-.town-dock-knob{position:absolute;left:calc(var(--town-dock-pos) * 1%);top:50%;width:26px;height:26px;transform:translate(-50%,-50%);border:3px solid #fff;border-radius:50%;background:#e76956;box-shadow:0 2px 0 rgba(81,61,44,.28);transition:background .12s}
-.town-dock-knob.is-settled{background:#40c96b;box-shadow:0 0 12px #a9ffb8}
+/* 実写の駅接近シーン: #veh(本物の機関車)/#cars(本物の客車)は隠さず常時表示のまま、
+   その手前に「駅の看板+待ち人」だけが townDockState.pos に応じて右→左へ動く。
+   left の値そのものは syncTownDockPresentation() が pos/bounds から計算するだけで、
+   物理演算・成否判定には一切関与しない (見た目の描画専用)。 */
+.town-dock-approach{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.town-dock-station-marker{position:absolute;left:52vw;bottom:12.5vh;width:clamp(150px,21vw,260px);height:clamp(76px,11vw,132px);transform:translateX(-50%);transition:left .05s linear,filter .2s ease}
+.town-dock-station-art{position:absolute;inset:0;background:url("../assets/images/nazonazo-tunnel/town_station_checkpoint_20260703.webp") center bottom/contain no-repeat;filter:drop-shadow(0 4px 3px rgba(70,45,25,.2))}
+.town-dock-station-marker.is-near .town-dock-station-art{filter:brightness(1.1) saturate(1.08) drop-shadow(0 0 11px rgba(255,224,120,.68))}
+.town-dock-station-helper{position:absolute;left:18%;bottom:58%;width:22%;aspect-ratio:.62;filter:drop-shadow(0 3px 0 rgba(70,45,25,.15))}
+.town-dock-station-helper::before{content:"";position:absolute;left:50%;top:0;width:62%;aspect-ratio:1;transform:translateX(-50%);border-radius:50%;background:#ffd9ad;box-shadow:0 2px 0 rgba(140,90,40,.2)}
+.town-dock-station-helper::after{content:"";position:absolute;left:50%;bottom:0;width:100%;height:66%;transform:translateX(-50%);border-radius:40% 40% 18% 18%;background:#e8834f;box-shadow:0 2px 0 rgba(140,90,40,.2)}
+.town-dock-station-bubble{position:absolute;left:18%;bottom:calc(58% + 22%/.62 + 3px);transform:translateX(-30%);white-space:nowrap;background:rgba(255,255,255,.92);border:2px solid #f5c06a;border-radius:999px;padding:2px 8px;font-size:clamp(10px,1.6vw,14px);font-weight:900;color:#79512c}
+.town-dock-station-marker.is-settled .town-dock-station-helper{animation:townDockVillagerHop .5s ease-in-out infinite alternate}
+.town-dock-station-marker.is-blink{animation:townDockZoneBlink 1s ease-in-out infinite}
 .town-dock-controls{position:absolute;left:50%;bottom:max(7px,env(safe-area-inset-bottom));z-index:9;transform:translateX(-50%)}
 #townDockThrottle{appearance:none;-webkit-appearance:none;min-width:clamp(200px,40vw,320px);min-height:clamp(64px,14vh,86px);padding:6px 20px;border:4px solid #fff0a5;border-radius:24px;
   background:linear-gradient(#ffcb63,#ed8e43);box-shadow:0 6px 0 #a85d31;color:#613b20;font-size:clamp(18px,3.2vw,26px);font-weight:1000;touch-action:none;user-select:none;cursor:pointer}
@@ -1555,6 +1560,7 @@ body.town-dock-active #veh,body.town-dock-active #cars{visibility:hidden!importa
 #townDockThrottle:focus-visible{outline:5px solid #fff273;outline-offset:3px}
 body.town-dock-bright #scene{filter:brightness(1.12) saturate(1.1) sepia(.04);transition:filter 1.1s ease}
 @keyframes townDockZoneBlink{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes townDockVillagerHop{to{transform:translateY(-6px)}}
 
 /* ===== quiz ===== */
 #quiz{position:absolute;left:50%;top:50%;bottom:auto;transform:translate(-50%,120vh);width:min(94vw,760px);
@@ -1989,7 +1995,8 @@ body.ios-device #quiz.show:not(.sea-quiz):not(.future-capsule-quiz):not(.space-g
   body.st-space.space-obstacle-hit .vehicle-steer-shell{animation:none!important;filter:brightness(1.35)}
   .jungle-flight-layer{display:none!important}
   .tunnel-friend,.tunnel-friend-visual,.tunnel-friend img,.tunnel-friend .tunnel-friend-emoji,.tunnel-friend::after{animation:none!important;will-change:auto!important}
-  .town-dock-villager,.town-dock-windows i,.town-dock-knob,.town-dock-zone{transition:none!important}
-  .town-dock-zone.is-blink{animation:none!important;opacity:.7}
+  .town-dock-station-marker{transition:none!important}
+  .town-dock-station-marker.is-blink{animation:none!important;opacity:.7}
+  .town-dock-station-marker.is-settled .town-dock-station-helper{animation:none!important;transform:translateY(-6px)}
   body.town-dock-bright #scene{transition:none!important}
 }

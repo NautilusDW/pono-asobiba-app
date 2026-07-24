@@ -56,6 +56,7 @@ namespace Pono.KawaGlint.Editor
         private const string ShaderContentRoot = "Assets/Pono/Games/KawaGlint/Content/Resources/KawaGlint/Rendering";
         private const string RefractionShaderPath = ShaderContentRoot + "/KawaRefraction.shader";
         private const string SurfaceShaderPath = ShaderContentRoot + "/KawaSurface.shader";
+        private const string GodRaysShaderPath = ShaderContentRoot + "/KawaGodRays.shader";
 
         private static readonly Color SceneBackgroundColor = new Color(0x17 / 255f, 0x46 / 255f, 0x6B / 255f, 1f);
 
@@ -88,6 +89,7 @@ namespace Pono.KawaGlint.Editor
 
             errors += RequireAsset<Shader>(RefractionShaderPath);
             errors += RequireAsset<Shader>(SurfaceShaderPath);
+            errors += RequireAsset<Shader>(GodRaysShaderPath);
             errors += RequireAsset<SceneAsset>(SpikeScenePath);
 
             var rendererData = AssetDatabase.LoadAssetAtPath<ScriptableRendererData>(RendererDataPath);
@@ -101,6 +103,11 @@ namespace Pono.KawaGlint.Editor
                 if (!rendererData.TryGetRendererFeature<KawaRefractionFeature>(out _))
                 {
                     Debug.LogError($"{RendererDataPath} is missing KawaRefractionFeature.");
+                    errors++;
+                }
+                if (!rendererData.TryGetRendererFeature<KawaGodRayFeature>(out _))
+                {
+                    Debug.LogError($"{RendererDataPath} is missing KawaGodRayFeature.");
                     errors++;
                 }
             }
@@ -121,6 +128,11 @@ namespace Pono.KawaGlint.Editor
                 if (!profile.Has<Bloom>())
                 {
                     Debug.LogError($"{VolumeProfilePath} is missing Bloom.");
+                    errors++;
+                }
+                if (!profile.Has<KawaGodRayVolume>())
+                {
+                    Debug.LogError($"{VolumeProfilePath} is missing KawaGodRayVolume.");
                     errors++;
                 }
             }
@@ -183,6 +195,13 @@ namespace Pono.KawaGlint.Editor
                 Debug.LogError(
                     $"{SharedDefaultVolumeProfilePath} (shared, project-global) must NOT contain "
                     + $"KawaRefractionVolume - it belongs only in {VolumeProfilePath}.");
+                errors++;
+            }
+            if (sharedDefaultProfile != null && sharedDefaultProfile.Has<KawaGodRayVolume>())
+            {
+                Debug.LogError(
+                    $"{SharedDefaultVolumeProfilePath} (shared, project-global) must NOT contain "
+                    + $"KawaGodRayVolume - it belongs only in {VolumeProfilePath}.");
                 errors++;
             }
 
@@ -355,6 +374,7 @@ namespace Pono.KawaGlint.Editor
             }
 
             EnsureRendererFeature<KawaRefractionFeature>(rendererData);
+            EnsureRendererFeature<KawaGodRayFeature>(rendererData);
 
             return rendererData;
         }
@@ -488,6 +508,7 @@ namespace Pono.KawaGlint.Editor
             }
 
             var removed = RemoveComponentIfPresent<KawaRefractionVolume>(profile);
+            removed += RemoveComponentIfPresent<KawaGodRayVolume>(profile);
 
             if (removed > 0)
             {
@@ -534,6 +555,7 @@ namespace Pono.KawaGlint.Editor
 
             EnsureRefractionOverrides(profile);
             EnsureBloomOverrides(profile);
+            EnsureGodRayOverrides(profile);
 
             EditorUtility.SetDirty(profile);
             AssetDatabase.SaveAssets();
@@ -573,6 +595,34 @@ namespace Pono.KawaGlint.Editor
                 bloom.intensity.Override(0.8f);
                 bloom.threshold.Override(0.85f);
                 bloom.scatter.Override(0.6f);
+            }
+        }
+
+        // Child-safe scene values (see DESIGN.md "KawaGodRayVolume 設計"): intensity 0.55 is
+        // ~35% lower than AquaLumina's own 0.85 scene override, and the class-level defaults
+        // this Add<KawaGodRayVolume>(true) starts from keep intensity at 0 (fully inactive) -
+        // see KawaGodRayVolume's own remarks for why that class default must never change.
+        private static void EnsureGodRayOverrides(VolumeProfile profile)
+        {
+            if (!profile.Has<KawaGodRayVolume>())
+            {
+                var component = profile.Add<KawaGodRayVolume>(true);
+                AssetDatabase.AddObjectToAsset(component, profile);
+            }
+
+            if (profile.TryGet(out KawaGodRayVolume godRays))
+            {
+                godRays.intensity.Override(0.55f);
+                godRays.density.Override(0.94f);
+                godRays.decay.Override(0.93f);
+                godRays.sampleCount.Override(56);
+                godRays.lightViewportPosition.Override(new Vector2(0.82f, 0.90f));
+                godRays.waterlineViewportY.Override(0.66f);
+                godRays.threshold.Override(0.62f);
+                godRays.beamNoiseStrength.Override(0.45f);
+                godRays.seedRadius.Override(0.35f);
+                godRays.depthReach.Override(0.45f);
+                godRays.tint.Override(new Color(1f, 0.94f, 0.78f));
             }
         }
 

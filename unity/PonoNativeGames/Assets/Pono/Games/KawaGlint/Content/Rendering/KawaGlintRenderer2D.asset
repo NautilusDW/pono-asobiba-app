@@ -13,6 +13,19 @@ MonoBehaviour:
   m_Name: KawaRefractionFeature
   m_EditorClassIdentifier: Pono.KawaGlint.Rendering::Pono.KawaGlint.Rendering.KawaRefractionFeature
   m_Active: 1
+--- !u!114 &-272984534157178682
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0807c74b68ad64166ba890113a49d242, type: 3}
+  m_Name: KawaGodRayFeature
+  m_EditorClassIdentifier: Pono.KawaGlint.Rendering::Pono.KawaGlint.Rendering.KawaGodRayFeature
+  m_Active: 1
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -39,7 +52,8 @@ MonoBehaviour:
     probeVolumeBlendStatesCS: {fileID: 0}
   m_RendererFeatures:
   - {fileID: -7260986475951681727}
-  m_RendererFeatureMap: 410ffc3d45cb3b9b
+  - {fileID: -272984534157178682}
+  m_RendererFeatureMap: 410ffc3d45cb3b9bc6c86234032a36fc
   m_UseNativeRenderPass: 0
   m_LayerMask:
     serializedVersion: 2

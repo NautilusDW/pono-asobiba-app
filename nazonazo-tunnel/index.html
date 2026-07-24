@@ -248,14 +248,6 @@
           <div id="townDockProgress" role="status" aria-live="polite" aria-atomic="true">えき 1 / 3</div>
         </header>
         <p id="townDockGuide" role="status" aria-live="polite" aria-atomic="true">ればーを おしつづけて すすもう。はなすと ゆっくり とまるよ</p>
-        <div class="town-dock-scene" aria-hidden="true">
-          <div id="townDockVillager" class="town-dock-villager"></div>
-          <div id="townDockWindows" class="town-dock-windows" role="img" aria-label="のせた むらびと 0 / 3"><i data-window="0"></i><i data-window="1"></i><i data-window="2"></i></div>
-        </div>
-        <div id="townDockTrack" class="town-dock-track" role="meter" aria-label="れっしゃの いち" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-          <div id="townDockZone" class="town-dock-zone"></div>
-          <i id="townDockKnob" class="town-dock-knob"></i>
-        </div>
         <div id="townDockControls" class="town-dock-controls" role="group" aria-label="れっしゃの そうさ">
           <button id="townDockThrottle" type="button" aria-label="おしつづけると すすむ。はなすと とまるよ"><strong>しゅっぱつ</strong><small>おしつづける</small></button>
         </div>
@@ -342,6 +334,15 @@
     <div id="jungleAnimalsNear" class="jungle-animal-layer" aria-hidden="true"></div>
     <div id="jungleHabitatBack" aria-hidden="true"></div>
     <div id="world"></div>
+    <div id="townDockApproachLayer" class="town-dock-approach-layer" aria-hidden="true" hidden>
+      <div id="townDockApproach" class="town-dock-approach" role="meter" aria-label="えきまでの きょり" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div id="townDockStationMarker" class="town-dock-station-marker" aria-hidden="true">
+          <div class="town-dock-station-art"></div>
+          <div class="town-dock-station-helper"></div>
+          <span class="town-dock-station-bubble">まってるよ！</span>
+        </div>
+      </div>
+    </div>
     <div id="screenPortalBack" aria-hidden="true"><div class="screen-exit-gate"></div></div>
     <div id="cars"></div>
     <div id="veh">
