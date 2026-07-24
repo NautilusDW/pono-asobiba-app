@@ -119,8 +119,8 @@ namespace Pono.TownCraft
             GUILayout.Label($"ざいりょう {_state.inventory.materials}　ひらめき {_state.inventory.ideas}", _label);
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("みち：じどうせつぞく", _button, GUILayout.Width(210)))
-                _message = "みちは となりの マスへ じどうで つながるよ";
+            if (GUILayout.Button("みち：1マスずつ", _button, GUILayout.Width(190)))
+                _message = "しろい わく ひとつが みち ひとつぶん";
             if (GUILayout.Button("おへやへ", _button, GUILayout.Width(140))) _message = "わたしの おへやへ つなぐ いりぐち";
             if (GUILayout.Button("ずかん", _button, GUILayout.Width(120))) _message = "ずかんを ひらく いりぐち";
             GUILayout.Label("おうちの なかで かぐを かえたり ずかんを よめるよ", _label);

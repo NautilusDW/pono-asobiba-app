@@ -93,5 +93,15 @@ namespace Pono.TownCraft.Tests.EditMode
             state.terrainArt = TerrainArtVariant.SpriteCookRich;
             Assert.That(state.cells.Select(c => (c.ground, c.road, c.water, c.height)), Is.EqualTo(before));
         }
+
+        [Test]
+        public void ApplyingRoadTwiceToSameCellIsIdempotent()
+        {
+            var state = TownCraftState.CreateDemo();
+            TownCraftRules.ApplyTool(state, EditTool.Road, 1, 1);
+            var afterFirst = state.cells.Select(c => (c.ground, c.road, c.water, c.height)).ToArray();
+            TownCraftRules.ApplyTool(state, EditTool.Road, 1, 1);
+            Assert.That(state.cells.Select(c => (c.ground, c.road, c.water, c.height)), Is.EqualTo(afterFirst));
+        }
     }
 }
