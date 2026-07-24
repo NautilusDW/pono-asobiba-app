@@ -63,6 +63,8 @@
 
 - 2026-07-24 - by Codex - [batch:1462-hyokkori-ground-layout-mask] - hyokkori-hightouch/js/locations.js, hyokkori-hightouch/index.html, assets/images/hyokkori-hightouch/mask_hideout_world_donguri_far_v3_20260724.png, tests/e2e/hyokkori/**, tests/hyokkori_hightouch_regression.cjs, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - ユーザー実画面指摘を受け、1面「こもれびの ひろば」全6穴を背景の植物・崖縁と前後関係が破綻しない開けた地面へ再配置し、2面「どんぐりの こみち」の動物が上側で過剰に切れるマスク／停止位置を素材輪郭に合わせて修正する。タップ面積を維持し、4 viewport・Chromium/WebKit・全動物状態で回帰確認する [overlap: batch:1460-nazonazo-town-pitatto-round7, batch:1463-machigai-visible-differences (sw.js/play.html)]
 
+- 2026-07-24 - by Claude - [batch:1461-kawaglint-art-integration] - unity/PonoNativeGames/Assets/Pono/Games/KawaGlint/**(既存ファイル変更+新規Content/Sprites、AquaLumina等の保護4ディレクトリ不変更), tmp/alpha_pending/1458-kawaglint-fish-art/**(読み取りのみ)、AGENTS_CLAIMS.md, HANDOFF.md - GPT Image 2で生成済み・目視承認済みの本番画像12点(ポノ釣り人・魚5種のシルエット+釣果イラスト・川背景)をUnityへ組み込み。クロマキー除去+透過抜き、per-species差し替え(現状は全種同じ涙型シルエット使い回し)、尻尾振りアニメーション、背景差し替え。fable設計→sonnet5並列実装→クロスレビューで進行中 [overlap: batch:1449-tsuri-unity-water-spike(KawaGlint本体、継続作業)]
+
 - 2026-07-24 - by Claude - [batch:1460-nazonazo-town-pitatto-round7] - nazonazo-tunnel/js/game.js, nazonazo-tunnel/index.html, nazonazo-tunnel/styles.css, tests/nazonazo_town_dock_regression.cjs, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - batch:1453の続き(round7)。ユーザー実playtestingフィードバック反映: 各駅間レグを短い局所距離から実距離全区間に拡張、自動巡航ハンドオフ(driving=true再突入)を撤去して全区間プレイヤー手動保持制御に一本化、フロート型ゲージを廃止し実スクロール世界内のトラック上ブレーキゾーン帯+赤枠停止ボックス表示へ置換 [overlap: batch:1453-nazonazo-town-pitatto-teisha (同一機能の先行round、同ファイル群)]
 
 
