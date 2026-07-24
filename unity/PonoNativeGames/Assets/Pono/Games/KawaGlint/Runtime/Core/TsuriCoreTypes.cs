@@ -62,6 +62,17 @@ namespace Pono.KawaGlint.Core
         public float SizeMinCm;
         public float SizeMaxCm;
         public TsuriChallengeProfile ChallengeProfile;
+
+        /// <summary>
+        /// 海拡張 (KawaGlint 海拡張 実装契約 v1.0 §A-2) で追加した純加算フィールド。
+        /// この種が出現しうる水域。 既存5種にも設定するが tuning には接続しない。
+        /// </summary>
+        public TsuriWaterZone[] Zones = null;
+
+        /// <summary>
+        /// 図鑑表示用の代表 niche (§3.4)。 演出駆動しない (静的検査レベルで tuning 接続禁止)。
+        /// </summary>
+        public TsuriNiche RepresentativeNiche = TsuriNiche.Midwater;
     }
 
     /// <summary>core.js の caughtLog エントリ ({ speciesId, at }) に対応。</summary>

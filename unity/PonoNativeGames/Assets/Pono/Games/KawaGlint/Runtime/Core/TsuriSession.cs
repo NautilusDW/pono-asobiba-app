@@ -32,12 +32,30 @@ namespace Pono.KawaGlint.Core
         public float RendaElapsedSec = 0f;
 
         /// <summary>
+        /// 海拡張 (KawaGlint 海拡張 実装契約 v1.0 §A-4) 新設・純加算フィールド。
+        /// null = 現行挙動 (asase 等、ロケーション別 WeightMul を適用しない既存パス)。
+        /// 非 null の場合 speciesId→倍率 で ComputeSpeciesProbabilities/PickSpecies の
+        /// 抽選重みに乗算される (TsuriWorldData.BuildWeightMulMap が生成)。
+        /// </summary>
+        public Dictionary<string, float> SpeciesWeightMulById = null;
+
+        /// <summary>
         /// core.js の cloneSession() と同じ深い複製。 リスト/辞書は新インスタンスを
         /// 生成する (呼び出し側の state を絶対に mutate しないため)。 TsuriSpecies
         /// 参照そのものは共有してよい (魚マスターデータは不変)。
         /// </summary>
         public TsuriSession Clone()
         {
+            Dictionary<string, float> weightMulClone = null;
+            if (SpeciesWeightMulById != null)
+            {
+                weightMulClone = new Dictionary<string, float>();
+                foreach (var kv in SpeciesWeightMulById)
+                {
+                    weightMulClone[kv.Key] = kv.Value;
+                }
+            }
+
             var clone = new TsuriSession
             {
                 SpeciesPool = new List<TsuriSpecies>(SpeciesPool),
@@ -52,7 +70,8 @@ namespace Pono.KawaGlint.Core
                 SessionSeenIds = new List<string>(SessionSeenIds),
                 FloorHeldSec = FloorHeldSec,
                 CaughtLog = new List<TsuriCaughtEntry>(CaughtLog),
-                RendaElapsedSec = RendaElapsedSec
+                RendaElapsedSec = RendaElapsedSec,
+                SpeciesWeightMulById = weightMulClone
             };
             return clone;
         }

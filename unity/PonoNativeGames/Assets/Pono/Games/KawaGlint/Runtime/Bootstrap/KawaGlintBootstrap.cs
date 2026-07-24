@@ -141,7 +141,16 @@ namespace Pono.KawaGlint.Bootstrap
                 var gameControllerGo = new GameObject("KawaGlintGameController");
                 gameControllerGo.transform.SetParent(transform, false);
                 _gameController = gameControllerGo.AddComponent<KawaGlintGameController>();
-                _gameController.Configure(_actors, hud, hud.InputSurface, _camera, _stage, Environment.TickCount);
+
+                // 海拡張 (実装契約v1.0 §C-3): fishdex ローカルストアを配線し、ロケーション
+                // 選択パネルを構築する。 fishdex の保存先は persistentDataPath 配下の
+                // 専用サブディレクトリ (TsuriDexStore がアトミック書込を担当)。
+                var fishdex = new KawaGlintFishdexService(
+                    System.IO.Path.Combine(Application.persistentDataPath, "pono", "tsuri"));
+                _gameController.Configure(_actors, hud, hud.InputSurface, _camera, _stage, Environment.TickCount, fishdex);
+
+                var locationPanel = KawaGlintLocationSelectPanel.Build(transform);
+                locationPanel.Configure(_gameController, hud.InputSurface, fishdex.ZoneCatchCount);
             }
 
             KawaGlintQaCapture.AttachIfRequested(gameObject, this);

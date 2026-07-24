@@ -25,7 +25,14 @@ namespace Pono.KawaGlint.Gameplay
         private const string PhaseWordWait = "まとう…";
         private const string NarrationWait = "ウキを みててね";
         private const string PhaseWordPreBite = "…きたかも！";
-        private const string NarrationPreBite = "…きたかも？";
+
+        /// <summary>
+        /// Midwater niche の前あたりナレーション(既定値)。 海拡張 (実装契約v1.0 §C-1)
+        /// の <see cref="KawaGlintNicheCues"/> がこの定数をそのまま参照する
+        /// (二重管理禁止 -- リテラルを複製しない)。 internal のまま同一アセンブリ
+        /// (Pono.KawaGlint.App) 内でのみ共有する。
+        /// </summary>
+        internal const string NarrationPreBite = "…きたかも？";
         private const string PhaseWordBite = "いまだ！タップ！";
         private const string NarrationBite = "いまだ！ タップ！";
         private const string NarrationRenda = "ぽんぽん タップで ひっぱろう！";
@@ -64,6 +71,17 @@ namespace Pono.KawaGlint.Gameplay
         private KawaStageInfo _stage;
         private System.Random _random;
         private TsuriSession _session;
+
+        // 海拡張 (実装契約v1.0 §C-1) 追加フィールド ─────────────────────────
+        // 現在のロケーション。 Configure で asase に初期化し、TrySetLocation でのみ
+        // 差し替える (Cast/Tick 等、他のどの経路からも変更しない)。
+        private TsuriLocationData _currentLocation;
+        // fishdex 記録窓口。 null 可 (テスト互換 -- Configure に渡さなければ配線されない)。
+        private KawaGlintFishdexService _fishdex;
+        // サイズロール専用の乱数ストリーム。 メインの _random (種抽選/待ち時間/前あたり
+        // プラン)とは完全に分離する -- 既存 PlayMode テストの乱数消費順序への影響を
+        // 絶対に避けるため、_random からは一切引かない。
+        private System.Random _sizeRandom;
 
         private bool _configured;
         private float _targetX;
@@ -121,6 +139,9 @@ namespace Pono.KawaGlint.Gameplay
         /// <summary>Species id of the current bite/renda target, or null outside those phases.</summary>
         public string CurrentSpeciesId => _session != null ? _session.SpeciesId : null;
 
+        /// <summary>Current location id (海拡張・実装契約v1.0 §C-1). Null only before Configure runs.</summary>
+        public string CurrentLocationId => _currentLocation?.Id;
+
         public int ConsecutiveMisses => _session != null ? _session.ConsecutiveMisses : 0;
 
         /// <summary>
@@ -174,15 +195,24 @@ namespace Pono.KawaGlint.Gameplay
             KawaGlintInputSurface input,
             Camera camera,
             KawaStageInfo stage,
-            int randomSeed)
+            int randomSeed,
+            KawaGlintFishdexService fishdex = null)
         {
             _actors = actors;
             _hud = hud;
             _input = input;
             _camera = camera;
             _stage = stage;
+            _fishdex = fishdex;
             _random = new System.Random(randomSeed);
-            _session = TsuriCore.CreateSession(TsuriFishData.RiverSpecies, TsuriMode.Relaxed);
+            // メイン _random とは独立したストリーム (0x5F5E1 は任意の固定オフセット --
+            // 既存 PlayMode テストの乱数消費順序を絶対に変えないための分離、契約§C-1)。
+            _sizeRandom = new System.Random(randomSeed ^ 0x5F5E1);
+            _currentLocation = TsuriWorldData.GetLocationById(TsuriWorldData.DefaultLocationId);
+            _session = TsuriCore.CreateSession(
+                TsuriWorldData.BuildEffectivePool(_currentLocation),
+                TsuriMode.Relaxed,
+                TsuriWorldData.BuildWeightMulMap(_currentLocation));
 
             _input.Tapped += HandleTap;
 
@@ -204,6 +234,68 @@ namespace Pono.KawaGlint.Gameplay
             {
                 _input.Tapped -= HandleTap;
             }
+        }
+
+        /// <summary>
+        /// 海拡張 (実装契約v1.0 §C-1) 新設: ロケーション切替。 Phase が
+        /// Idle/Landed/Escaped のときのみ有効 (それ以外は no-op、Cast と同じガード形)。
+        /// 未知IDは <see cref="TsuriWorldData.GetLocationById"/> が asase へ正規化する。
+        /// UnlockCount 不合格 (現状は全ロケ null=常時解放のため実質未到達の防御実装) の
+        /// 場合も no-op。 成立時は pity/misses/CaughtLog/SessionSeenIds/Mode を保持した
+        /// まま pool/weightMul を差し替え、画面を Idle 状態に戻して true を返す。
+        /// </summary>
+        public bool TrySetLocation(string locationId)
+        {
+            if (_session == null
+                || (_session.Phase != TsuriPhase.Idle
+                    && _session.Phase != TsuriPhase.Landed
+                    && _session.Phase != TsuriPhase.Escaped))
+            {
+                return false;
+            }
+
+            var loc = TsuriWorldData.GetLocationById(locationId);
+            if (loc == null)
+            {
+                return false; // 台帳が壊れていない限り到達しない (GetLocationById は asase へ正規化する)
+            }
+
+            var zoneCatchCount = _fishdex != null ? _fishdex.ZoneCatchCount(loc.Zone) : 0;
+            if (!TsuriWorldData.IsUnlocked(loc, zoneCatchCount))
+            {
+                return false;
+            }
+
+            _session = TsuriCore.WithSpeciesPool(
+                _session,
+                TsuriWorldData.BuildEffectivePool(loc),
+                TsuriWorldData.BuildWeightMulMap(loc));
+            _currentLocation = loc;
+
+            // Idle 画面へ戻す: Wait/Bite/Renda/バナー系の演出状態を全て解除する
+            // (WithSpeciesPool 自体が session 側の Phase/SpeciesId/Wait/Bite/Gauge/
+            // FloorHeld/RendaElapsed を Idle 相当にリセット済み -- ここでは見た目側の
+            // 後始末のみ)。
+            if (_readyRoutine != null)
+            {
+                StopCoroutine(_readyRoutine);
+                _readyRoutine = null;
+            }
+            _activeEventIndex = -1;
+            _debugDeepUntilElapsed = 0f;
+
+            _hud.HideTimingRing();
+            _hud.HideRenda();
+            _hud.HideCatchBanner();
+            _hud.HideEscapeBanner();
+            _actors.Bobber.SetVisualState(KawaGlintBobberState.Hidden);
+            _actors.SetRingsVisible(false);
+            _actors.SetFishingLineVisible(false);
+            _actors.SetFishingLineTension(false);
+            _actors.HideTargetFish();
+            _hud.SetPhaseWord(PhaseWordIdle);
+            _hud.SetNarration(NarrationIdle);
+            return true;
         }
 
         private void Update()
@@ -238,6 +330,10 @@ namespace Pono.KawaGlint.Gameplay
                     EnterRendaUi();
                     break;
                 case TsuriPhase.Escaped:
+                    // fishdex 記録 (実装契約v1.0 §C-1): EnterEscapedUi() の直前に記録する
+                    // (契約どおりの順序)。 _session.SpeciesId は Bite->Escaped 遷移で
+                    // クリアされない (TsuriCore.Tick) ので、逃げた種を正しく指す。
+                    _fishdex?.RecordEscape(_session.SpeciesId, _currentLocation, NowMs());
                     EnterEscapedUi();
                     break;
                 case TsuriPhase.Landed:
@@ -337,7 +433,10 @@ namespace Pono.KawaGlint.Gameplay
                         _actors.Bobber.SetTwitchIntensity(_preBitePlan.EventIntensity01(idx));
                         _actors.Bobber.SetVisualState(KawaGlintBobberState.Twitch);
                         _hud.SetPhaseWord(PhaseWordPreBite);
-                        _hud.SetNarration(NarrationPreBite);
+                        // niche 演出配線 (実装契約v1.0 §C-1): asase は全 Spawns エントリが
+                        // Midwater なので KawaGlintNicheCues.PreBiteNarration(Midwater) ==
+                        // NarrationPreBite (定数を直接参照) -- 挙動不変。
+                        _hud.SetNarration(KawaGlintNicheCues.PreBiteNarration(TsuriWorldData.NicheFor(_currentLocation, _session.SpeciesId)));
                     }
                 }
                 else
@@ -430,7 +529,11 @@ namespace Pono.KawaGlint.Gameplay
 
             _targetX = Mathf.Clamp(world.x, _stage.ShoreRightEdgeWorldX + CastMinMarginWorld, _stage.WaterWorldRect.xMax - CastMaxMarginWorld);
 
-            TsuriKawaTuning.NextWaitSecRange(_session.ConsecutiveMisses, out var waitMin, out var waitMax);
+            // 海拡張 (実装契約v1.0 §C-1): TsuriKawaTuning.NextWaitSecRange 呼び出しを
+            // ロケーション別の TsuriWorldData.NextWaitSecRange に差し替え。 asase では
+            // 値が完全一致する (EditMode テストで固定済み) -- TsuriKawaTuning.cs 自体は
+            // 1文字も変更しない (既存テスト用に現状維持)。
+            TsuriWorldData.NextWaitSecRange(_currentLocation, _session.ConsecutiveMisses, out var waitMin, out var waitMax);
             _session = TsuriCore.Cast(_session, waitMin, waitMax, _random);
             _waitTotalSec = _session.WaitRemainingSec;
             // Random consumption order note: Cast() above already consumed
@@ -635,6 +738,15 @@ namespace Pono.KawaGlint.Gameplay
             _actors.SetFishingLineTension(false);
 
             var species = TsuriFishData.GetSpeciesById(_session.SpeciesId);
+
+            // fishdex 記録配線 (実装契約v1.0 §C-1): サイズは _sizeRandom (メイン _random
+            // から分離した専用ストリーム) でロールし、cm 単位に丸めて渡す。
+            // サイズレンジ無し種 (ながぐつ/かいがら等) は null。
+            int? sizeCm = species != null && species.HasSizeRange
+                ? Mathf.RoundToInt(Mathf.Lerp(species.SizeMinCm, species.SizeMaxCm, (float)_sizeRandom.NextDouble()))
+                : (int?)null;
+            _fishdex?.RecordCatch(species, _currentLocation, sizeCm, NowMs());
+
             var edible = species != null && species.Edible;
             var label = edible ? CatchLabelEdible : CatchLabelTreasure;
             var speciesName = species != null ? species.Name : SpeciesUnknownName;

@@ -163,6 +163,25 @@ namespace Pono.KawaGlint.UI
             return text;
         }
 
+        /// <summary>
+        /// A simple tappable button: an Image (raycastTarget=true, doubles as the
+        /// Button's target graphic) with a centered child Text label filling the
+        /// same rect. Added for the 海拡張 (sea-expansion) location-select panel
+        /// (実装契約v1.0 §C-2) -- every prior HUD element only ever needed passive
+        /// Image/Text, never a real uGUI Button.
+        /// </summary>
+        public static Button CreateButton(string name, Transform parent, string label, int fontSize, Color bgColor, Color textColor)
+        {
+            var image = CreateImage(name, parent, bgColor, raycastTarget: true);
+            var button = image.gameObject.AddComponent<Button>();
+            button.targetGraphic = image;
+
+            var text = CreateText(name + "Label", image.rectTransform, label, fontSize, TextAnchor.MiddleCenter, textColor);
+            Fill(text.rectTransform);
+
+            return button;
+        }
+
         public static void Fill(RectTransform rect)
         {
             rect.anchorMin = Vector2.zero;

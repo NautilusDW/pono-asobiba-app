@@ -39,6 +39,36 @@ namespace Pono.KawaGlint.Core
             return session;
         }
 
+        /// <summary>
+        /// 海拡張 (実装契約v1.0 §A-4) 新設オーバーロード。 weightMulBySpeciesId (通常
+        /// TsuriWorldData.BuildWeightMulMap の結果) をセッションに紐づける。
+        /// null を渡した場合は既存2引数版と完全に同じ結果になる (Core 既存パス保証)。
+        /// </summary>
+        public static TsuriSession CreateSession(
+            IReadOnlyList<TsuriSpecies> pool, TsuriMode mode,
+            IReadOnlyDictionary<string, float> weightMulBySpeciesId)
+        {
+            var session = CreateSession(pool, mode);
+            session.SpeciesWeightMulById = CloneWeightMulMap(weightMulBySpeciesId);
+            return session;
+        }
+
+        /// <summary>weightMulBySpeciesId の防御的コピー。 null 入力は null を返す (現行パス維持)。</summary>
+        private static Dictionary<string, float> CloneWeightMulMap(IReadOnlyDictionary<string, float> weightMulBySpeciesId)
+        {
+            if (weightMulBySpeciesId == null)
+            {
+                return null;
+            }
+
+            var map = new Dictionary<string, float>();
+            foreach (var kv in weightMulBySpeciesId)
+            {
+                map[kv.Key] = kv.Value;
+            }
+            return map;
+        }
+
         // ═══ 抽選 ════════════════════════════════════════════════════════
         /// <summary>
         /// speciesPool + sessionSeenIds から、種ごとの選択確率 (0〜1、合計1) を
@@ -109,6 +139,46 @@ namespace Pono.KawaGlint.Core
             return probs;
         }
 
+        /// <summary>
+        /// 海拡張 (実装契約v1.0 §A-4) 新設オーバーロード。 map が null/空の場合は既存2引数版の
+        /// 結果をそのまま返す (ビット同一)。 それ以外は既存計算の結果 probs に対し
+        /// probs[id] *= mul (未指定は既定1.0) した後、合計1に再正規化する
+        /// (rarity階層構造そのものには手を入れない)。
+        /// </summary>
+        public static Dictionary<string, double> ComputeSpeciesProbabilities(
+            IReadOnlyList<TsuriSpecies> speciesPool, IReadOnlyList<string> sessionSeenIds,
+            IReadOnlyDictionary<string, float> weightMulBySpeciesId)
+        {
+            var baseProbs = ComputeSpeciesProbabilities(speciesPool, sessionSeenIds);
+            if (weightMulBySpeciesId == null || weightMulBySpeciesId.Count == 0)
+            {
+                return baseProbs;
+            }
+
+            var weighted = new Dictionary<string, double>();
+            double total = 0;
+            foreach (var kv in baseProbs)
+            {
+                float mul = weightMulBySpeciesId.TryGetValue(kv.Key, out var m) ? m : 1f;
+                double w = kv.Value * mul;
+                weighted[kv.Key] = w;
+                total += w;
+            }
+
+            if (total <= 0)
+            {
+                // 全滅防止の防御的フォールバック(通常到達しない)。
+                return baseProbs;
+            }
+
+            var result = new Dictionary<string, double>();
+            foreach (var kv in weighted)
+            {
+                result[kv.Key] = kv.Value / total;
+            }
+            return result;
+        }
+
         private static bool Contains(IReadOnlyList<string> list, string value)
         {
             for (int i = 0; i < list.Count; i++)
@@ -132,13 +202,29 @@ namespace Pono.KawaGlint.Core
             IReadOnlyList<string> sessionSeenIds,
             Random random)
         {
+            // 4引数版は5引数版へ null 委譲する (ComputeSpeciesProbabilities の3引数版が
+            // map==null 時に2引数版の結果をそのまま返すため、挙動はビット同一)。
+            return PickSpecies(speciesPool, pityBySpecies, sessionSeenIds, random, null);
+        }
+
+        /// <summary>
+        /// 海拡張 (実装契約v1.0 §A-4) 新設オーバーロード。 weightMulBySpeciesId が null の
+        /// 場合は既存4引数版と完全に同じ抽選結果になる (Core 既存パス保証)。
+        /// </summary>
+        public static string PickSpecies(
+            IReadOnlyList<TsuriSpecies> speciesPool,
+            IReadOnlyDictionary<string, float> pityBySpecies,
+            IReadOnlyList<string> sessionSeenIds,
+            Random random,
+            IReadOnlyDictionary<string, float> weightMulBySpeciesId)
+        {
             var pool = speciesPool;
             if (pool == null || pool.Count == 0)
             {
                 return null;
             }
 
-            var probs = ComputeSpeciesProbabilities(pool, sessionSeenIds ?? Array.Empty<string>());
+            var probs = ComputeSpeciesProbabilities(pool, sessionSeenIds ?? Array.Empty<string>(), weightMulBySpeciesId);
             double total = 0;
             for (int i = 0; i < pool.Count; i++)
             {
@@ -187,13 +273,44 @@ namespace Pono.KawaGlint.Core
                 max = tmp;
             }
 
-            next.SpeciesId = PickSpecies(next.SpeciesPool, next.PityBySpecies, next.SessionSeenIds, random);
+            next.SpeciesId = PickSpecies(next.SpeciesPool, next.PityBySpecies, next.SessionSeenIds, random, next.SpeciesWeightMulById);
             next.WaitRemainingSec = min + (float)(random.NextDouble() * (max - min));
             next.BiteWindowRemainingSec = 0f;
             next.GaugePct = 0f;
             next.FloorHeldSec = 0f;
             next.RendaElapsedSec = 0f;
             next.Phase = TsuriPhase.Wait;
+            return next;
+        }
+
+        /// <summary>
+        /// 海拡張 (実装契約v1.0 §A-4) 新設: ロケーション切替。 pity/misses/CaughtLog/
+        /// SessionSeenIds/Mode を保持したまま pool と weightMul を差し替える。
+        /// Phase が Idle/Landed/Escaped 以外なら複製をそのまま返す no-op (Cast と同じ
+        /// ガード形)。 成立時は Phase=Idle, SpeciesId=null, Wait/Bite/Gauge/FloorHeld/
+        /// RendaElapsed = 0 にリセットする (=Idle 画面へ戻す)。
+        /// </summary>
+        public static TsuriSession WithSpeciesPool(
+            TsuriSession session,
+            IReadOnlyList<TsuriSpecies> pool,
+            IReadOnlyDictionary<string, float> weightMulBySpeciesId)
+        {
+            var next = session.Clone();
+            if (next.Phase != TsuriPhase.Idle && next.Phase != TsuriPhase.Landed && next.Phase != TsuriPhase.Escaped)
+            {
+                return next;
+            }
+
+            next.SpeciesPool = pool != null ? new List<TsuriSpecies>(pool) : new List<TsuriSpecies>();
+            next.SpeciesWeightMulById = CloneWeightMulMap(weightMulBySpeciesId);
+
+            next.Phase = TsuriPhase.Idle;
+            next.SpeciesId = null;
+            next.WaitRemainingSec = 0f;
+            next.BiteWindowRemainingSec = 0f;
+            next.GaugePct = 0f;
+            next.FloorHeldSec = 0f;
+            next.RendaElapsedSec = 0f;
             return next;
         }
 
