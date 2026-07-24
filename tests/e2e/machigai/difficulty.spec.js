@@ -57,7 +57,7 @@ test('後半7面は生成済みB画像で形・向き・模様の意味が明確
     'おつきさまの むき',
     'うさぎの みみ',
     'ぞうの はな',
-    'まくらの かど'
+    'まくらの かたち'
   ]);
   expect((await stageData(page, 'castle')).differences.slice(3).map(({ label }) => label)).toEqual([
     'どらごんの はね',

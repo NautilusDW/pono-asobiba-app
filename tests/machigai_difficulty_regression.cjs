@@ -55,12 +55,27 @@ const expectedClarityTargets = {
   ],
   bedroom: [
     { index: 0, label: 'おつきさまの むき', kind: 'direction', minRadius: 0.095 },
+    { index: 1, label: 'うさぎの みみ', kind: 'direction', minRadius: 0.085 },
     { index: 2, label: 'ぞうの はな', kind: 'direction', minRadius: 0.105 },
-    { index: 3, label: 'まくらの かど', kind: 'shape', minRadius: 0.105 }
+    { index: 3, label: 'まくらの かたち', kind: 'shape', minRadius: 0.075 }
   ],
   castle: [
     { index: 3, label: 'どらごんの はね', kind: 'shape', minRadius: 0.100 },
     { index: 4, label: 'かんむりの おおきさ', kind: 'shape', minRadius: 0.090 }
+  ]
+};
+const expectedRegeneratedHits = {
+  jungle: [
+    { x: 0.160, y: 0.205, r: 0.095 },
+    { x: 0.432, y: 0.330, r: 0.100 },
+    { x: 0.767, y: 0.628, r: 0.085 },
+    { x: 0.215, y: 0.635, r: 0.115 }
+  ],
+  bedroom: [
+    { x: 0.228, y: 0.200, r: 0.095 },
+    { x: 0.700, y: 0.370, r: 0.085 },
+    { x: 0.235, y: 0.665, r: 0.105 },
+    { x: 0.540, y: 0.310, r: 0.075 }
   ]
 };
 
@@ -94,6 +109,15 @@ Object.entries(expectedClarityTargets).forEach(([stageId, targets]) => {
     assert.equal(diff.kind, target.kind, `${stageId}[${target.index}]: 差の意味`);
     assert.ok(diff.r >= target.minRadius, `${stageId}[${target.index}]: 小画面向けhit radius`);
   });
+});
+
+Object.entries(expectedRegeneratedHits).forEach(([stageId, expectedHits]) => {
+  const stage = stages.find((candidate) => candidate.id === stageId);
+  assert.deepEqual(
+    Array.from(stage.differences, ({ x, y, r }) => ({ x, y, r })),
+    expectedHits,
+    `${stageId}: 再生成した対象の中心とタップ範囲`
+  );
 });
 
 stages.forEach((stage) => {

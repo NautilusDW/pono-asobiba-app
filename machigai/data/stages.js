@@ -122,10 +122,10 @@ window.STAGE_DATA = {
       imgB: "assets/processed/jungle_b.webp",
       thumb: "assets/processed/jungle_t.webp",
       differences: [
-        { x: 0.165, y: 0.210, r: 0.085, label: "おうむの はね", kind: "pattern" },
-        { x: 0.414, y: 0.335, r: 0.095, label: "さるの しっぽ", kind: "shape" },
-        { x: 0.847, y: 0.723, r: 0.080, label: "きりんの もよう", kind: "pattern" },
-        { x: 0.229, y: 0.647, r: 0.110, label: "ぞうの みみ", kind: "shape" }
+        { x: 0.160, y: 0.205, r: 0.095, label: "おうむの はね", kind: "pattern" },
+        { x: 0.432, y: 0.330, r: 0.100, label: "さるの しっぽ", kind: "shape" },
+        { x: 0.767, y: 0.628, r: 0.085, label: "きりんの もよう", kind: "pattern" },
+        { x: 0.215, y: 0.635, r: 0.115, label: "ぞうの みみ", kind: "shape" }
       ]
     },
     {
@@ -136,10 +136,10 @@ window.STAGE_DATA = {
       imgB: "assets/processed/bedroom_b.webp",
       thumb: "assets/processed/bedroom_t.webp",
       differences: [
-        { x: 0.222, y: 0.203, r: 0.095, label: "おつきさまの むき", kind: "direction" },
-        { x: 0.684, y: 0.341, r: 0.080, label: "うさぎの みみ", kind: "direction" },
-        { x: 0.217, y: 0.684, r: 0.105, label: "ぞうの はな", kind: "direction" },
-        { x: 0.750, y: 0.450, r: 0.105, label: "まくらの かど", kind: "shape" }
+        { x: 0.228, y: 0.200, r: 0.095, label: "おつきさまの むき", kind: "direction" },
+        { x: 0.700, y: 0.370, r: 0.085, label: "うさぎの みみ", kind: "direction" },
+        { x: 0.235, y: 0.665, r: 0.105, label: "ぞうの はな", kind: "direction" },
+        { x: 0.540, y: 0.310, r: 0.075, label: "まくらの かたち", kind: "shape" }
       ]
     },
     {
