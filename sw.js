@@ -1,5 +1,13 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2373: ひょっこりハイタッチで、見えている動物画像と下側マスク線から
+// 10〜18pxの補助タップ領域を作り、ボタン矩形より上の顔・耳・手も正しい穴へ
+// 判定するよう修正。こもれび／どんぐり左上の隠れ場所を背景の地面へ移し、
+// 全5面の動物停止位置と手前縁をground-stack比へ統一して画面サイズによる
+// 下透け・クロップずれを解消。ボーナス光輪も動物窓内でマスクする。
+// hyokkori-hightouch/index.html の個別queryを1456へ更新。ゲーム個別ファイルは
+// network-first配信のためCRITICAL_ASSETSには追加しない。play.html
+// PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2373)。
 // v2372: なぞなぞトレイン町面「ぴたっと停車」の実機報告2件を修正。(1)駅開始/リトライ
 // 直後、一度も入力しないうちに settled(vel=0)+pos(0)<zone が真になり即座に
 // resolveTownDockFail が発火する回帰を armed ゲート (実際に位置が動くまで判定を
@@ -1018,7 +1026,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2372;
+const CACHE_VERSION = 2373;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
