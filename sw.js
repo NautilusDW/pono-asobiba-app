@@ -1,5 +1,11 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2384: まちがいさがしのジャングル背景を、木の枝に直接実った房から、
+// 大きな葉・緑の偽茎・果梗を持つ自然なバナナ株へA/B共通で修復。よるのおへやBは、
+// ゾウの両目を保った自然なJ字の鼻と、木部へ縫い目が侵食しない角型の枕へ修復した。
+// ステージデータ・差分数・当たり判定は変更していない。ゲーム個別画像は
+// network-first配信のためCRITICAL_ASSETSには追加しない。
+// play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2384)。
 // v2383: なぞなぞトレイン町面「ぴたっと停車」round8。実playtestで報告された「緑ゾーンの
 // 中で止まったのに惜しい(失敗)判定になる」不具合を修正。原因は判定バグではなく、ブレーキ
 // ゾーン帯/停止ボックス/誘導矢印の画面位置を計算するtownDockWorldToScreenVw(worldSpaceX)が
@@ -1141,7 +1147,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2383;
+const CACHE_VERSION = 2384;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
