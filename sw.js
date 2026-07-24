@@ -1,5 +1,11 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2378: まちがいさがし15面のうち後半7面を、GPT Image 2で局所編集したB画像へ更新。
+// 単純な色違い／物の有無に偏らず、羽・耳・しっぽ・星・窓・模様などの形／向き／
+// 細部差を4〜5個ずつ配置し、前半5面(easy)・中盤3面(medium)・後半7面(hard)の
+// 難易度カーブをデータ化した。実行時のCSS画像変形は使わず1024px WebPを直接表示する。
+// ゲーム個別ファイルと画像はnetwork-first配信のためCRITICAL_ASSETSには追加しない。
+// play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2378)。
 // v2377: ひょっこりハイタッチの全5面far／near外装へ、実際の葉・土・石・根の
 // 前縁を写した10枚の専用alpha maskを追加。動物を水平線で切らず、同じ外装画像の
 // 手前部分を輪郭どおり重ねて隠す。従来の直線clipは外装下端の漏れ防止位置へ下げ、
@@ -1069,7 +1075,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2377;
+const CACHE_VERSION = 2378;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

@@ -532,32 +532,6 @@ body.is-portrait #viewport {
   display: block;
 }
 
-.subtle-difference-patch {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  clip-path: circle(var(--patch-radius) at var(--patch-x) var(--patch-y));
-  -webkit-mask-image: radial-gradient(
-    circle at var(--patch-x) var(--patch-y),
-    #000 0,
-    #000 var(--patch-inner-radius),
-    transparent var(--patch-radius)
-  );
-  mask-image: radial-gradient(
-    circle at var(--patch-x) var(--patch-y),
-    #000 0,
-    #000 var(--patch-inner-radius),
-    transparent var(--patch-radius)
-  );
-}
-
-.subtle-difference-patch img {
-  position: absolute;
-  inset: 0;
-  will-change: transform;
-}
-
 .panel.shaking {
   animation: panel-shake 0.4s ease;
 }

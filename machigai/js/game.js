@@ -92,22 +92,11 @@
    */
   function createSession(stageData) {
     var diffs = (stageData.differences || []).map(function (d) {
-      function clonePoint(point) {
-        if (!point) return null;
-        return {
-          x: point.x,
-          y: point.y,
-          r: typeof point.r === 'number' ? point.r : d.r
-        };
-      }
       return {
         x: d.x,
         y: d.y,
         r: d.r,
         label: d.label,
-        kind: d.kind || '',
-        a: clonePoint(d.a),
-        b: clonePoint(d.b),
         found: false
       };
     });
@@ -121,25 +110,15 @@
       hintCount: 0
     };
 
-    function pointForSide(diff, side) {
-      if (side === 'a' && diff.a) return diff.a;
-      if (side === 'b' && diff.b) return diff.b;
-      return diff;
-    }
-
-    /**
-     * 正規化座標(0-1)のタップ判定。
-     * side は 'a' / 'b'。省略時は従来の共有 x/y/r を使うため旧データと互換。
-     */
-    function checkHit(nx, ny, side) {
+    /** 正規化座標(0-1)のタップ判定。最も近い未発見の円がヒットすれば見つけた扱いにする */
+    function checkHit(nx, ny) {
       var bestIndex = -1;
       var bestDist = Infinity;
       for (var i = 0; i < state.diffs.length; i++) {
         var d = state.diffs[i];
         if (d.found) continue;
-        var point = pointForSide(d, side);
-        var dist = Math.hypot(nx - point.x, ny - point.y);
-        var effR = Math.max(point.r * RADIUS_MULTIPLIER, MIN_EFFECTIVE_RADIUS);
+        var dist = Math.hypot(nx - d.x, ny - d.y);
+        var effR = Math.max(d.r * RADIUS_MULTIPLIER, MIN_EFFECTIVE_RADIUS);
         if (dist <= effR && dist < bestDist) {
           bestDist = dist;
           bestIndex = i;
