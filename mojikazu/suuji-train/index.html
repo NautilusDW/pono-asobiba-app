@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#79d7f2">
+  <title>すうじのれっしゃ</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="portrait-note" role="status">
+    <span aria-hidden="true">📱↻</span>
+    <strong>よこに してね</strong>
+  </div>
+
+  <main class="game">
+    <header class="topbar">
+      <a class="back" href="../index.html" aria-label="ゲームを えらぶ ところへ もどる">← もどる</a>
+      <h1>すうじのれっしゃ</h1>
+      <button class="help" id="helpButton" type="button" aria-label="あそびかた">？</button>
+    </header>
+
+    <section class="chooser" id="chooser" aria-labelledby="chooseTitle">
+      <div class="title-art" aria-hidden="true">☁️　🚂💨　☁️</div>
+      <h2 id="chooseTitle">どの れっしゃで あそぶ？</h2>
+      <div class="mode-buttons">
+        <button type="button" data-mode="five"><b>1〜5</b><span>はじめて</span></button>
+        <button type="button" data-mode="ten"><b>1〜10</b><span>ながい れっしゃ</span></button>
+        <button type="button" data-mode="missing"><b>？を いれよう</b><span>ぬけた すうじ</span></button>
+      </div>
+    </section>
+
+    <section class="play" id="play" hidden aria-labelledby="prompt">
+      <div class="prompt" id="prompt" aria-live="polite">1から じゅんばんに つなごう！</div>
+      <div class="track" id="track" aria-label="れっしゃを つなぐ ところ">
+        <div class="engine" aria-label="きかんしゃ"><span>🚂</span></div>
+        <div class="slots" id="slots"></div>
+      </div>
+      <div class="platform">
+        <div class="pieces" id="pieces" aria-label="すうじの しゃりょう"></div>
+      </div>
+    </section>
+
+    <section class="finish" id="finish" hidden aria-live="polite">
+      <div class="finish-train" id="finishTrain" aria-hidden="true">🚂🚃🚃🚃💨</div>
+      <h2>できた！</h2>
+      <p>れっしゃが しゅっぱつ！</p>
+      <div>
+        <button type="button" id="againButton">もういちど</button>
+        <button type="button" id="chooseButton">ほかを えらぶ</button>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="helpDialog">
+    <h2>あそびかた</h2>
+    <p>すうじの しゃりょうを<br>じゅんばんに つなごう！</p>
+    <p>タッチしてから わくを タッチ。<br>ひっぱっても つなげるよ。</p>
+    <button type="button" id="closeHelp">わかった！</button>
+  </dialog>
+
+  <script src="game.js"></script>
+</body>
+</html>

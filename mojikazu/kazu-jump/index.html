@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#79d7ef">
+  <title>かずだけジャンプ | かずのゲームランド</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="game">
+    <header>
+      <a class="circle" href="../" aria-label="ゲームランドにもどる">←</a>
+      <div class="mission">
+        <span id="prompt">つぎは どの かず？</span>
+        <strong id="target">2</strong>
+      </div>
+      <button id="hint" class="circle" type="button" aria-label="ヒント">💡</button>
+    </header>
+    <section id="sky" aria-label="ジャンプするゲーム">
+      <div id="progress" aria-label="すすみぐあい"></div>
+      <div id="friend" aria-hidden="true">🐿️</div>
+      <div id="cloud" aria-hidden="true">☁️</div>
+      <div id="platforms"></div>
+      <p id="message" role="status" aria-live="polite"></p>
+    </section>
+    <section id="start" class="overlay">
+      <h1>かずだけジャンプ</h1>
+      <p>つぎの かずを えらんで<br>ジャンプしよう！</p>
+      <div class="levels" role="group" aria-label="むずかしさ">
+        <button type="button" data-level="5">1から 5</button>
+        <button type="button" data-level="10">1から 10</button>
+        <button type="button" data-level="20">1から 20</button>
+      </div>
+    </section>
+    <section id="finish" class="overlay" hidden>
+      <div class="finish-star" aria-hidden="true">★</div>
+      <h2>ゴール！</h2>
+      <p>じゅんばんに とべたね！</p>
+      <button id="again" type="button">もういちど</button>
+      <a href="../">ゲームを えらぶ</a>
+    </section>
+  </main>
+  <aside class="portrait"><span>↻</span><b>よこに してね</b></aside>
+  <script src="game.js"></script>
+</body>
+</html>
