@@ -7,7 +7,22 @@ const pages = [
   "/mojikazu/junban-touch/",
   "/mojikazu/suuji-pachinko/",
   "/mojikazu/suuji-train/",
-  "/mojikazu/kazu-jump/"
+  "/mojikazu/kazu-jump/",
+  "/mojikazu/kazoete-shoot/",
+  "/mojikazu/suuji-meteor/",
+  "/mojikazu/tokei-awase/",
+  "/mojikazu/moji-atsume/",
+  "/mojikazu/hiragana-bubble/",
+  "/mojikazu/shiritori-train/",
+  "/mojikazu/hiragana-invader/",
+  "/mojikazu/kotoba-puzzle/",
+  "/mojikazu/moji-ari/",
+  "/mojikazu/moji-katachi/",
+  "/mojikazu/kotoba-bingo/",
+  "/mojikazu/mojikazu-dungeon/",
+  "/mojikazu/mojikazu-rhythm/",
+  "/mojikazu/oboete-touch/",
+  "/mojikazu/dorega-kawatta/"
 ];
 const viewports = [
   { width: 390, height: 844 },
@@ -42,6 +57,24 @@ const viewports = [
       await page.locator(`.number-button[data-number="${value}"]`).click();
     }
     await page.locator("#celebration:not([hidden])").waitFor();
+    assert.equal(await page.locator("#trail line").count(), 5, "star mode must close its meaningful outline");
+
+    await page.goto(`${base}/mojikazu/junban-touch/`);
+    await page.locator('[data-limit="20"]').click();
+    assert.equal(await page.locator("#trail").isHidden(), true, "random search mode must not draw a meaningless line");
+    const boxes = await page.locator(".number-button").evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const rect = button.getBoundingClientRect();
+        return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+      })
+    );
+    for (let i = 0; i < boxes.length; i += 1) {
+      for (let j = i + 1; j < boxes.length; j += 1) {
+        const overlapX = Math.min(boxes[i].right, boxes[j].right) - Math.max(boxes[i].left, boxes[j].left);
+        const overlapY = Math.min(boxes[i].bottom, boxes[j].bottom) - Math.max(boxes[i].top, boxes[j].top);
+        assert.ok(overlapX <= 2 || overlapY <= 2, `random buttons ${i + 1} and ${j + 1} overlap`);
+      }
+    }
 
     await page.goto(`${base}/mojikazu/suuji-train/`);
     await page.locator('[data-mode="five"]').click();

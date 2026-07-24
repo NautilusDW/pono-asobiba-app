@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#784fc7">
+  <title>もじあつめ</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <header><a href="../" aria-label="ゲームランドにもどる">←</a><div><span id="picture">🍎</span><strong id="word">りんご</strong><div id="slots" aria-label="ことばを つくる"></div></div><button id="hint" type="button" aria-label="ヒント">💡</button></header>
+    <section id="field" aria-label="おちてくる もじ"></section>
+    <p id="message" role="status" aria-live="polite">つぎの もじを みつけよう</p>
+    <section id="start" class="overlay"><h1>もじあつめ</h1><p>おちてくる もじを<br>じゅんばんに タッチ！</p><button id="play" type="button">はじめる</button></section>
+    <section id="finish" class="overlay" hidden><div class="big">✨</div><h2>ことばが できた！</h2><p id="made"></p><button id="again" type="button">つぎの ことば</button><a href="../">ゲームを えらぶ</a></section>
+  </main>
+  <aside class="portrait"><span>↻</span><b>よこに してね</b></aside>
+  <script src="game.js"></script>
+</body>
+</html>

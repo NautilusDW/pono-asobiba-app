@@ -13,7 +13,18 @@
   let limit = 5;
   let expected = 1;
   let lastPoint = null;
+  let firstPoint = null;
   let hintTimer = 0;
+
+  const SHAPES = {
+    5: [
+      [50, 9], [62, 76], [9, 32], [91, 32], [38, 76]
+    ],
+    10: [
+      [9, 51], [28, 27], [54, 17], [75, 31], [92, 14],
+      [84, 50], [92, 86], [70, 69], [45, 80], [24, 68]
+    ]
+  };
 
   function shuffled(values) {
     const copy = [...values];
@@ -55,10 +66,24 @@
       line.setAttribute("y2", point.y);
       trail.append(line);
     }
+    if (!firstPoint) firstPoint = point;
     lastPoint = point;
   }
 
+  function closeTrail() {
+    if (!lastPoint || !firstPoint || limit === 20) return;
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", lastPoint.x);
+    line.setAttribute("y1", lastPoint.y);
+    line.setAttribute("x2", firstPoint.x);
+    line.setAttribute("y2", firstPoint.y);
+    trail.append(line);
+  }
+
   function finishGame() {
+    closeTrail();
+    document.getElementById("finishMessage").textContent =
+      limit === 5 ? "おほしさま！" : limit === 10 ? "おさかな！" : "ぜんぶ みつけた！";
     goalBadge.hidden = true;
     window.setTimeout(() => {
       celebration.hidden = false;
@@ -94,6 +119,7 @@
   function startGame() {
     expected = 1;
     lastPoint = null;
+    firstPoint = null;
     clearHint();
     trail.replaceChildren();
     board.replaceChildren();
@@ -102,9 +128,28 @@
     nextNumber.textContent = "1";
 
     const numbers = shuffled(Array.from({ length: limit }, (_, index) => index + 1));
-    const cells = shuffled(Array.from({ length: 20 }, (_, index) => index));
+    const randomPoints = [];
+    const boardRect = board.getBoundingClientRect();
+    while (randomPoints.length < limit) {
+      const candidate = {
+        x: 7 + Math.random() * 82,
+        y: 9 + Math.random() * 78
+      };
+      const farEnough = randomPoints.every((point) => {
+        const dx = (point.x - candidate.x) * boardRect.width / 100;
+        const dy = (point.y - candidate.y) * boardRect.height / 100;
+        const minimumGap = limit === 20 ? 52 : 70;
+        return Math.abs(dx) >= minimumGap || Math.abs(dy) >= minimumGap;
+      });
+      if (farEnough) randomPoints.push(candidate);
+    }
+    const shape = SHAPES[limit];
+    const mirror = Math.random() > .5;
+    const positions = shape
+      ? shape.map(([x, y]) => ({ x: mirror ? 100 - x : x, y }))
+      : randomPoints;
 
-    numbers.forEach((number, index) => {
+    numbers.forEach((number) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "number-button";
@@ -113,11 +158,13 @@
       button.setAttribute("aria-label", `${number}`);
       button.setAttribute("aria-pressed", "false");
       button.style.setProperty("--ball-color", colors[(number - 1) % colors.length]);
-      button.style.gridColumn = String((cells[index] % 5) + 1);
-      button.style.gridRow = String(Math.floor(cells[index] / 5) + 1);
+      const point = positions[number - 1];
+      button.style.left = `${point.x}%`;
+      button.style.top = `${point.y}%`;
       button.addEventListener("click", () => chooseNumber(button));
       board.append(button);
     });
+    trail.style.display = limit === 20 ? "none" : "";
   }
 
   difficultyButtons.forEach((button) => {
