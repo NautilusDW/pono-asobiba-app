@@ -59,6 +59,8 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
+- 2026-07-25 - by Claude - [batch:1470-kawaglint-species-x2-rarity-bg-depth-polish] - unity/PonoNativeGames/Assets/Pono/Games/KawaGlint/**(既存ファイル変更+新規、AquaLumina等の保護4ディレクトリ不変更), tmp/alpha_pending/**(新規アート、gitignore対象)、docs/**、AGENTS_CLAIMS.md, HANDOFF.md - ユーザー実プレイフィードバック7件: ①生き物を約2倍(15→30種前後)に拡充、②抽選確率の再設計(連続で同じ種も出る独立抽選+レアは本当に稀+pity)、③レア種の魚影を一目で分かる差別化(シルエット/動き)、④背景のサンゴ/岩/海藻をちゃんと作る(現状13点は最低限)、⑤生態的整合性(沖の船で鮭が釣れる等)の見直し、⑥背景の多層化・アニメ化(雲が流れる/木々が揺れる/パララックス)、⑦水面が二重に見える不具合(背景アートの焼き込み水面線とSurfaceBandエフェクトのズレ)+ウキの見た目改善+食いつき時に引っ張られる描写の追加。Opus5設計→アート生成→(orchestrator目視承認)→sonnet5並列実装→クロスレビュー→ビルド検証で進行予定 [overlap: batch:1449-tsuri-unity-water-spike(KawaGlint本体、継続作業)]
+
 - 2026-07-25 - by Codex - [batch:1468-machigai-tts31-narration] - machigai/**, tests/e2e/machigai/**, tests/machigai_*.cjs, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - 間違い探しで実際に再生される全差分ラベルと完了文言を Gemini TTS 3.1 / Leda / 1.15倍へ統一し、音声形式・音量・faster-whisper台本キーワード・全manifest対応・連打/mute/cancelを検証してApp stagingへ反映する [overlap: batch:1464-hyokkori-sleep-feedback (sw.js/play.html), batch:1460-nazonazo-town-pitatto-round7 (sw.js/play.html)]
 
 
